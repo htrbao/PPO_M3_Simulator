@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import Any, ClassVar, Dict, Optional, Type, TypeVar, Union
 
@@ -6,6 +7,7 @@ import torch as th
 from gymnasium import spaces
 from torch.nn import functional as F
 import datetime
+import csv   
 
 from training.common.buffers import RolloutBuffer
 from training.common.on_policy_algorithm import OnPolicyAlgorithm
@@ -211,9 +213,27 @@ class PPO(OnPolicyAlgorithm):
 
             self.clip_range_vf = get_schedule_fn(self.clip_range_vf)
 
+    def write_csv(self, stats):
+        # Check if the file exists
+        file_exists = os.path.isfile(f"./output/_logging/{self._model_name}")
+
+        # Open the CSV file in append mode
+        with open(f"./output/_logging/{self._model_name}", mode='a', newline='') as file:
+            fieldnames = stats.keys()
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            
+            # Write the header only if the file does not exist
+            if not file_exists:
+                print(file_exists)
+                writer.writeheader()
+        
+            # Write the data
+            writer.writerow(stats)
+
     def train_log(self, stats):
         if self._wandb:
             wandb.log(stats)
+        self.write_csv(stats)
         pass
 
     def train(self) -> None:
@@ -371,7 +391,7 @@ class PPO(OnPolicyAlgorithm):
             stats["train/clip_range_vf"]=clip_range_vf
 
         self.train_log(stats)
-        self.policy.save(path=f"./_saved_model/{self._model_name}.pt")
+        self.policy.save(path=f"./output/_saved_model/{self._model_name}.pt")
 
     def learn(
         self: SelfPPO,

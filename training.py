@@ -5,73 +5,8 @@ from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.ppo import PPO
 from training.m3_model.m3_cnn import M3CnnFeatureExtractor
+from configs import args
 
-
-def get_args():
-    parser = argparse.ArgumentParser(
-        "BEiT fine-tuning and evaluation script for image classification",
-        add_help=False,
-    )
-    # Model Information
-    parser.add_argument(
-        "--prefix_name",
-        type=str,
-        default="m3_with_cnn",
-        help="prefix name of the model",
-    )
-    parser.add_argument(
-        "--mid_channels",
-        type=int,
-        default=64,
-        help="Number of intermediary channels in CNN model",
-    )
-    parser.add_argument(
-        "--num_first_cnn_layer",
-        type=int,
-        default=4,
-        help="Number of intermediary layers in CNN model",
-    )
-
-    # Rollout Data
-    parser.add_argument(
-        "--n_steps",
-        type=int,
-        default=32,
-        metavar="n_steps",
-        help="rollout data length (default: 32)",
-    )
-
-    # Optimizer parameters
-    parser.add_argument(
-        "--lr",
-        type=float,
-        default=0.0003,
-        metavar="LR",
-        help="learning rate (default: 0.0003)",
-    )
-    parser.add_argument("--batch_size", default=128, type=int)
-    parser.add_argument("--epochs", default=20, type=int)
-
-    # Continue training
-    parser.add_argument(
-        "--checkpoint",
-        default=None,
-        type=str,
-        help="Path to current checkpoint to continue training",
-    )
-
-    # Logging
-    parser.add_argument(
-        "--wandb",
-        action="store_true",
-        default=False,
-        help="Whether want to logging onto Wandb",
-    )
-
-    return parser.parse_args()
-
-
-args = get_args()
 env = Match3Env(90)
 
 print(env.observation_space)
@@ -80,24 +15,27 @@ print(env.action_space)
 PPO_trainer = PPO(
     policy="CnnPolicy",
     env=env,
-    learning_rate=args.lr,
-    n_steps=args.n_steps,
-    ent_coef=0.00001,
+    learning_rate=args.LR,
+    vf_coef=args.VF_COEF,
+    n_steps=args.N_STEPS,
+    batch_size=args.BATCH_SIZE,
+    gamma=args.GAMMA,
+    ent_coef=args.ENTROPY_COEFF,
     policy_kwargs={
-        "net_arch": dict(pi=[], vf=[161, 32]),
+        "net_arch": dict(pi=args.PI, vf=args.VF),
         "features_extractor_class": M3CnnFeatureExtractor,
         "features_extractor_kwargs": {
-            "mid_channels": args.mid_channels,
+            "mid_channels": args.MID_CHANNELS,
             "out_channels": 161,
-            "num_first_cnn_layer": args.num_first_cnn_layer,
+            "num_first_cnn_layer": args.NUM_FIRST_CNN_LAYERS,
         },
         "optimizer_class": torch.optim.Adam,
-        "share_features_extractor": True,
+        "share_features_extractor": args.SHARE_FEATURES_EXTRACTOR,
     },
-    _checkpoint=args.checkpoint,
-    _wandb=args.wandb,
-    device="cuda",
-    prefix_name=args.prefix_name,
+    _checkpoint=args.CHECKPOINTS,
+    _wandb=args.WANDB,
+    device=args.DEVICE,
+    prefix_name=args.PREFIX_NAME,
 )
 
 while True:
