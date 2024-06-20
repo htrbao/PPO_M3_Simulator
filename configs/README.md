@@ -8,7 +8,7 @@
 - `SHARE_FEATURES_EXTRACTOR`: Whether sharing the feature extraction between Actor and Critic
 - `CHECKPOINTS`: Load the old checkpoint to continue the training process if the `relative_path` to the old checkpoint is received.
 
-![M3 CNN Architecture](ARGS.png)
+![M3 CNN Architecture](docs/ARGS.png)
 
 ### Training configs
 - `LR`: Learning rate
@@ -37,7 +37,7 @@
 - `SHARE_FEATURES_EXTRACTOR`: Có chia sẻ phần trích xuất đặc trưng giữa Actor và Critic hay không
 - `CHECKPOINTS`: Tải Checkpoint cũ để tiếp tục quá trình huấn luyện nếu được nhận `relative_path`.
 
-![Kiến trúc M3 CNN](ARGS.png)
+![Kiến trúc M3 CNN](docs/ARGS.png)
 
 ### Cấu hình Huấn luyện
 - `LR`: Learning Rate
