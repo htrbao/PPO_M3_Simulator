@@ -26,6 +26,23 @@
 - `DEVICE`: `"cuda"` if using GPU else `"cpu"`
 - `PREFIX_NAME`: Used in name for model
 
+### Effects of Configurable Arguments
+
+| Argument             | Increase                           | Decrease                          |
+|----------------------|------------------------------------|-----------------------------------|
+| `PI`                 | Increases the complexity of the Actor Model, potentially improving performance but also increasing training time and resource requirements. | Decreases the complexity of the Actor Model, reducing training time but potentially decreasing performance. |
+| `VF`                 | Increases the complexity of the Critic Model, potentially improving performance but also increasing training time and resource requirements. | Decreases the complexity of the Critic Model, reducing training time but potentially decreasing performance. |
+| `MID_CHANNELS`       | Increases the number of CNN channels, improving feature extraction but increasing computational and memory requirements. | Decreases the number of CNN channels, reducing computational and memory requirements but potentially decreasing feature extraction capabilities. |
+| `NUM_FIRST_CNN_LAYERS` | Increases the number of CNN layers, improving feature extraction but increasing computational and memory requirements. | Decreases the number of CNN layers, reducing computational and memory requirements but potentially decreasing feature extraction capabilities. |
+| `SHARE_FEATURES_EXTRACTOR` | Shares features between Actor and Critic, reducing resource requirements but potentially decreasing the individual performance of each model. | Does not share features, improving the individual performance of each model but increasing resource requirements. |
+| `LR`                 | Increases learning rate, making the model learn faster but potentially less stable. | Decreases learning rate, making the model learn more stably but slower. |
+| `N_STEPS`            | Increases rollout length, improving update quality but increasing memory requirements. | Decreases rollout length, reducing memory requirements but potentially decreasing update quality. |
+| `BATCH_SIZE`         | Increases batch size, improving training stability but increasing memory requirements. | Decreases batch size, reducing memory requirements but potentially making training less stable. |
+| `ENTROPY_COEFF`      | Increases entropy coefficient, encouraging the model to explore more but potentially decreasing immediate performance. | Decreases entropy coefficient, making the model more stable but potentially decreasing its ability to explore. |
+| `VF_COEF`            | Increases value coefficient, making the model focus more on value but potentially decreasing optimization of other parts of the `loss`. | Decreases value coefficient, making the model focus more on other parts of the `loss` but potentially decreasing value performance. |
+| `GAMMA`              | Increases gamma, making the model focus more on future rewards. | Decreases gamma, making the model focus more on immediate rewards. |
+
+
 ---
 # Giải thích về các tham số cấu hình
 
