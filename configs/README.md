@@ -1,6 +1,5 @@
 # Explanation of the configurable arguments
 
-## Information about Argument
 ### Model configs
 - `PI`: Size of each layer of the Linear layer used for the Actor Model
 - `VF`: Size of each layer of the Linear layer used for the Critic Model
@@ -21,8 +20,7 @@
 ### Reward configs
 - `GAMMA`: How important the points you get later are compared to the points you get right now.
 
-    _Deeper config in computation of `reward` is located in [../]()._
-_
+    _Deeper config in computation of `reward` is located in [RolloutBuffer.compute_rewards](../training/common/buffers.py)_
 
 ### Logging configs
 - `DEVICE`: `"cuda"` if using GPU else `"cpu"`
@@ -48,14 +46,16 @@ _
 - `ENTROPY_COEFF`: Hệ số loss entropy (Sử dụng trong quá trình tính toán loss)
 - `VF_COEF`: Hệ số loss của Value Function (Sử dụng trong quá trình tính toán loss)
 
-### Cấu hình Thưởng
+### Cấu hình Phần thưởng
 - `GAMMA`: Tầm quan trọng của phần thưởng bạn nhận được khi tích lũy so với phần thưởng tức thời.
+
+    Tùy chỉnh sâu hơn với `reward` có thể vào [RolloutBuffer.compute_rewards](../training/common/buffers.py)_
 
 ### Cấu hình Ghi log
 - `DEVICE`: "cuda" nếu sử dụng GPU, ngược lại là "cpu"
 - `PREFIX_NAME`: Sử dụng trong tên cho mô hình
 
-# Hiệu ứng của các Tham số Cấu hình
+### Hiệu ứng của các Tham số Cấu hình
 
 | Tham số              | Tăng                               | Giảm                              |
 |----------------------|------------------------------------|-----------------------------------|
