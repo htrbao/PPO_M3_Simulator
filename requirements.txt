@@ -1,1 +1,3 @@
 torchrl
+pandas
+wandb
