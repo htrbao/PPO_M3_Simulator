@@ -1,8 +1,8 @@
 from typing import List, Union
 
 # Model configs
-PI:List[int] = []
-VF:List[int] = []
+PI:List[int] = [256, 180, 180] # Có thể để mảng rỗng []
+VF:List[int] = [161, 32] # Có thể để mảng rỗng []
 MID_CHANNELS:int = 16
 NUM_FIRST_CNN_LAYERS:int = 16
 SHARE_FEATURES_EXTRACTOR:int = True
