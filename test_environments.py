@@ -21,7 +21,7 @@ while not dones:
         selected_action = random.choice(indices_with_one)
         print("Selected index:", selected_action)
         obs, reward, dones, infos = env.step(selected_action)
-
+        
         print(obs.shape)
         print("Reward of this action:", reward)
 
