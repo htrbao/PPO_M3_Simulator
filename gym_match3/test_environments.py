@@ -23,6 +23,7 @@ while not dones:
         obs, reward, dones, infos = env.step(selected_action)
         
         print(obs.shape)
+        env.render()
         print("Reward of this action:", reward)
 
     else:
