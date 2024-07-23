@@ -217,5 +217,6 @@ class Match3Env(gym.Env):
     def render(self, mode="human", close=False):
         if close:
             warnings.warn("close=True isn't supported yet")
-        self.renderer.render_board(self.__game.board)
         print(self.__game.board)
+
+        self.renderer.render_board(self.__game.board)

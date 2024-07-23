@@ -1,6 +1,6 @@
 import random
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
-
+import matplotlib.pyplot as plt
 from gym_match3.envs.match3_env import Match3Env
 
 env = Match3Env(90)
@@ -29,3 +29,5 @@ while not dones:
     else:
         print("No indices with value 1 found.")
         dones = True
+    
+plt.show()
