@@ -214,9 +214,15 @@ class Match3Env(gym.Env):
     def __get_board(self):
         return self.__game.board.board.copy()
 
-    def render(self, mode="human", close=False):
+    def render(self, action, mode="human", close=False):
         if close:
             warnings.warn("close=True isn't supported yet")
         print(self.__game.board)
+        tiles = self.__get_action(action)
+        p1, p2 = tiles
+        x1, y1 = p1.get_coord()
+        x2, y2 = p2.get_coord()
+        if x1 > x2 or y1 > y2:
+            x1, y1, x2, y2 = x2, y2, x1, y1
 
-        self.renderer.render_board(self.__game.board)
+        self.renderer.render_board(self.__game.board, {"x1": x1, "y1": y1, "x2": x2, "y2": y2})
