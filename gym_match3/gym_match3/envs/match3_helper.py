@@ -611,7 +611,6 @@ class M3Helper:
                 obs["legal_action"],
                 action_space,
             )
-
         return dict(obs=obs, action_space=action_space)
 
     def obs_to_tensor(self, obs):
