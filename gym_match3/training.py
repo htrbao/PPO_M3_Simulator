@@ -114,6 +114,7 @@ PPO_trainer = PPO(
             "mid_channels": args.mid_channels,
             "out_channels": 161,
             "num_first_cnn_layer": args.num_first_cnn_layer,
+            
         },
         "optimizer_class": torch.optim.Adam,
         "share_features_extractor": False,
