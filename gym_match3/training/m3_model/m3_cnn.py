@@ -124,19 +124,19 @@ class M3CnnLargerFeatureExtractor(nn.Module):
     def forward(self, input: torch.Tensor):
         if len(input.shape) == 3:
             input = torch.unsqueeze(input, 0)
-        input = self.layers[0](input)
-        input = self.layers[1](input)
-        res = 0
-        for i in range(2,self.num_first_cnn_layer*2+2):
-            cur = self.layers[i](input)
-            if i ==2:
-                res = cur
-            input = cur
-            if i %4 == 2 and i != 2:
-                input += res
-                res = cur
+        # input = self.layers[0](input)
+        # input = self.layers[1](input)
+        # res = 0
+        # for i in range(2,self.num_first_cnn_layer*2+2):
+        #     cur = self.layers[i](input)
+        #     if i ==2:
+        #         res = cur
+        #     input = cur
+        #     if i %4 == 2 and i != 2:
+        #         input += res
+        #         res = cur
         
-        return input
+        return self.net(input)
 
 
 class M3MlpExtractor(nn.Module):
