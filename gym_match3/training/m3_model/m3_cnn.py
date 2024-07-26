@@ -106,6 +106,7 @@ class M3CnnLargerFeatureExtractor(nn.Module):
                 )
             )  # (batch, mid_channels, (size))
             layers.append(nn.ReLU())
+            
         layers.append(
             nn.Conv2d(
                 kwargs["mid_channels"], kwargs["out_channels"], 3, stride=1, padding=1
@@ -124,15 +125,18 @@ class M3CnnLargerFeatureExtractor(nn.Module):
         if len(input.shape) == 3:
             input = torch.unsqueeze(input, 0)
         input = self.layers[0](input)
+        input = self.layers[1](input)
         res = 0
-        for i in range(1,len(self.num_first_cnn_layer)):
-            if i %2 == 1:
-                cur = self.layers[i](input) 
-                input = cur + res
+        for i in range(2,self.num_first_cnn_layer*2+2):
+            cur = self.layers[i](input)
+            if i ==2:
                 res = cur
-            input = self.layers[i](input)
-        x = input
-        return x
+            input = cur
+            if i %4 == 2 and i != 2:
+                input += res
+                res = cur
+        
+        return input
 
 
 class M3MlpExtractor(nn.Module):
