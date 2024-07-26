@@ -324,12 +324,7 @@ class Bottleneck(nn.Module):
         x = self.relu(x)
         
         return x
-model_parameters={}
-model_parameters['resnet18'] = ([64,128,256,512],[2,2,2,2],1,False)
-model_parameters['resnet34'] = ([64,128,256,512],[3,4,6,3],1,False)
-model_parameters['resnet50'] = ([64,128,256,512],[3,4,6,3],4,True)
-model_parameters['resnet101'] = ([64,128,256,512],[3,4,23,3],4,True)
-model_parameters['resnet152'] = ([64,128,256,512],[3,8,36,3],4,True)
+    
 class ResNet(nn.Module):
 
     def __init__(self, in_channels, **kwargs):
@@ -346,14 +341,25 @@ class ResNet(nn.Module):
 
         Attributes:
             Layer consisting of conv->batchnorm->relu
+
         """
+        model_parameters={}
+        model_parameters['resnet18'] = ([64,128,256,512],[2,2,2,2],1,False)
+        model_parameters['resnet34'] = ([64,128,256,512],[3,4,6,3],1,False)
+        model_parameters['resnet50'] = ([64,128,256,512],[3,4,6,3],4,True)
+        model_parameters['resnet101'] = ([64,128,256,512],[3,4,23,3],4,True)
+        model_parameters['resnet152'] = ([64,128,256,512],[3,8,36,3],4,True)
+        
+        resnet_variant = model_parameters[kwargs.get("resnet_variant")]
+        num_classes = kwargs["out_channels"]
+        
         super(ResNet,self).__init__()
         self.channels_list = resnet_variant[0]
         self.repeatition_list = resnet_variant[1]
         self.expansion = resnet_variant[2]
         self.is_Bottleneck = resnet_variant[3]
 
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False )
+        self.conv1 = nn.Conv2d(in_channels=in_channels.shape[0], out_channels=64, kernel_size=7, stride=2, padding=3, bias=False )
         self.batchnorm1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
 

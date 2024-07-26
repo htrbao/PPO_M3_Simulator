@@ -5,7 +5,7 @@ import torch
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.ppo import PPO
-from training.m3_model.m3_cnn import M3CnnFeatureExtractor, M3CnnLargerFeatureExtractor
+from training.m3_model.m3_cnn import M3CnnFeatureExtractor, M3CnnLargerFeatureExtractor, Resnet
 
 
 def get_args():
@@ -107,14 +107,23 @@ PPO_trainer = PPO(
     n_steps=args.n_steps,
     gamma=args.gamma,
     ent_coef=0.00001,
+    # policy_kwargs={
+    #     "net_arch": dict(pi=args.pi, vf=args.vf),
+    #     "features_extractor_class": M3CnnLargerFeatureExtractor,
+    #     "features_extractor_kwargs": {
+    #         "mid_channels": args.mid_channels,
+    #         "out_channels": 161,
+    #         "num_first_cnn_layer": args.num_first_cnn_layer,
+    #     },
+    #     "optimizer_class": torch.optim.Adam,
+    #     "share_features_extractor": False,
+    # },
     policy_kwargs={
         "net_arch": dict(pi=args.pi, vf=args.vf),
-        "features_extractor_class": M3CnnLargerFeatureExtractor,
+        "features_extractor_class": Resnet,
         "features_extractor_kwargs": {
-            "mid_channels": args.mid_channels,
             "out_channels": 161,
-            "num_first_cnn_layer": args.num_first_cnn_layer,
-            
+            "resnet_variant": "resnet18",  
         },
         "optimizer_class": torch.optim.Adam,
         "share_features_extractor": False,
