@@ -115,6 +115,7 @@ class M3CnnLargerFeatureExtractor(nn.Module):
         layers.append(M3Aap(target_pooling_shape))  # (batch, out_channels)
         layers.append(nn.Flatten(1, -1))
         self.layers = layers
+        self.num_first_cnn_layer = kwargs["num_first_cnn_layer"]
         self.net = nn.Sequential(*layers)
         self.features_dim = kwargs["out_channels"] * target_pooling_shape[0] * (target_pooling_shape[1] if len(target_pooling_shape) == 2 else 1)
         # self.linear = nn.Sequential(nn.Linear(self.features_dim, self.features_dim), nn.ReLU())
@@ -122,14 +123,15 @@ class M3CnnLargerFeatureExtractor(nn.Module):
     def forward(self, input: torch.Tensor):
         if len(input.shape) == 3:
             input = torch.unsqueeze(input, 0)
+        input = self.layers[0](input)
         res = 0
-        for i in range(len(self.layers)):
-            if i %2 == 0:
+        for i in range(1,len(self.num_first_cnn_layer)):
+            if i %2 == 1:
                 cur = self.layers[i](input) 
                 input = cur + res
                 res = cur
             input = self.layers[i](input)
-        x = self.net(input)
+        x = input
         return x
 
 

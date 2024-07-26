@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=1 python training.py --prefix_name fix_increase_clip_match_easier_w_256_180_180_161pi_256_256_32vf_95gamma --pi 256 180 180 161 --vf 256 256 32 --mid_channels 32 --num_first_cnn_layer 10 --n_steps 32768 --lr 0.00002 --gamma 0.95 --wandb
+CUDA_VISIBLE_DEVICES=1 python training.py --prefix_name fix_increase_clip_match_easier_w_256_180_180_161pi_256_256_32vf_95gamma --pi 256 180 180 161 --vf 256 256 32 --mid_channels 32 --num_first_cnn_layer 30 --n_steps 32768 --lr 0.00002 --gamma 0.95 --wandb
