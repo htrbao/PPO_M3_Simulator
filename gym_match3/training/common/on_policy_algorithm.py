@@ -169,12 +169,13 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         self._last_obs, infos = env.reset()
         dones = False
         action_space = infos["action_space"]
+        
         # Sample new weights for the state dependent exploration
         if self.use_sde:
             self.policy.reset_noise(env.num_envs)
 
         print("Start rollout data")
-
+ 
         while (
             n_steps < n_rollout_steps
         ):  # or (n_steps >= n_rollout_steps and not dones):
@@ -191,6 +192,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                 obs_tensor = obs_as_tensor(self._last_obs, self.device)
                 action_space = obs_as_tensor(action_space, self.device)
                 actions, values, log_probs = self.policy(obs_tensor, action_space)
+                
             actions = actions.cpu().numpy()
             print(values)
 

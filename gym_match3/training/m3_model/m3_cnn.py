@@ -417,5 +417,5 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-  model = ResNet( params , in_channels=3, num_classes=1000)
-  model = Bottleneck(64,64,4,True,2)
+#   model = ResNet( params , in_channels=3, num_classes=1000)
+#   model = Bottleneck(64,64,4,True,2)
