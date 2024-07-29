@@ -91,6 +91,13 @@ def get_args():
         help="Whether want to logging onto Wandb",
     )
 
+    parser.add_argument(
+        "--actor_device_cpu",
+        default=True,
+        type=bool,
+        help="Whether want to use CPU for actor",
+    )
+        
     return parser.parse_args()
 
 
@@ -132,6 +139,7 @@ PPO_trainer = PPO(
     _wandb=args.wandb,
     device="cuda",
     prefix_name=args.prefix_name,
+    # actor_device_cpu=args.actor_device_cpu,
 )
 run_i = 0
 while run_i < 300:

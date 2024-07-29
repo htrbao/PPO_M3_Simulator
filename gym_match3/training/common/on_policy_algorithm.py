@@ -10,7 +10,8 @@ from training.common.base_class import BaseAlgorithm
 from training.common.buffers import DictRolloutBuffer, RolloutBuffer
 from training.common.policies import ActorCriticPolicy
 from training.common.type_aliases import GymEnv, Schedule
-from training.common.utils import obs_as_tensor, safe_mean
+from training.common.utils import obs_as_tensor, safe_mean, create_buffers
+from torch import multiprocessing as mp
 
 SelfOnPolicyAlgorithm = TypeVar("SelfOnPolicyAlgorithm", bound="OnPolicyAlgorithm")
 
@@ -138,131 +139,147 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         )
         self.policy = self.policy.to(self.device)
 
-    def collect_rollouts(
-        self,
-        env,
-        rollout_buffer: RolloutBuffer,
-        n_rollout_steps: int,
-    ) -> bool:
-        """
-        Collect experiences using the current policy and fill a ``RolloutBuffer``.
-        The term rollout here refers to the model-free notion and should not
-        be used with the concept of rollout used in model-based RL or planning.
+    # def collect_rollouts(
+    #     self,
+    #     env,
+    #     rollout_buffer: RolloutBuffer,
+    #     n_rollout_steps: int,
+    # ) -> bool:
+    #     """
+    #     Collect experiences using the current policy and fill a ``RolloutBuffer``.
+    #     The term rollout here refers to the model-free notion and should not
+    #     be used with the concept of rollout used in model-based RL or planning.
 
-        :param env: The training environment
-        :param callback: Callback that will be called at each step
-            (and at the beginning and end of the rollout)
-        :param rollout_buffer: Buffer to fill with rollouts
-        :param n_rollout_steps: Number of experiences to collect per environment
-        :return: True if function returned with at least `n_rollout_steps`
-            collected, False if callback terminated rollout prematurely.
-        """
-        # Switch to eval mode (this affects batch norm / dropout)
-        self.policy.set_training_mode(False)
+    #     :param env: The training environment
+    #     :param callback: Callback that will be called at each step
+    #         (and at the beginning and end of the rollout)
+    #     :param rollout_buffer: Buffer to fill with rollouts
+    #     :param n_rollout_steps: Number of experiences to collect per environment
+    #     :return: True if function returned with at least `n_rollout_steps`
+    #         collected, False if callback terminated rollout prematurely.
+    #     """
+    #     # Switch to eval mode (this affects batch norm / dropout)
+    #     self.policy.set_training_mode(False)
 
-        # Some stats about the play ability in current epoch.
-        __num_completed_games = 0
-        __num_win_games = 0
+    #     # Some stats about the play ability in current epoch.
+    #     __num_completed_games = 0
+    #     __num_win_games = 0
 
-        n_steps = 0
-        rollout_buffer.reset()
-        self._last_obs, infos = env.reset()
-        dones = False
-        action_space = infos["action_space"]
+    #     n_steps = 0
+    #     rollout_buffer.reset()
+    #     self._last_obs, infos = env.reset()
+    #     dones = False
+    #     action_space = infos["action_space"]
         
-        # Sample new weights for the state dependent exploration
-        if self.use_sde:
-            self.policy.reset_noise(env.num_envs)
+    #     # Sample new weights for the state dependent exploration
+    #     if self.use_sde:
+    #         self.policy.reset_noise(env.num_envs)
+            
+    #     device_iterator = ['cpu']
+    #     buffers = create_buffers(device_iterator=device_iterator)
+        
+    #     actor_processes = []
+    #     ctx = mp.get_context('spawn')
+    #     free_queue = {}
+    #     full_queue = {}
+            
+    #     for device in device_iterator:
+    #         _free_queue = {key: ctx.SimpleQueue() for key in range(4)}
+    #         _full_queue = {key: ctx.SimpleQueue() for key in range(4)}
+    #         free_queue[device] = _free_queue
+    #         full_queue[device] = _full_queue
 
-        print("Start rollout data")
+        
+
+    #     print("Start rollout data")
  
-        while (
-            n_steps < n_rollout_steps
-        ):  # or (n_steps >= n_rollout_steps and not dones):
-            if (
-                self.use_sde
-                and self.sde_sample_freq > 0
-                and n_steps % self.sde_sample_freq == 0
-            ):
-                # Sample a new noise matrix
-                self.policy.reset_noise(env.num_envs)
+    #     while (
+    #         n_steps < n_rollout_steps
+    #     ):  # or (n_steps >= n_rollout_steps and not dones):
+    #         if (
+    #             self.use_sde
+    #             and self.sde_sample_freq > 0
+    #             and n_steps % self.sde_sample_freq == 0
+    #         ):
+    #             # Sample a new noise matrix
+    #             self.policy.reset_noise(env.num_envs)
 
-            with th.no_grad():
-                # Convert to pytorch tensor or to TensorDict
-                obs_tensor = obs_as_tensor(self._last_obs, self.device)
-                action_space = obs_as_tensor(action_space, self.device)
-                actions, values, log_probs = self.policy(obs_tensor, action_space)
+    #         with th.no_grad():
+    #             # Convert to pytorch tensor or to TensorDict
+    #             obs_tensor = obs_as_tensor(self._last_obs, self.device)
+    #             action_space = obs_as_tensor(action_space, self.device)
+    #             actions, values, log_probs = self.policy(obs_tensor, action_space)
                 
-            actions = actions.cpu().numpy()
-            print(values)
+    #         actions = actions.cpu().numpy()
+    #         print(values)
 
-            # Rescale and perform action
-            clipped_actions = actions[0]
+    #         # Rescale and perform action
+    #         clipped_actions = actions[0]
 
-            if isinstance(self.action_space, spaces.Box):
-                if self.policy.squash_output:
-                    # Unscale the actions to match env bounds
-                    # if they were previously squashed (scaled in [-1, 1])
-                    clipped_actions = self.policy.unscale_action(clipped_actions)
-                else:
-                    # Otherwise, clip the actions to avoid out of bound error
-                    # as we are sampling from an unbounded Gaussian distribution
-                    clipped_actions = np.clip(
-                        actions, self.action_space.low, self.action_space.high
-                    )
+    #         if isinstance(self.action_space, spaces.Box):
+    #             if self.policy.squash_output:
+    #                 # Unscale the actions to match env bounds
+    #                 # if they were previously squashed (scaled in [-1, 1])
+    #                 clipped_actions = self.policy.unscale_action(clipped_actions)
+    #             else:
+    #                 # Otherwise, clip the actions to avoid out of bound error
+    #                 # as we are sampling from an unbounded Gaussian distribution
+    #                 clipped_actions = np.clip(
+    #                     actions, self.action_space.low, self.action_space.high
+    #                 )
 
-            new_obs, rewards, dones, infos = env.step(clipped_actions)
-            print(rewards)
+    #         new_obs, rewards, dones, infos = env.step(clipped_actions)
+    #         print(rewards)
 
-            if "game" in rewards.keys():
-                __num_completed_games += 1
-                __num_win_games += 0 if rewards["game"] < 0 else 1
+    #         if "game" in rewards.keys():
+    #             __num_completed_games += 1
+    #             __num_win_games += 0 if rewards["game"] < 0 else 1
 
-            action_space = infos["action_space"]
+    #         action_space = infos["action_space"]
 
-            self.num_timesteps += env.num_envs
+    #         self.num_timesteps += env.num_envs
 
-            # self._update_info_buffer(infos, dones) #Open if like
-            n_steps += 1
+    #         # self._update_info_buffer(infos, dones) #Open if like
+    #         n_steps += 1
 
-            if isinstance(self.action_space, spaces.Discrete):
-                # Reshape in case of discrete action
-                actions = actions.reshape(-1, 1)
+    #         if isinstance(self.action_space, spaces.Discrete):
+    #             # Reshape in case of discrete action
+    #             actions = actions.reshape(-1, 1)
 
-            # Handle timeout by bootstraping with value function
-            # see GitHub issue #633
-            # for idx, done in enumerate(dones):
-            #     if (
-            #         done
-            #         and infos[idx].get("terminal_observation") is not None
-            #         and infos[idx].get("TimeLimit.truncated", False)
-            #     ):
-            #         terminal_obs = self.policy.obs_to_tensor(infos[idx]["terminal_observation"])[0]
-            #         with th.no_grad():
-            #             terminal_value = self.policy.predict_values(terminal_obs)[0]  # type: ignore[arg-type]
-            #         rewards[idx] += self.gamma * terminal_value
+    #         # Handle timeout by bootstraping with value function
+    #         # see GitHub issue #633
+    #         # for idx, done in enumerate(dones):
+    #         #     if (
+    #         #         done
+    #         #         and infos[idx].get("terminal_observation") is not None
+    #         #         and infos[idx].get("TimeLimit.truncated", False)
+    #         #     ):
+    #         #         terminal_obs = self.policy.obs_to_tensor(infos[idx]["terminal_observation"])[0]
+    #         #         with th.no_grad():
+    #         #             terminal_value = self.policy.predict_values(terminal_obs)[0]  # type: ignore[arg-type]
+    #         #         rewards[idx] += self.gamma * terminal_value
 
-            rollout_buffer.add(
-                self._last_obs,  # type: ignore[arg-type]
-                actions,
-                rewards,
-                self._last_episode_starts,  # type: ignore[arg-type]
-                values,
-                log_probs,
-                action_space,
-            )
-            self._last_obs = new_obs  # type: ignore[assignment]
-            self._last_episode_starts = dones
+    #         rollout_buffer.add(
+    #             self._last_obs,  # type: ignore[arg-type]
+    #             actions,
+    #             rewards,
+    #             self._last_episode_starts,  # type: ignore[arg-type]
+    #             values,
+    #             log_probs,
+    #             action_space,
+    #         )
+    #         self._last_obs = new_obs  # type: ignore[assignment]
+    #         self._last_episode_starts = dones
 
-        with th.no_grad():
-            # Compute value for the last timestep
-            values = self.policy.predict_values(obs_as_tensor(new_obs, self.device))  # type: ignore[arg-type]
+    #     with th.no_grad():
+    #         # Compute value for the last timestep
+    #         values = self.policy.predict_values(obs_as_tensor(new_obs, self.device))  # type: ignore[arg-type]
 
-        rollout_buffer.compute_returns_and_advantage(last_values=values, dones=dones)
+    #     rollout_buffer.compute_returns_and_advantage(last_values=values, dones=dones)
 
-        print("End rollout data")
+    #     print("End rollout data")
 
-        return True, __num_completed_games, __num_win_games
+    #     return True, __num_completed_games, __num_win_games
 
     def train(self) -> None:
         """
@@ -306,6 +323,129 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                 "rollout/success_rate", safe_mean(self.ep_success_buffer)
             )
         self.logger.dump(step=self.num_timesteps)
+        
+    def collect_rollouts_worker(
+        worker_id,
+        env,
+        policy,
+        n_rollout_steps,
+        use_sde,
+        sde_sample_freq,
+        gamma,
+        device,
+        free_queue,
+        full_queue,
+        buffer
+    ):
+        n_steps = 0
+        _last_obs, infos = env.reset()
+        dones = False
+        action_space = infos["action_space"]
+
+        if use_sde:
+            policy.reset_noise(env.num_envs)
+
+        while n_steps < n_rollout_steps:
+            if (
+                use_sde
+                and sde_sample_freq > 0
+                and n_steps % sde_sample_freq == 0
+            ):
+                policy.reset_noise(env.num_envs)
+
+            with th.no_grad():
+                obs_tensor = obs_as_tensor(_last_obs, device)
+                action_space_tensor = obs_as_tensor(action_space, device)
+                actions, values, log_probs = policy(obs_tensor, action_space_tensor)
+
+            actions = actions.cpu().numpy()
+
+            clipped_actions = actions[0]
+            if isinstance(policy.action_space, spaces.Box):
+                if policy.squash_output:
+                    clipped_actions = policy.unscale_action(clipped_actions)
+                else:
+                    clipped_actions = np.clip(
+                        actions, policy.action_space.low, policy.action_space.high
+                    )
+
+            new_obs, rewards, dones, infos = env.step(clipped_actions)
+
+            action_space = infos["action_space"]
+
+            policy.num_timesteps += env.num_envs
+
+            n_steps += 1
+
+            if isinstance(policy.action_space, spaces.Discrete):
+                actions = actions.reshape(-1, 1)
+
+            buffer.add(
+                _last_obs,
+                actions,
+                rewards,
+                policy._last_episode_starts,
+                values,
+                log_probs,
+                action_space,
+            )
+            _last_obs = new_obs
+            policy._last_episode_starts = dones
+
+        with th.no_grad():
+            values = policy.predict_values(obs_as_tensor(new_obs, device))
+
+        buffer.compute_returns_and_advantage(last_values=values, dones=dones)
+
+        free_queue.put(worker_id)
+
+    def collect_rollouts(
+        self,
+        env,
+        rollout_buffer: RolloutBuffer,
+        n_rollout_steps: int,
+        num_workers: int = 4
+    ) -> Tuple[bool, int, int]:
+        self.policy.set_training_mode(False)
+
+        __num_completed_games = 0
+        __num_win_games = 0
+
+        rollout_buffer.reset()
+        self._last_obs, infos = env.reset()
+        dones = False
+        action_space = infos["action_space"]
+
+        if self.use_sde:
+            self.policy.reset_noise(env.num_envs)
+
+        device_iterator = ['cpu']
+        buffers = create_buffers(device_iterator=device_iterator)
+
+        ctx = mp.get_context('spawn')
+        free_queue = ctx.Queue()
+        full_queue = ctx.Queue()
+
+        processes = []
+        for worker_id in range(num_workers):
+            p = ctx.Process(
+                target=self.collect_rollouts_worker,
+                args=(
+                    worker_id, env, self.policy, n_rollout_steps // num_workers,
+                    self.use_sde, self.sde_sample_freq, self.gamma, self.device,
+                    free_queue, full_queue, rollout_buffer
+                )
+            )
+            p.start()
+            processes.append(p)
+
+        for _ in range(num_workers):
+            worker_id = free_queue.get()
+
+        for p in processes:
+            p.join()
+
+        return True, __num_completed_games, __num_win_games
 
     def learn(
         self: SelfOnPolicyAlgorithm,

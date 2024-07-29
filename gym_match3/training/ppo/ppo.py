@@ -114,6 +114,7 @@ class PPO(OnPolicyAlgorithm):
         device: Union[th.device, str] = "auto",
         prefix_name: str = "m3_with_cnn",
         _init_setup_model: bool = True,
+        
     ):
         super().__init__(
             policy,
@@ -380,6 +381,8 @@ class PPO(OnPolicyAlgorithm):
 
         self.train_log(stats)
         self.policy.save(path=f"./_saved_model/{self._model_name}.pt")
+        
+    
 
     def learn(
         self: SelfPPO,
