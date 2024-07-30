@@ -114,6 +114,7 @@ class PPO(OnPolicyAlgorithm):
         device: Union[th.device, str] = "auto",
         prefix_name: str = "m3_with_cnn",
         _init_setup_model: bool = True,
+        
     ):
         super().__init__(
             policy,
@@ -160,6 +161,7 @@ class PPO(OnPolicyAlgorithm):
             ), f"`n_steps * n_envs` must be greater than 1. Currently n_steps={self.n_steps} and n_envs={self.env.num_envs}"
             # Check that the rollout buffer size is a multiple of the mini-batch size
             untruncated_batches = buffer_size // batch_size
+            
             if buffer_size % batch_size > 0:
                 warnings.warn(
                     f"You have specified a mini-batch size of {batch_size},"
@@ -187,6 +189,7 @@ class PPO(OnPolicyAlgorithm):
 
         self._model_name = f"{prefix_name}_{policy_kwargs['features_extractor_kwargs']['num_first_cnn_layer']}layers_{policy_kwargs['features_extractor_kwargs']['mid_channels']}channels_{learning_rate}_{n_steps}_{'' if policy_kwargs['share_features_extractor'] else 'not_'}share_{datetime.datetime.today().strftime('%Y%m%d')}"
         self._wandb = _wandb
+        
         if self._wandb:
             wandb.init(project="m3_with_cnn", 
                        name=self._model_name)
@@ -378,6 +381,8 @@ class PPO(OnPolicyAlgorithm):
 
         self.train_log(stats)
         self.policy.save(path=f"./_saved_model/{self._model_name}.pt")
+        
+    
 
     def learn(
         self: SelfPPO,

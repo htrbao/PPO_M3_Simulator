@@ -169,6 +169,30 @@ for x in range(0, 8):
 
 
 LEVELS = [   
+          
+    Level(10, 9, 5, [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0],
+        [0, 0, 0, 0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ], [
+        DameMonster(position=Point(6, 6),
+                    relax_interval = 2,
+                    setup_interval = 1,
+                    width=2,
+                    height=2,
+                    hp=30,
+                    dame=2,
+                    have_paper_box=True
+                    )
+    ]),
+    
     *easy_levels,
 
     Level(10, 9, 5, [

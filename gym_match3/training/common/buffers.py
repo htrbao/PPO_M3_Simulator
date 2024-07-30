@@ -375,7 +375,7 @@ class RolloutBuffer(BaseBuffer):
         while start_idx < self.buffer_size * self.n_envs:
             yield self._get_samples(indices[start_idx : start_idx + batch_size])
             start_idx += batch_size
-
+            
     def _get_samples(
         self,
         batch_inds: np.ndarray,
@@ -393,6 +393,18 @@ class RolloutBuffer(BaseBuffer):
         )
         return RolloutBufferSamples(*tuple(map(self.to_torch, data)))
 
+                
+    def merge(self, rb):
+        self.observations = np.concatenate((self.observations, rb.observations), axis=0)
+        self.actions = np.concatenate((self.actions, rb.actions), axis=0)
+        self.values = np.concatenate((self.values, rb.values), axis=0)
+        self.log_probs = np.concatenate((self.log_probs, rb.log_probs), axis=0)
+        self.advantages = np.concatenate((self.advantages, rb.advantages), axis=0)
+        self.returns = np.concatenate((self.returns, rb.returns), axis=0)
+        self.rewards = np.concatenate((self.rewards, rb.rewards), axis=0)
+        self.legal_actions = np.concatenate((self.legal_actions, rb.legal_actions), axis=0)
+        self.buffer_size += rb.buffer_size
+        self.full = self.full and rb.full
 
 class DictRolloutBuffer(RolloutBuffer):
     """

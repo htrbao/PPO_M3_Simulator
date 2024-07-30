@@ -10,7 +10,8 @@ from training.common.base_class import BaseAlgorithm
 from training.common.buffers import DictRolloutBuffer, RolloutBuffer
 from training.common.policies import ActorCriticPolicy
 from training.common.type_aliases import GymEnv, Schedule
-from training.common.utils import obs_as_tensor, safe_mean
+from training.common.utils import obs_as_tensor, safe_mean, create_buffers
+from torch import multiprocessing as mp
 
 SelfOnPolicyAlgorithm = TypeVar("SelfOnPolicyAlgorithm", bound="OnPolicyAlgorithm")
 
@@ -169,12 +170,14 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         self._last_obs, infos = env.reset()
         dones = False
         action_space = infos["action_space"]
+        
         # Sample new weights for the state dependent exploration
         if self.use_sde:
             self.policy.reset_noise(env.num_envs)
+            
 
         print("Start rollout data")
-
+ 
         while (
             n_steps < n_rollout_steps
         ):  # or (n_steps >= n_rollout_steps and not dones):
@@ -191,6 +194,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                 obs_tensor = obs_as_tensor(self._last_obs, self.device)
                 action_space = obs_as_tensor(action_space, self.device)
                 actions, values, log_probs = self.policy(obs_tensor, action_space)
+                
             actions = actions.cpu().numpy()
             print(values)
 
@@ -262,6 +266,8 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
         return True, __num_completed_games, __num_win_games
 
+
+
     def train(self) -> None:
         """
         Consume current rollout data and update policy parameters.
@@ -304,6 +310,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                 "rollout/success_rate", safe_mean(self.ep_success_buffer)
             )
         self.logger.dump(step=self.num_timesteps)
+        
 
     def learn(
         self: SelfOnPolicyAlgorithm,
@@ -353,3 +360,160 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         state_dicts = ["policy", "policy.optimizer"]
 
         return state_dicts, []
+
+
+    def collect_rollouts_worker(
+        self,
+        worker_id,
+        env,
+        policy,
+        n_rollout_steps,
+        use_sde,
+        sde_sample_freq,
+        gamma,
+        device,
+        free_queue,
+        full_queue,
+        buffer
+    ):
+        
+        __num_completed_games = 0
+        __num_win_games = 0
+        num_timesteps = 0
+        
+        n_steps = 0
+        buffer.reset()
+        self._last_obs, infos = env.reset()
+        dones = False
+        action_space = infos["action_space"]
+
+        if use_sde:
+            policy.reset_noise(env.num_envs)
+        
+        print("Start rollout data")
+        
+        
+        while n_steps < n_rollout_steps:
+            if (
+                use_sde
+                and sde_sample_freq > 0
+                and n_steps % sde_sample_freq == 0
+            ):
+                policy.reset_noise(env.num_envs)
+
+            with th.no_grad():
+                obs_tensor = obs_as_tensor(self._last_obs, device)
+                action_space_tensor = obs_as_tensor(action_space, device)
+                actions, values, log_probs = policy(obs_tensor, action_space_tensor)
+
+            actions = actions.cpu().numpy()
+
+            clipped_actions = actions[0]
+            
+            if isinstance(policy.action_space, spaces.Box):
+                if policy.squash_output:
+                    clipped_actions = policy.unscale_action(clipped_actions)
+                else:
+                    clipped_actions = np.clip(
+                        actions, policy.action_space.low, policy.action_space.high
+                    )
+
+            new_obs, rewards, dones, infos = env.step(clipped_actions)
+
+
+            if "game" in rewards.keys():
+                __num_completed_games += 1
+                __num_win_games += 0 if rewards["game"] < 0 else 1
+
+            action_space = infos["action_space"]
+
+            num_timesteps += env.num_envs
+
+            n_steps += 1
+
+            if isinstance(policy.action_space, spaces.Discrete):
+                actions = actions.reshape(-1, 1)
+
+            buffer.add(
+                self._last_obs,
+                actions,
+                rewards,
+                self._last_episode_starts,
+                values,
+                log_probs,
+                action_space,
+            )
+            self._last_obs = new_obs
+            self._last_episode_starts = dones
+
+        with th.no_grad():
+            values = policy.predict_values(obs_as_tensor(new_obs, device))
+
+        buffer.compute_returns_and_advantage(last_values=values, dones=dones)
+
+        free_queue.put((
+            worker_id, __num_completed_games, __num_win_games, num_timesteps
+        ))
+
+
+    def collect_rollouts(
+        self,
+        env,
+        rollout_buffer: RolloutBuffer,
+        n_rollout_steps: int,
+        num_workers: int = 4
+    ) -> Tuple[bool, int, int]:
+        
+    
+        self.policy.set_training_mode(False)
+        
+        rollout_buffer.reset()
+
+        __num_completed_games = 0
+        __num_win_games = 0
+
+        ctx = mp.get_context('spawn')
+        free_queue = ctx.Queue()
+        full_queue = ctx.Queue()
+    
+        rollout_buffers= [ 
+            self.rollout_buffer_class(
+            self.n_steps,
+            self.observation_space,  # type: ignore[arg-type]
+            self.action_space,
+            device=self.device,
+            gamma=self.gamma,
+            gae_lambda=self.gae_lambda,
+            n_envs=self.n_envs,
+            **self.rollout_buffer_kwargs,
+            ) for _ in range(num_workers)
+        ]
+        
+        processes = []
+        i =0 
+        for worker_id in range(num_workers):
+            p = ctx.Process(
+                target=self.collect_rollouts_worker,
+                args=(
+                    worker_id, env, self.policy, n_rollout_steps // num_workers,
+                    self.use_sde, self.sde_sample_freq, self.gamma, self.device,
+                    free_queue, full_queue, rollout_buffers[i]
+                )
+            )
+            p.start()
+            processes.append(p)
+            i+=1
+
+        for _ in range(num_workers):
+            worker_id, num_completed_games, num_win_games, num_timesteps = free_queue.get()
+            __num_completed_games += num_completed_games
+            __num_win_games += num_win_games
+            rollout_buffer.merge(rollout_buffers[worker_id])
+            self.num_timesteps += num_timesteps            
+
+        for p in processes:
+            p.join()
+            
+        
+
+        return True, __num_completed_games, __num_win_games
