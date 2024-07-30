@@ -10,7 +10,7 @@ from training.common.base_class import BaseAlgorithm
 from training.common.buffers import DictRolloutBuffer, RolloutBuffer
 from training.common.policies import ActorCriticPolicy
 from training.common.type_aliases import GymEnv, Schedule
-from training.common.utils import obs_as_tensor, safe_mean, create_buffers
+from training.common.utils import obs_as_tensor, safe_mean
 from torch import multiprocessing as mp
 
 SelfOnPolicyAlgorithm = TypeVar("SelfOnPolicyAlgorithm", bound="OnPolicyAlgorithm")
