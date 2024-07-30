@@ -12,6 +12,7 @@ from training.common.policies import ActorCriticPolicy
 from training.common.type_aliases import GymEnv, Schedule
 from training.common.utils import obs_as_tensor, safe_mean
 from torch import multiprocessing as mp
+from gym_match3.envs.match3_env import Match3Env
 
 SelfOnPolicyAlgorithm = TypeVar("SelfOnPolicyAlgorithm", bound="OnPolicyAlgorithm")
 
@@ -387,7 +388,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         dones = False
         action_space = infos["action_space"]
 
-        if use_sde:
+        if self.use_sde:
             policy.reset_noise(env.num_envs)
         
         print("Start rollout data")
@@ -395,7 +396,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         
         while n_steps < n_rollout_steps:
             if (
-                use_sde
+                self.use_sde
                 and sde_sample_freq > 0
                 and n_steps % sde_sample_freq == 0
             ):
@@ -415,7 +416,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                     clipped_actions = policy.unscale_action(clipped_actions)
                 else:
                     clipped_actions = np.clip(
-                        actions, policy.action_space.low, policy.action_space.high
+                        actions, self.action_space.low, self.action_space.high
                     )
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
@@ -489,13 +490,17 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             ) for _ in range(num_workers)
         ]
         
+        envs = [
+            Match3Env(90) for _ in range(num_workers)
+        ]
+        
         processes = []
         i =0 
         for worker_id in range(num_workers):
             p = ctx.Process(
                 target=self.collect_rollouts_worker,
                 args=(
-                    worker_id, env, self.policy, n_rollout_steps // num_workers,
+                    worker_id, envs[i], self.policy, n_rollout_steps // num_workers,
                     self.use_sde, self.sde_sample_freq, self.gamma, self.device,
                     free_queue, full_queue, rollout_buffers[i]
                 )
@@ -514,6 +519,5 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         for p in processes:
             p.join()
             
-        
 
         return True, __num_completed_games, __num_win_games
