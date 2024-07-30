@@ -5,7 +5,7 @@ import torch
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.ppo import PPO
-from training.m3_model.m3_cnn import M3CnnFeatureExtractor, M3CnnLargerFeatureExtractor, Resnet
+from training.m3_model.m3_cnn import M3CnnFeatureExtractor, M3CnnLargerFeatureExtractor, ResNet
 
 
 def get_args():
@@ -127,7 +127,7 @@ PPO_trainer = PPO(
     # },
     policy_kwargs={
         "net_arch": dict(pi=args.pi, vf=args.vf),
-        "features_extractor_class": Resnet,
+        "features_extractor_class": ResNet,
         "features_extractor_kwargs": {
             "out_channels": 161,
             "resnet_variant": "resnet50",  
