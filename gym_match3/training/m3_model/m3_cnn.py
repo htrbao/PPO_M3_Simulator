@@ -352,6 +352,7 @@ class ResNet(nn.Module):
         
         resnet_variant = model_parameters[kwargs.get("resnet_variant")]
         num_classes = kwargs["out_channels"]
+        self.features_dim = kwargs["out_channels"]
         
         super(ResNet,self).__init__()
         self.channels_list = resnet_variant[0]
