@@ -129,7 +129,9 @@ PPO_trainer = PPO(
         "net_arch": dict(pi=args.pi, vf=args.vf),
         "features_extractor_class": ResNet,
         "features_extractor_kwargs": {
+            "mid_channels": args.mid_channels,
             "out_channels": 161,
+            "num_first_cnn_layer": args.num_first_cnn_layer,
             "resnet_variant": "resnet50",  
         },
         "optimizer_class": torch.optim.Adam,
