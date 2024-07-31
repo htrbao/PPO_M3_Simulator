@@ -98,14 +98,14 @@ def get_args():
         help="Whether want to use CPU for actor",
     )
     
-    parser.add_batch_size(
+    parser.add_argument(
         "--batch_size",
         type=int,
         default=128,
         help="batch size for training",
     )
     
-    parser.add_num_workers(
+    parser.add_argument(
         "--num_workers",
         type=int,
         default=4,
