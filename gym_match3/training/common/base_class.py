@@ -199,6 +199,7 @@ class BaseAlgorithm(ABC):
                 self.observation_space, spaces.Dict
             ):
                 raise ValueError(
+                    
                     f"You must use `MultiInputPolicy` when working with dict observation space, not {policy}"
                 )
 

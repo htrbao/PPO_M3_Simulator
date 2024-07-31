@@ -6,7 +6,7 @@ from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.ppo import PPO
 from training.m3_model.m3_cnn import M3CnnFeatureExtractor, M3CnnLargerFeatureExtractor, ResNet
-
+from training.common.utils import collect_rollouts
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -101,60 +101,62 @@ def get_args():
     return parser.parse_args()
 
 
-args = get_args()
-env = Match3Env(90)
+if __name__ == "__main__":
+    args = get_args()
+    env = Match3Env(90)
 
-print(env.observation_space)
-print(env.action_space)
-
-PPO_trainer = PPO(
-    policy="CnnPolicy",
-    env=env,
-    learning_rate=args.lr,
-    n_steps=args.n_steps,
-    gamma=args.gamma,
-    ent_coef=0.00001,
-    # policy_kwargs={
-    #     "net_arch": dict(pi=args.pi, vf=args.vf),
-    #     "features_extractor_class": M3CnnLargerFeatureExtractor,
-    #     "features_extractor_kwargs": {
-    #         "mid_channels": args.mid_channels,
-    #         "out_channels": 161,
-    #         "num_first_cnn_layer": args.num_first_cnn_layer,
-    #     },
-    #     "optimizer_class": torch.optim.Adam,
-    #     "share_features_extractor": False,
-    # },
-    policy_kwargs={
-        "net_arch": dict(pi=args.pi, vf=args.vf),
-        "features_extractor_class": ResNet,
-        "features_extractor_kwargs": {
-            "mid_channels": args.mid_channels,
-            "out_channels": 161,
-            "num_first_cnn_layer": args.num_first_cnn_layer,
-            "resnet_variant": "resnet50",  
+    PPO_trainer = PPO(
+        policy="CnnPolicy",
+        env=env,
+        learning_rate=args.lr,
+        n_steps=args.n_steps,
+        gamma=args.gamma,
+        ent_coef=0.00001,
+        policy_kwargs={
+            "net_arch": dict(pi=args.pi, vf=args.vf),
+            "features_extractor_class": M3CnnLargerFeatureExtractor,
+            "features_extractor_kwargs": {
+                "mid_channels": args.mid_channels,
+                "out_channels": 161,
+                "num_first_cnn_layer": args.num_first_cnn_layer,
+            },
+            "optimizer_class": torch.optim.Adam,
+            "share_features_extractor": False,
         },
-        "optimizer_class": torch.optim.Adam,
-        "share_features_extractor": False,
-    },
-    _checkpoint=args.checkpoint,
-    _wandb=args.wandb,
-    device="cuda",
-    prefix_name=args.prefix_name,
-    # actor_device_cpu=args.actor_device_cpu,
-)
-run_i = 0
-while run_i < 300:
-    run_i += 1
-    s_t = time.time()
-    _, num_completed_games, num_win_games = PPO_trainer.collect_rollouts(
-        PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps, 4
+        # policy_kwargs={
+        #     "net_arch": dict(pi=args.pi, vf=args.vf),
+        #     "features_extractor_class": ResNet,
+        #     "features_extractor_kwargs": {
+        #         "mid_channels": args.mid_channels,
+        #         "out_channels": 161,
+        #         "num_first_cnn_layer": args.num_first_cnn_layer,
+        #         "resnet_variant": "resnet50",  
+        #     },
+        #     "optimizer_class": torch.optim.Adam,
+        #     "share_features_extractor": False,
+        # },
+        _checkpoint=args.checkpoint,
+        _wandb=args.wandb,
+        device="cpu",
+        # "cuda"
+        prefix_name=args.prefix_name,
+        # actor_device_cpu=args.actor_device_cpu,
     )
-    win_rate = num_win_games / num_completed_games * 100
-    print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
-    s_t = time.time()
-    PPO_trainer.train(
-        num_completed_games=num_completed_games, num_win_games=num_win_games
-    )
-    
-    print("training time", time.time() - s_t)
+    run_i = 0
+    while run_i < 2:
+        run_i += 1
+        s_t = time.time()   
+        collect_rollouts(PPO_trainer, 4)
+
+        # _, num_completed_games, num_win_games = PPO_trainer.collect_rollouts(
+        #     PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps
+        # )
+
+        # win_rate = num_win_games / num_completed_games * 100
+        # print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
+        # s_t = time.time()
+        # PPO_trainer.train(
+        #     num_completed_games=num_completed_games, num_win_games=num_win_games
+        # )
+        
+        # print("training time", time.time() - s_t)
