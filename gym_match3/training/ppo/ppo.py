@@ -89,7 +89,7 @@ class PPO(OnPolicyAlgorithm):
         env: Union[GymEnv, str],
         learning_rate: Union[float, Schedule] = 3e-4,
         n_steps: int = 2048,
-        batch_size: int = 64,
+        batch_size: int = 1000,
         n_epochs: int = 10,
         gamma: float = 0.99,
         gae_lambda: float = 0.95,
@@ -242,9 +242,11 @@ class PPO(OnPolicyAlgorithm):
         continue_training = True
         # train for n_epochs epochs
         for epoch in range(self.n_epochs):
+            print(f"Epoch {epoch}")
+            
             approx_kl_divs = []
             # Do a complete pass on the rollout buffer
-            for rollout_data in self.rollout_buffer.get(self.batch_size):
+            for idx, rollout_data in enumerate(self.rollout_buffer.get(self.batch_size)):
                 if epoch == 0:
                     mean_rewards.extend(rollout_data.rewards.cpu().flatten().tolist())
                     mean_values.extend(rollout_data.old_values.cpu().flatten().tolist())
@@ -382,7 +384,7 @@ class PPO(OnPolicyAlgorithm):
         self.train_log(stats)
         self.policy.save(path=f"./_saved_model/{self._model_name}.pt")
         
-    
+        self.policy_target.load_state_dict(self.policy.state_dict())
 
     def learn(
         self: SelfPPO,

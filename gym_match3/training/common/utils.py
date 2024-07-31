@@ -6,12 +6,16 @@ import re
 from collections import deque
 from itertools import zip_longest
 from typing import Dict, Iterable, List, Optional, Tuple, Union
+from torch import multiprocessing as mp
+from gym_match3.envs.match3_env import Match3Env
+import torch as th
 
 import cloudpickle
 import gymnasium as gym
 import numpy as np
 import torch
 from gymnasium import spaces
+
 
 import training as sb3
 
@@ -605,3 +609,189 @@ def get_system_info(print_info: bool = True) -> Tuple[Dict[str, str], str]:
     if print_info:
         print(env_info_str)
     return env_info, env_info_str
+
+
+def collect_rollouts_worker(
+        worker_id,
+        free_queue,
+        buffers,
+        policy,
+        config
+    ):
+        buffer = buffers[worker_id]
+        
+        use_sde, n_rollout_steps, sde_sample_freq, device, action_space_low, action_space_high, is_box_instance = config.values()
+
+        print("Start rollout data", worker_id)
+        __num_completed_games = 0
+        __num_win_games = 0
+        num_timesteps = 0
+        
+        env = Match3Env(90)
+    
+        n_steps = 0
+        buffer.reset()
+        _last_obs, infos = env.reset()
+        _last_episode_starts = False
+        dones = False
+        action_space = infos["action_space"]
+        
+        if use_sde:
+            policy.reset_noise(env.num_envs)
+        
+        print("Start rollout data")
+        
+        
+        while n_steps < n_rollout_steps:
+            if (
+                use_sde
+                and sde_sample_freq > 0
+                and n_steps % sde_sample_freq == 0
+            ):
+                policy.reset_noise(env.num_envs)
+
+            with th.no_grad():
+                obs_tensor = obs_as_tensor(_last_obs, device).clone().detach()
+                action_space_tensor = obs_as_tensor(action_space, device).clone().detach()
+                actions, values, log_probs = policy(obs_tensor, action_space_tensor)
+
+            actions = actions.cpu().clone().detach().numpy()
+
+            clipped_actions = actions[0]
+            
+            if is_box_instance:
+                if policy.squash_output:
+                    clipped_actions = policy.unscale_action(clipped_actions)
+                else:
+                    clipped_actions = np.clip(
+                        actions,action_space_low, action_space_high
+                    )
+
+            new_obs, rewards, dones, infos = env.step(clipped_actions)
+            # print(rewards)
+
+            if "game" in rewards.keys():
+                __num_completed_games += 1
+                __num_win_games += 0 if rewards["game"] < 0 else 1
+
+            action_space = infos["action_space"]
+
+            num_timesteps += env.num_envs
+
+            n_steps += 1
+
+            if isinstance(policy.action_space, spaces.Discrete):
+                actions = actions.reshape(-1, 1)
+
+            
+            buffer.add(
+                _last_obs,
+                actions,
+                rewards,
+                _last_episode_starts,
+                values,
+                log_probs,
+                action_space,
+            )
+            _last_obs = new_obs
+            _last_episode_starts = dones
+
+        with th.no_grad():
+            values = policy.predict_values(obs_as_tensor(new_obs, device)).clone().detach()
+
+        buffer.compute_returns_and_advantage(last_values=values, dones=dones)
+        # for p in buffer.get(10):
+        #     print(p)
+        print("Rollout buffer of subprocess", worker_id, buffer.full)
+        free_queue.put((
+            worker_id, __num_completed_games, __num_win_games, num_timesteps, buffer
+        ))
+        
+        
+
+
+def collect_rollouts(
+        PPO_trainer,
+        num_workers: int = 4
+    ) -> Tuple[bool, int, int]:
+        n_rollout_steps = PPO_trainer.n_steps
+        print("Steps to rollout", n_rollout_steps)
+        
+        PPO_trainer.policy_target.set_training_mode(False)
+        
+        for p in PPO_trainer.policy_target.parameters():
+            print("target", p)
+            break
+            
+        PPO_trainer.rollout_buffer.reset()
+
+        __num_completed_games = 0
+        __num_win_games = 0
+
+        ctx = mp.get_context('spawn')
+        free_queue = ctx.SimpleQueue()
+    
+        rollout_buffers= [ 
+            PPO_trainer.rollout_buffer_class(
+            PPO_trainer.n_steps//num_workers,
+            PPO_trainer.observation_space,  # type: ignore[arg-type]
+            PPO_trainer.action_space,
+            device=PPO_trainer.device,
+            gamma=PPO_trainer.gamma,
+            gae_lambda=PPO_trainer.gae_lambda,
+            n_envs=PPO_trainer.n_envs,
+            **PPO_trainer.rollout_buffer_kwargs,
+            ) for _ in range(num_workers)
+        ]
+        
+        
+        processes = []
+        
+        is_box_instance = isinstance(PPO_trainer.action_space, spaces.Box)
+        action_space_low = PPO_trainer.action_space.low if is_box_instance else None
+        action_space_high = PPO_trainer.action_space.high if is_box_instance else None
+        
+        config = dict(
+            use_sde=PPO_trainer.use_sde,
+            n_rollout_steps=n_rollout_steps // num_workers,
+            sde_sample_freq=PPO_trainer.sde_sample_freq,
+            device=PPO_trainer.device,
+            is_box_instance=is_box_instance,
+            action_space_low=action_space_low,
+            action_space_high=action_space_high,
+        )
+
+        print("Start rollout data before multiprocessing")
+        for worker_id in range(num_workers):
+            p = ctx.Process(
+                target=collect_rollouts_worker,
+                args=(
+                    worker_id,
+                    free_queue, 
+                    rollout_buffers,
+                    PPO_trainer.policy_target,     
+                    config
+                )
+            )
+            p.start()
+            processes.append(p)
+            
+
+        for _ in range(num_workers):
+            worker_id, num_completed_games, num_win_games, num_timesteps, buffer = free_queue.get()
+            
+            __num_completed_games += num_completed_games
+            __num_win_games += num_win_games
+            
+            print("Worker", worker_id, "completed", num_completed_games, "games")
+
+            PPO_trainer.rollout_buffer.merge(buffer,0)
+            PPO_trainer.num_timesteps += num_timesteps            
+
+        for p in processes:
+            p.join()
+            
+        PPO_trainer.rollout_buffer.set_full(True)
+        PPO_trainer.rollout_buffer.remove_empty(n_rollout_steps)
+        
+        return True, __num_completed_games, __num_win_games
