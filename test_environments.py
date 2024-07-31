@@ -1,9 +1,6 @@
 import random
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
-import matplotlib.pyplot as plt
-from gym_match3.envs.match3_env import Match3Env
-from gym_match3.envs.match3_helper import M3Helper
 import cv2
+from gym_match3.envs.match3_env import Match3Env
 
 
 env = Match3Env(90)

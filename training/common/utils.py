@@ -639,8 +639,6 @@ def collect_rollouts_worker(
         if use_sde:
             policy.reset_noise(env.num_envs)
         
-        print("Start rollout data")
-        
         
         while n_steps < n_rollout_steps:
             if (
@@ -718,11 +716,6 @@ def collect_rollouts(
         print("Steps to rollout", n_rollout_steps)
         
         PPO_trainer.policy_target.set_training_mode(False)
-        
-        for p in PPO_trainer.policy_target.parameters():
-            print("target", p)
-            break
-            
         PPO_trainer.rollout_buffer.reset()
 
         __num_completed_games = 0

@@ -16,7 +16,7 @@ class Renderer:
         self.previousBoard = None
         self.images = []       
         for i in range(0,17):
-            self.images.append(cv2.imread(f"/Users/hung/Documents/coding/internVNG/gym-match3/gym_match3/gym_match3/envs/image/{i}.jpg", cv2.IMREAD_UNCHANGED))
+            self.images.append(cv2.imread(f"./gym_match3/envs/image/{i}.jpg", cv2.IMREAD_UNCHANGED))
         self.square_size = square_size
 
     def render_board(self, board: Board, tiles=None):
