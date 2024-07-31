@@ -350,6 +350,7 @@ class RolloutBuffer(BaseBuffer):
     ) -> Generator[RolloutBufferSamples, None, None]:
         assert self.full, ""
         indices = np.random.permutation(self.buffer_size * self.n_envs)
+        print(self.buffer_size)
         # Prepare the data
         if not self.generator_ready:
             _tensor_names = [
@@ -394,17 +395,32 @@ class RolloutBuffer(BaseBuffer):
         return RolloutBufferSamples(*tuple(map(self.to_torch, data)))
 
                 
-    def merge(self, rb):
-        self.observations = np.concatenate((self.observations, rb.observations), axis=0)
-        self.actions = np.concatenate((self.actions, rb.actions), axis=0)
-        self.values = np.concatenate((self.values, rb.values), axis=0)
-        self.log_probs = np.concatenate((self.log_probs, rb.log_probs), axis=0)
-        self.advantages = np.concatenate((self.advantages, rb.advantages), axis=0)
-        self.returns = np.concatenate((self.returns, rb.returns), axis=0)
-        self.rewards = np.concatenate((self.rewards, rb.rewards), axis=0)
-        self.legal_actions = np.concatenate((self.legal_actions, rb.legal_actions), axis=0)
+    def merge(self, rb, axis):
+        self.observations = np.concatenate((self.observations, rb.observations), axis=axis)
+        self.actions = np.concatenate((self.actions, rb.actions), axis=axis)
+        self.values = np.concatenate((self.values, rb.values), axis=axis)
+        self.log_probs = np.concatenate((self.log_probs, rb.log_probs), axis=axis)
+        self.advantages = np.concatenate((self.advantages, rb.advantages), axis=axis)
+        self.returns = np.concatenate((self.returns, rb.returns), axis=axis)
+        self.rewards = np.concatenate((self.rewards, rb.rewards), axis=axis)
+        self.legal_actions = np.concatenate((self.legal_actions, rb.legal_actions), axis=axis)
+        
         self.buffer_size += rb.buffer_size
-        self.full = self.full and rb.full
+    
+    def set_full(self, full):
+        self.full = full
+        
+    def remove_empty(self, pos):
+        self.observations = self.observations[pos:, :, :, :]
+        self.actions = self.actions[pos:, :, :]
+        self.values = self.values[pos:, :]
+        self.log_probs = self.log_probs[pos:, :]
+        self.advantages = self.advantages[pos:, :]
+        self.returns = self.returns[pos:, :]
+        self.rewards = self.rewards[pos:, :]
+        self.legal_actions = self.legal_actions[pos:, :, :]
+        self.buffer_size -= pos
+        
 
 class DictRolloutBuffer(RolloutBuffer):
     """

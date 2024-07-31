@@ -139,6 +139,15 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             **self.policy_kwargs,
         )
         self.policy = self.policy.to(self.device)
+        self.policy_target = self.policy_class(  # type: ignore[assignment]
+            self.observation_space,
+            self.action_space,
+            self.lr_schedule,
+            use_sde=self.use_sde,
+            **self.policy_kwargs,
+        )
+        self.policy_target.load_state_dict(self.policy.state_dict())
+        self.policy_target = self.policy_target.to(self.device)
 
     def collect_rollouts(
         self,

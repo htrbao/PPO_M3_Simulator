@@ -614,11 +614,13 @@ def get_system_info(print_info: bool = True) -> Tuple[Dict[str, str], str]:
 def collect_rollouts_worker(
         worker_id,
         free_queue,
-        buffer,
+        buffers,
         policy,
         config
     ):
-        use_sde, n_rollout_steps, sde_sample_freq, device, action_space_low, action_space_high, is_box_instance = config
+        buffer = buffers[worker_id]
+        
+        use_sde, n_rollout_steps, sde_sample_freq, device, action_space_low, action_space_high, is_box_instance = config.values()
 
         print("Start rollout data", worker_id)
         __num_completed_games = 0
@@ -634,92 +636,93 @@ def collect_rollouts_worker(
         dones = False
         action_space = infos["action_space"]
         
-        print(config)
+        if use_sde:
+            policy.reset_noise(env.num_envs)
         
-        # obs_tensor = obs_as_tensor(_last_obs, device)
-        # action_space_tensor = obs_as_tensor(action_space, device)
-        # actions, values, log_probs = policy(obs_tensor, action_space_tensor)
-        # print("Actions", actions)
-        # print("Values", values)
-    
-        # if use_sde:
-        #     policy.reset_noise(env.num_envs)
-        
-        # print("Start rollout data")
+        print("Start rollout data")
         
         
-        # while n_steps < n_rollout_steps:
-        #     if (
-        #         use_sde
-        #         and sde_sample_freq > 0
-        #         and n_steps % sde_sample_freq == 0
-        #     ):
-        #         policy.reset_noise(env.num_envs)
+        while n_steps < n_rollout_steps:
+            if (
+                use_sde
+                and sde_sample_freq > 0
+                and n_steps % sde_sample_freq == 0
+            ):
+                policy.reset_noise(env.num_envs)
 
-        #     with th.no_grad():
-        #         obs_tensor = obs_as_tensor(_last_obs, device)
-        #         action_space_tensor = obs_as_tensor(action_space, device)
-        #         actions, values, log_probs = policy(obs_tensor, action_space_tensor)
+            with th.no_grad():
+                obs_tensor = obs_as_tensor(_last_obs, device).clone().detach()
+                action_space_tensor = obs_as_tensor(action_space, device).clone().detach()
+                actions, values, log_probs = policy(obs_tensor, action_space_tensor)
 
-        #     actions = actions.cpu().numpy()
+            actions = actions.cpu().clone().detach().numpy()
 
-        #     clipped_actions = actions[0]
+            clipped_actions = actions[0]
             
-        #     if is_box_instance:
-        #         if policy.squash_output:
-        #             clipped_actions = policy.unscale_action(clipped_actions)
-        #         else:
-        #             clipped_actions = np.clip(
-        #                 actions,action_space_low, action_space_high
-        #             )
+            if is_box_instance:
+                if policy.squash_output:
+                    clipped_actions = policy.unscale_action(clipped_actions)
+                else:
+                    clipped_actions = np.clip(
+                        actions,action_space_low, action_space_high
+                    )
 
-        #     new_obs, rewards, dones, infos = env.step(clipped_actions)
+            new_obs, rewards, dones, infos = env.step(clipped_actions)
+            # print(rewards)
 
+            if "game" in rewards.keys():
+                __num_completed_games += 1
+                __num_win_games += 0 if rewards["game"] < 0 else 1
 
-        #     if "game" in rewards.keys():
-        #         __num_completed_games += 1
-        #         __num_win_games += 0 if rewards["game"] < 0 else 1
+            action_space = infos["action_space"]
 
-        #     action_space = infos["action_space"]
+            num_timesteps += env.num_envs
 
-        #     num_timesteps += env.num_envs
+            n_steps += 1
 
-        #     n_steps += 1
+            if isinstance(policy.action_space, spaces.Discrete):
+                actions = actions.reshape(-1, 1)
 
-        #     if isinstance(policy.action_space, spaces.Discrete):
-        #         actions = actions.reshape(-1, 1)
+            
+            buffer.add(
+                _last_obs,
+                actions,
+                rewards,
+                _last_episode_starts,
+                values,
+                log_probs,
+                action_space,
+            )
+            _last_obs = new_obs
+            _last_episode_starts = dones
 
-        #     buffer.add(
-        #         _last_obs,
-        #         actions,
-        #         rewards,
-        #         _last_episode_starts,
-        #         values,
-        #         log_probs,
-        #         action_space,
-        #     )
-        #     _last_obs = new_obs
-        #     _last_episode_starts = dones
+        with th.no_grad():
+            values = policy.predict_values(obs_as_tensor(new_obs, device)).clone().detach()
 
-        # with th.no_grad():
-        #     values = policy.predict_values(obs_as_tensor(new_obs, device))
-
-        # buffer.compute_returns_and_advantage(last_values=values, dones=dones)
-
+        buffer.compute_returns_and_advantage(last_values=values, dones=dones)
+        # for p in buffer.get(10):
+        #     print(p)
+        print("Rollout buffer of subprocess", worker_id, buffer.full)
         free_queue.put((
-            worker_id, __num_completed_games, __num_win_games, num_timesteps
+            worker_id, __num_completed_games, __num_win_games, num_timesteps, buffer
         ))
+        
+        
 
 
 def collect_rollouts(
         PPO_trainer,
         num_workers: int = 4
     ) -> Tuple[bool, int, int]:
-        
         n_rollout_steps = PPO_trainer.n_steps
         print("Steps to rollout", n_rollout_steps)
         
-        PPO_trainer.policy.set_training_mode(False)
+        PPO_trainer.policy_target.set_training_mode(False)
+        
+        for p in PPO_trainer.policy_target.parameters():
+            print("target", p)
+            break
+            
         PPO_trainer.rollout_buffer.reset()
 
         __num_completed_games = 0
@@ -730,7 +733,7 @@ def collect_rollouts(
     
         rollout_buffers= [ 
             PPO_trainer.rollout_buffer_class(
-            PPO_trainer.n_steps,
+            PPO_trainer.n_steps//num_workers,
             PPO_trainer.observation_space,  # type: ignore[arg-type]
             PPO_trainer.action_space,
             device=PPO_trainer.device,
@@ -740,6 +743,7 @@ def collect_rollouts(
             **PPO_trainer.rollout_buffer_kwargs,
             ) for _ in range(num_workers)
         ]
+        
         
         processes = []
         
@@ -757,30 +761,37 @@ def collect_rollouts(
             action_space_high=action_space_high,
         )
 
+        print("Start rollout data before multiprocessing")
         for worker_id in range(num_workers):
             p = ctx.Process(
                 target=collect_rollouts_worker,
                 args=(
                     worker_id,
                     free_queue, 
-                    rollout_buffers[worker_id],
-                    PPO_trainer.policy,     
+                    rollout_buffers,
+                    PPO_trainer.policy_target,     
                     config
                 )
             )
             p.start()
             processes.append(p)
+            
 
         for _ in range(num_workers):
-            worker_id, num_completed_games, num_win_games, num_timesteps = free_queue.get()
+            worker_id, num_completed_games, num_win_games, num_timesteps, buffer = free_queue.get()
+            
             __num_completed_games += num_completed_games
             __num_win_games += num_win_games
+            
             print("Worker", worker_id, "completed", num_completed_games, "games")
-            PPO_trainer.rollout_buffer.merge(rollout_buffers[worker_id])
+
+            PPO_trainer.rollout_buffer.merge(buffer,0)
             PPO_trainer.num_timesteps += num_timesteps            
 
         for p in processes:
             p.join()
             
-
+        PPO_trainer.rollout_buffer.set_full(True)
+        PPO_trainer.rollout_buffer.remove_empty(n_rollout_steps)
+        
         return True, __num_completed_games, __num_win_games

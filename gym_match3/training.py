@@ -109,7 +109,8 @@ if __name__ == "__main__":
         policy="CnnPolicy",
         env=env,
         learning_rate=args.lr,
-        n_steps=args.n_steps,
+        n_steps = 400,
+        # n_steps=args.n_steps,
         gamma=args.gamma,
         ent_coef=0.00001,
         policy_kwargs={
@@ -142,21 +143,23 @@ if __name__ == "__main__":
         prefix_name=args.prefix_name,
         # actor_device_cpu=args.actor_device_cpu,
     )
+    
+    PPO_trainer.policy.share_memory()
     run_i = 0
     while run_i < 2:
         run_i += 1
-        s_t = time.time()   
-        collect_rollouts(PPO_trainer, 4)
+        s_t = time.time()  
+        # print(PPO_trainer.rollout_buffer.observations)
+            
+        _, num_completed_games, num_win_games = collect_rollouts(PPO_trainer, 4)
 
-        # _, num_completed_games, num_win_games = PPO_trainer.collect_rollouts(
-        #     PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps
-        # )
-
-        # win_rate = num_win_games / num_completed_games * 100
-        # print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
-        # s_t = time.time()
-        # PPO_trainer.train(
-        #     num_completed_games=num_completed_games, num_win_games=num_win_games
-        # )
+        win_rate = num_win_games / num_completed_games * 100
+        print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
         
-        # print("training time", time.time() - s_t)
+        
+        s_t = time.time()
+        PPO_trainer.train(
+            num_completed_games=num_completed_games, num_win_games=num_win_games
+        )
+        
+        print("training time", time.time() - s_t)
