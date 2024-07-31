@@ -90,6 +90,7 @@ class PPO(OnPolicyAlgorithm):
         learning_rate: Union[float, Schedule] = 3e-4,
         n_steps: int = 2048,
         batch_size: int = 1000,
+        num_workers: int = 4,
         n_epochs: int = 10,
         gamma: float = 0.99,
         gae_lambda: float = 0.95,
@@ -144,6 +145,7 @@ class PPO(OnPolicyAlgorithm):
                 spaces.MultiBinary,
             ),
         )
+        self.num_workers = num_workers
 
         # Sanity check, otherwise it will lead to noisy gradient and NaN
         # because of the advantage normalization

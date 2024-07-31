@@ -298,7 +298,7 @@ class RolloutBuffer(BaseBuffer):
         new_reward = (_reward - reward_min) / (reward_max - reward_min) * (
             target_max - target_min
         ) + target_min
-        print(new_reward)
+        # print(new_reward)
         return new_reward
 
     def add(

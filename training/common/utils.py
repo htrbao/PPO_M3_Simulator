@@ -666,7 +666,7 @@ def collect_rollouts_worker(
                     )
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
-            # print(rewards)
+            print(rewards)
 
             if "game" in rewards.keys():
                 __num_completed_games += 1
