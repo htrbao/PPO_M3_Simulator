@@ -97,6 +97,20 @@ def get_args():
         type=bool,
         help="Whether want to use CPU for actor",
     )
+    
+    parser.add_batch_size(
+        "--batch_size",
+        type=int,
+        default=128,
+        help="batch size for training",
+    )
+    
+    parser.add_num_workers(
+        "--num_workers",
+        type=int,
+        default=4,
+        help="number of workers for training",
+    )
         
     return parser.parse_args()
 
@@ -136,6 +150,8 @@ if __name__ == "__main__":
         #     "optimizer_class": torch.optim.Adam,
         #     "share_features_extractor": False,
         # },
+        num_workers=args.num_workers,
+        batch_size=args.batch_size,
         _checkpoint=args.checkpoint,
         _wandb=args.wandb,
         device="cpu",

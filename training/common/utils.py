@@ -710,9 +710,9 @@ def collect_rollouts_worker(
 
 def collect_rollouts(
         PPO_trainer,
-        num_workers: int = 4
     ) -> Tuple[bool, int, int]:
         n_rollout_steps = PPO_trainer.n_steps
+        num_workers = PPO_trainer.num_workers
         print("Steps to rollout", n_rollout_steps)
         
         PPO_trainer.policy_target.set_training_mode(False)
