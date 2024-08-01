@@ -203,7 +203,12 @@ class BaseModel(nn.Module):
         model.load_state_dict(saved_variables["state_dict"])
         model.to(device)
         
-        lr_scheduler = saved_variables["lr_sched"]
+        optimizer_state_dict = None
+        if "optimizer_state_dict" in saved_variables:
+            optimizer_state_dict = saved_variables["optimizer_state_dict"]
+        lr_scheduler = None
+        if "lr_sched" in saved_variables:
+            lr_scheduler = saved_variables["lr_sched"]
         
         return model, saved_variables["optimizer_state_dict"], lr_scheduler
     
