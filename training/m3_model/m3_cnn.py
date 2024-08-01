@@ -355,6 +355,7 @@ class ResNet(nn.Module):
     def forward(self,input):
         if len(input.shape) == 3:
             input = torch.unsqueeze(input, 0)
+            
         input = self.relu(self.batchnorm1(self.conv1(input)))
         
         input = self.maxpool(input)

@@ -19,8 +19,6 @@ logger = utils.configure_logger(1)
 
 
 SelfPPO = TypeVar("SelfPPO", bound="PPO")
-
-
 class PPO(OnPolicyAlgorithm):
     """
     Proximal Policy Optimization algorithm (PPO) (clip version)
