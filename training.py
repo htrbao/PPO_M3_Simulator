@@ -99,6 +99,13 @@ def get_args():
     )
     
     parser.add_argument(
+        "--device",
+        default="cuda",
+        type=str,
+        help="device to use for training",
+    )
+    
+    parser.add_argument(
         "--batch_size",
         type=int,
         default=128,
@@ -154,15 +161,14 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         _checkpoint=args.checkpoint,
         _wandb=args.wandb,
-        device="cpu",
-        # "cuda"
+        device=args.device,
         prefix_name=args.prefix_name,
         # actor_device_cpu=args.actor_device_cpu,
     )
     
     PPO_trainer.policy.share_memory()
     run_i = 0
-    while run_i < 2:
+    while run_i < 300:
         run_i += 1
         s_t = time.time()  
         # print(PPO_trainer.rollout_buffer.observations)
