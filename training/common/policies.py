@@ -210,7 +210,7 @@ class BaseModel(nn.Module):
         if "lr_sched" in saved_variables:
             lr_scheduler = saved_variables["lr_sched"]
         
-        return model, saved_variables["optimizer_state_dict"], lr_scheduler
+        return model, optimizer_state_dict, lr_scheduler
     
     def load_from_vector(self, vector: np.ndarray) -> None:
         """
