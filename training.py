@@ -173,7 +173,7 @@ if __name__ == "__main__":
     
     PPO_trainer.policy.share_memory()
     run_i = 0
-    while run_i < args:
+    while run_i < int(args.train_steps):
         run_i += 1
         s_t = time.time()  
         # print(PPO_trainer.rollout_buffer.observations)
