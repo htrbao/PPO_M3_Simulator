@@ -185,10 +185,12 @@ class PPO(OnPolicyAlgorithm):
         self._checkpoint = _checkpoint
         if self._checkpoint is not None:
             print(f"Load checkpoint from {self._checkpoint}")
-            policy, optimizer, lr_sched =  self.policy.load(path=self._checkpoint, device=self.device)
+            policy, optimizer_state_dict, lr_sched =  self.policy.load(path=self._checkpoint, device=self.device)
             self.policy= policy
-            self.policy.optimizer.load_state_dict(optimizer.state_dict())
-            self.lr_scheduler = lr_sched
+            if optimizer_state_dict is not None:
+                self.policy.optimizer.load_state_dict(optimizer_state_dict())
+            if lr_sched is not None:
+                self.lr_scheduler = lr_sched
 
         self._model_name = f"{prefix_name}_{policy_kwargs['features_extractor_kwargs']['num_first_cnn_layer']}layers_{policy_kwargs['features_extractor_kwargs']['mid_channels']}channels_{learning_rate}_{n_steps}_{'' if policy_kwargs['share_features_extractor'] else 'not_'}share_{datetime.datetime.today().strftime('%Y%m%d')}"
         self._wandb = _wandb
