@@ -123,7 +123,8 @@ if __name__ == "__main__":
         policy="CnnPolicy",
         env=env,
         learning_rate=args.lr,
-        n_steps=args.n_steps,
+        # n_steps=args.n_steps,
+        n_steps=4000,
         gamma=args.gamma,
         ent_coef=0.00001,
         # policy_kwargs={
@@ -167,7 +168,6 @@ if __name__ == "__main__":
         # print(PPO_trainer.rollout_buffer.observations)
             
         _, num_completed_games, num_win_games = collect_rollouts(PPO_trainer)
-
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
         

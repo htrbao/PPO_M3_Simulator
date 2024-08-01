@@ -321,8 +321,6 @@ class ResNet(nn.Module):
             Layer consisting of conv->batchnorm->relu
 
         """
-        print(in_channels)
-        print(in_channels.shape[0])
         model_parameters={}
         model_parameters['resnet18'] = ([64,128,256,512],[2,2,2,2],1,False)
         model_parameters['resnet34'] = ([64,128,256,512],[3,4,6,3],1,False)

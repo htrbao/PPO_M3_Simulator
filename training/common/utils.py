@@ -666,7 +666,7 @@ def collect_rollouts_worker(
                     )
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
-            print(rewards)
+            # print(rewards)
 
             if "game" in rewards.keys():
                 __num_completed_games += 1
@@ -701,6 +701,7 @@ def collect_rollouts_worker(
         # for p in buffer.get(10):
         #     print(p)
         print("Rollout buffer of subprocess", worker_id, buffer.full)
+        print(__num_win_games, __num_completed_games, num_timesteps)
         free_queue.put((
             worker_id, __num_completed_games, __num_win_games, num_timesteps, buffer
         ))
@@ -715,9 +716,15 @@ def collect_rollouts(
         num_workers = PPO_trainer.num_workers
         print("Steps to rollout", n_rollout_steps)
         
-        PPO_trainer.policy_target.set_training_mode(False)
+        # PPO_trainer.policy_target.set_training_mode(False)
+        PPO_trainer.policy.set_training_mode(False)
         PPO_trainer.rollout_buffer.reset()
-
+         
+        a=[]
+        for p in PPO_trainer.policy_target.parameters():
+            a=p
+        print(a)
+        
         __num_completed_games = 0
         __num_win_games = 0
 
@@ -772,7 +779,7 @@ def collect_rollouts(
 
         for _ in range(num_workers):
             worker_id, num_completed_games, num_win_games, num_timesteps, buffer = free_queue.get()
-            
+
             __num_completed_games += num_completed_games
             __num_win_games += num_win_games
             

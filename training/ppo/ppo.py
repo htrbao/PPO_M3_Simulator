@@ -250,6 +250,7 @@ class PPO(OnPolicyAlgorithm):
             # Do a complete pass on the rollout buffer
             for idx, rollout_data in enumerate(self.rollout_buffer.get(self.batch_size)):
                 if epoch == 0:
+                    
                     mean_rewards.extend(rollout_data.rewards.cpu().flatten().tolist())
                     mean_values.extend(rollout_data.old_values.cpu().flatten().tolist())
                     mean_returns.extend(rollout_data.returns.cpu().flatten().tolist())
@@ -356,6 +357,7 @@ class PPO(OnPolicyAlgorithm):
         self.logger.record("train/clip_range", clip_range)
         if self.clip_range_vf is not None:
             self.logger.record("train/clip_range_vf", clip_range_vf)
+
 
         stats = {
             "lr":self.lr_scheduler.get_lr()[-1], 
