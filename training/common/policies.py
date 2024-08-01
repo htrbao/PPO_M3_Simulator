@@ -203,12 +203,9 @@ class BaseModel(nn.Module):
         model.load_state_dict(saved_variables["state_dict"])
         model.to(device)
         
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-        optimizer.load_state_dict(saved_variables["optimizer_state_dict"])
-        
         lr_scheduler = saved_variables["lr_sched"]
         
-        return model, optimizer, lr_scheduler
+        return model, saved_variables["optimizer_state_dict"], lr_scheduler
     
     def load_from_vector(self, vector: np.ndarray) -> None:
         """
