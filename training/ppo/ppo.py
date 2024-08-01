@@ -254,6 +254,7 @@ class PPO(OnPolicyAlgorithm):
                     mean_values.extend(rollout_data.old_values.cpu().flatten().tolist())
                     mean_returns.extend(rollout_data.returns.cpu().flatten().tolist())
                     mean_advantage.extend(rollout_data.advantages.cpu().flatten().tolist())
+                    
                 actions = rollout_data.actions
                 if isinstance(self.action_space, spaces.Discrete):
                     # Convert discrete action from float to long

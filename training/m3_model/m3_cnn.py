@@ -81,6 +81,7 @@ class M3CnnLargerFeatureExtractor(nn.Module):
     def __init__(self, in_channels: int, **kwargs) -> None:
         # mid_channels: int, out_channels: int = 160, num_first_cnn_layer: int = 10, **kwargs
         super(M3CnnLargerFeatureExtractor, self).__init__()
+        print(in_channels)
 
         target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [5, 4]))
         # target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [7, 6]))
@@ -121,18 +122,6 @@ class M3CnnLargerFeatureExtractor(nn.Module):
     def forward(self, input: torch.Tensor):
         if len(input.shape) == 3:
             input = torch.unsqueeze(input, 0)
-        # input = self.layers[0](input)
-        # input = self.layers[1](input)
-        # res = 0
-        # for i in range(2,self.num_first_cnn_layer*2+2):
-        #     cur = self.layers[i](input)
-        #     if i ==2:
-        #         res = cur
-        #     input = cur
-        #     if i %4 == 2 and i != 2:
-        #         input += res
-        #         res = cur
-        
         return self.net(input)
 
 
@@ -214,17 +203,6 @@ class M3MlpExtractor(nn.Module):
 
     def forward_critic(self, features: torch.Tensor) -> torch.Tensor:
         return self.value_net(features)
-
-
-# m = nn.Conv2d(10, 2, 3, 1, 1)
-# n = M3Aap((1))
-# input = torch.randn(1, 10, 2, 2)
-# print(input.shape)
-# output = m(input)
-# print(output, output.shape)
-# output = n(output)
-# print(output, output.shape)
-
 
 class Bottleneck(nn.Module):
 
@@ -343,6 +321,8 @@ class ResNet(nn.Module):
             Layer consisting of conv->batchnorm->relu
 
         """
+        print(in_channels)
+        print(in_channels.shape[0])
         model_parameters={}
         model_parameters['resnet18'] = ([64,128,256,512],[2,2,2,2],1,False)
         model_parameters['resnet34'] = ([64,128,256,512],[3,4,6,3],1,False)
@@ -374,26 +354,27 @@ class ResNet(nn.Module):
         self.average_pool = nn.AdaptiveAvgPool2d(1)
         self.fc1 = nn.Linear( self.channels_list[3]*self.expansion , num_classes)
 
+    def forward(self,input):
+        if len(input.shape) == 3:
+            input = torch.unsqueeze(input, 0)
+        input = self.relu(self.batchnorm1(self.conv1(input)))
+        
+        input = self.maxpool(input)
+        
+        input = self.block1(input)
+        
+        input = self.block2(input)
+        
+        input = self.block3(input)
+        
+        input = self.block4(input)
+        
+        input = self.average_pool(input)
 
-
-    def forward(self,x):
-        x = self.relu(self.batchnorm1(self.conv1(x)))
-        x = self.maxpool(x)
+        input = torch.flatten(input, start_dim=1)
+        input = self.fc1(input)
         
-        x = self.block1(x)
-        
-        x = self.block2(x)
-        
-        x = self.block3(x)
-        
-        x = self.block4(x)
-        
-        x = self.average_pool(x)
-
-        x = torch.flatten(x, start_dim=1)
-        x = self.fc1(x)
-        
-        return x
+        return input
 
     def _make_blocks(self,in_channels,intermediate_channels,num_repeat, expansion, is_Bottleneck, stride):
         
