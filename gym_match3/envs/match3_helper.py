@@ -44,6 +44,15 @@ class M3Helper:
             ]
         else:
             self.obs_order = obs_order
+        self.coefficient = {
+            "match_normal": 1.3,
+            "match_2x2": 1.4,
+            "match_4_v": 1.4,
+            "match_4_h": 1.4,
+            "match_L": 1.5,
+            "match_T": 1.5,
+            "match_5": 1.6,
+        }
 
     def _from_action_to_tile(self):
         a2t = {}

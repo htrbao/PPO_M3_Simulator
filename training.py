@@ -119,6 +119,12 @@ def get_args():
         help="number of workers for training",
     )
         
+    parser.add_argument(
+        "--train_steps",
+        type=int,
+        default=500,
+        help = "number of training steps",
+    )    
     return parser.parse_args()
 
 
@@ -167,7 +173,7 @@ if __name__ == "__main__":
     
     PPO_trainer.policy.share_memory()
     run_i = 0
-    while run_i < 300:
+    while run_i < args:
         run_i += 1
         s_t = time.time()  
         # print(PPO_trainer.rollout_buffer.observations)
