@@ -196,7 +196,7 @@ if __name__ == "__main__":
         s_t = time.time()  
             
         _, num_completed_games, num_win_games = collect_rollouts(PPO_trainer)
-        num_completed_games+=1
+    
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
         
