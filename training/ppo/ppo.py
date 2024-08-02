@@ -193,6 +193,7 @@ class PPO(OnPolicyAlgorithm):
         self._checkpoint = _checkpoint
         
         if self._checkpoint is not None and os.path.exists(self._checkpoint):
+            print(f"Load checkpoint from {self._checkpoint}")
             self.policy, self.lr_scheduler = self.policy.load(path=self._checkpoint, device=self.device)
             
         self.policy_target.load_state_dict(self.policy.state_dict())

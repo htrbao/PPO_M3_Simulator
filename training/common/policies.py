@@ -180,8 +180,8 @@ class BaseModel(nn.Module):
             },
             path,
         )
-        for p in self.optimizer.param_groups:
-            print(p)
+        # for p in self.optimizer.param_groups:
+        #     print(p)
 
     @classmethod
     def load(
@@ -206,9 +206,10 @@ class BaseModel(nn.Module):
         model.to(device)
         for p in model.optimizer.param_groups:
             p['lr'] = saved_variables["lr_sched"].get_lr()[-1]
-
-        for p in model.optimizer.param_groups:
-            print(p)
+        
+        # for p in model.optimizer.param_groups:
+        #     print(p)
+        
         return model, saved_variables["lr_sched"]
     
     def load_from_vector(self, vector: np.ndarray) -> None:

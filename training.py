@@ -194,7 +194,6 @@ if __name__ == "__main__":
     while run_i < int(args.train_steps):
         run_i += 1
         s_t = time.time()  
-        # print(PPO_trainer.rollout_buffer.observations)
             
         _, num_completed_games, num_win_games = collect_rollouts(PPO_trainer)
         num_completed_games+=1
