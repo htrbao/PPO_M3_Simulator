@@ -165,7 +165,7 @@ class BaseModel(nn.Module):
             return param.device
         return get_device("cpu")
 
-    def save(self,  lr_scheduler, path: str) -> None:
+    def save(self, path: str) -> None:
         """
         Save model to a given location.
 
@@ -175,8 +175,6 @@ class BaseModel(nn.Module):
             {
                 "state_dict": self.state_dict(),
                 "data": self._get_constructor_parameters(),
-                "optimizer_state_dict": self.optimizer.state_dict(),
-                "lr_sched": lr_scheduler
             },
             path,
         )
@@ -203,14 +201,7 @@ class BaseModel(nn.Module):
         model.load_state_dict(saved_variables["state_dict"])
         model.to(device)
         
-        optimizer_state_dict = None
-        if "optimizer_state_dict" in saved_variables:
-            optimizer_state_dict = saved_variables["optimizer_state_dict"]
-        lr_scheduler = None
-        if "lr_sched" in saved_variables:
-            lr_scheduler = saved_variables["lr_sched"]
-        
-        return model, optimizer_state_dict, lr_scheduler
+        return model
     
     def load_from_vector(self, vector: np.ndarray) -> None:
         """

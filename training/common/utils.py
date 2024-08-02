@@ -716,7 +716,7 @@ def collect_rollouts(
         num_workers = PPO_trainer.num_workers
         print("Steps to rollout", n_rollout_steps)
         
-        # PPO_trainer.policy_target.set_training_mode(False)
+        PPO_trainer.policy_target.set_training_mode(False)
         PPO_trainer.policy.set_training_mode(False)
         PPO_trainer.rollout_buffer.reset()
          

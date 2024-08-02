@@ -64,8 +64,6 @@ def get_args():
         help="learning rate (default: 0.0003)",
     )
 
-    parser.add_argument("--epochs", default=20, type=int)
-
     # Reward Config
     parser.add_argument(
         "--gamma",
@@ -125,6 +123,20 @@ def get_args():
         default=500,
         help = "number of training steps",
     )    
+    
+    parser.add_argument(
+        "--resnet",
+        type = bool,
+        default = False,
+        help = "whether to use resnet",
+    )
+    
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=10,
+        help="number of epochs to train",
+    )
     return parser.parse_args()
 
 
@@ -137,9 +149,22 @@ if __name__ == "__main__":
         env=env,
         learning_rate=args.lr,
         n_steps=args.n_steps,
+        n_epochs=args.epochs,
         gamma=args.gamma,
         ent_coef=0.00001,
         policy_kwargs={
+            "net_arch": dict(pi=args.pi, vf=args.vf),
+            "features_extractor_class": ResNet,
+            "features_extractor_kwargs": {
+                "mid_channels": args.mid_channels,
+                "out_channels": 161,
+                "num_first_cnn_layer": args.num_first_cnn_layer,
+                "resnet_variant": "resnet50",  
+            },
+            "optimizer_class": torch.optim.Adam,
+            "share_features_extractor": False,
+        } if args.resnet else 
+        {
             "net_arch": dict(pi=args.pi, vf=args.vf),
             "features_extractor_class": M3CnnLargerFeatureExtractor,
             "features_extractor_kwargs": {
@@ -150,18 +175,6 @@ if __name__ == "__main__":
             "optimizer_class": torch.optim.Adam,
             "share_features_extractor": False,
         },
-        # policy_kwargs={
-        #     "net_arch": dict(pi=args.pi, vf=args.vf),
-        #     "features_extractor_class": ResNet,
-        #     "features_extractor_kwargs": {
-        #         "mid_channels": args.mid_channels,
-        #         "out_channels": 161,
-        #         "num_first_cnn_layer": args.num_first_cnn_layer,
-        #         "resnet_variant": "resnet50",  
-        #     },
-        #     "optimizer_class": torch.optim.Adam,
-        #     "share_features_extractor": False,
-        # },
         num_workers=args.num_workers,
         batch_size=args.batch_size,
         _checkpoint=args.checkpoint,
@@ -179,7 +192,7 @@ if __name__ == "__main__":
         # print(PPO_trainer.rollout_buffer.observations)
             
         _, num_completed_games, num_win_games = collect_rollouts(PPO_trainer)
-        
+        num_completed_games+=1
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
         
