@@ -165,7 +165,7 @@ class BaseModel(nn.Module):
             return param.device
         return get_device("cpu")
 
-    def save(self, path: str) -> None:
+    def save(self, path: str, lr_sched) -> None:
         """
         Save model to a given location.
 
@@ -175,9 +175,13 @@ class BaseModel(nn.Module):
             {
                 "state_dict": self.state_dict(),
                 "data": self._get_constructor_parameters(),
+                # "optimizer" : self.optimizer,
+                "lr_sched": lr_sched
             },
             path,
         )
+        for p in self.optimizer.param_groups:
+            print(p)
 
     @classmethod
     def load(
@@ -193,15 +197,19 @@ class BaseModel(nn.Module):
         device = get_device(device)
         # Note(antonin): we cannot use `weights_only=True` here because we need to allow
         # gymnasium imports for the policy to be loaded successfully
-        saved_variables = torch.load(path, map_location=device, weights_only=False)
+        saved_variables = torch.load(path, map_location=device)
 
         # Create policy object
         model = cls(**saved_variables["data"])
         # Load weights
         model.load_state_dict(saved_variables["state_dict"])
         model.to(device)
-        
-        return model
+        for p in model.optimizer.param_groups:
+            p['lr'] = saved_variables["lr_sched"].get_lr()[-1]
+
+        for p in model.optimizer.param_groups:
+            print(p)
+        return model, saved_variables["lr_sched"]
     
     def load_from_vector(self, vector: np.ndarray) -> None:
         """
@@ -671,7 +679,7 @@ class ActorCriticPolicy(BasePolicy):
 
         # Setup optimizer with initial learning rate
         self.optimizer = self.optimizer_class(self.parameters(), lr=lr_schedule(1), **self.optimizer_kwargs)  # type: ignore[call-arg]
-
+        
     def forward(
         self,
         obs: torch.Tensor,

@@ -6,6 +6,7 @@ import torch as th
 from gymnasium import spaces
 from torch.nn import functional as F
 import datetime
+import os
 
 from training.common.buffers import RolloutBuffer
 from training.common.on_policy_algorithm import OnPolicyAlgorithm
@@ -108,11 +109,11 @@ class PPO(OnPolicyAlgorithm):
         policy_kwargs: Optional[Dict[str, Any]] = None,
         verbose: int = 0,
         seed: Optional[int] = None,
-        _checkpoint:str = None,
         _wandb: bool = False,
         device: Union[th.device, str] = "auto",
         prefix_name: str = "m3_with_cnn",
         _init_setup_model: bool = True,
+        _checkpoint: Optional[str] = None,
         
     ):
         super().__init__(
@@ -182,16 +183,6 @@ class PPO(OnPolicyAlgorithm):
             self._setup_model()
             self.set_logger(logger)
 
-        self._checkpoint = _checkpoint
-        if self._checkpoint is not None:
-            print(f"Load checkpoint from {self._checkpoint}")
-            self.policy=  self.policy.load(path=self._checkpoint, device=self.device)
-             
-            self.policy_target.load_state_dict(self.policy.state_dict())
-            self.policy_target = self.policy_target.to(self.device)
-
-
-
         self._model_name = f"{prefix_name}_{policy_kwargs['features_extractor_kwargs']['num_first_cnn_layer']}layers_{policy_kwargs['features_extractor_kwargs']['mid_channels']}channels_{learning_rate}_{n_steps}_{'' if policy_kwargs['share_features_extractor'] else 'not_'}share_{datetime.datetime.today().strftime('%Y%m%d')}"
         self._wandb = _wandb
         
@@ -199,7 +190,13 @@ class PPO(OnPolicyAlgorithm):
             wandb.init(project="m3_with_cnn", 
                        name=self._model_name)
             
+        self._checkpoint = _checkpoint
         
+        if self._checkpoint is not None and os.path.exists(self._checkpoint):
+            self.policy, self.lr_scheduler = self.policy.load(path=self._checkpoint, device=self.device)
+            
+        self.policy_target.load_state_dict(self.policy.state_dict())
+        self.policy_target = self.policy_target.to(self.device)
 
     def _setup_model(self) -> None:
         super()._setup_model()
@@ -391,8 +388,11 @@ class PPO(OnPolicyAlgorithm):
             stats["train/clip_range_vf"]=clip_range_vf
 
         self.train_log(stats)
+        
         self.policy.save(
-            path=f"./_saved_model/{self._model_name}.pt")
+            path=f"./_saved_model/{self._model_name}.pt",
+            lr_sched=self.lr_scheduler
+            )
         
         self.policy_target.load_state_dict(self.policy.state_dict())
 

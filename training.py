@@ -177,15 +177,20 @@ if __name__ == "__main__":
         },
         num_workers=args.num_workers,
         batch_size=args.batch_size,
-        _checkpoint=args.checkpoint,
         _wandb=args.wandb,
         device=args.device,
         prefix_name=args.prefix_name,
+        _checkpoint=args.checkpoint,
         # actor_device_cpu=args.actor_device_cpu,
     )
     
     PPO_trainer.policy.share_memory()
     run_i = 0
+    
+    # for p in PPO_trainer.policy.optimizer.state_dict()['param_groups']:
+    #     print(p)
+    #     break
+    
     while run_i < int(args.train_steps):
         run_i += 1
         s_t = time.time()  
