@@ -1,0 +1,1 @@
+python test_environments.py --prefix_name testing_resnet --pi 256 256 180 180 --vf 180 180 32 --mid_channels 16 --num_first_cnn_layer 16 --device cpu --resnet True --checkpoint /Users/hung/Documents/coding/internVNG/TinkleMatch3/_saved_model/resnet_50_with_save_extractor_w_tut_256_256_180_180_pi_and_180_180.pt

@@ -18,6 +18,7 @@ class Renderer:
         for i in range(0,17):
             self.images.append(cv2.imread(f"./gym_match3/envs/image/{i}.jpg", cv2.IMREAD_UNCHANGED))
         self.square_size = square_size
+        self.speed = 50
 
     def render_board(self, board: Board, tiles=None):
         np_board = board.board
@@ -36,7 +37,7 @@ class Renderer:
                 #     cv2.putText(img, str(f'{actions}'), (j * self.square_size + self.square_size//2, i * self.square_size + self.square_size//2 +10), cv2.FONT_HERSHEY_SIMPLEX, 5, (0,0,0), 3, cv2.LINE_AA)
                 
         cv2.imshow("board", img)
-        cv2.waitKey(1000)
+        cv2.waitKey(self.speed)
         print(f"Selected action: {tiles}")
         x1,y1,x2,y2 = tiles['x1'], tiles['y1'], tiles['x2'], tiles['y2']
         first = int(np_board[x1][y1])
@@ -65,4 +66,3 @@ class Renderer:
             cv2.waitKey(1)
             img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = (255,255,255)
             img[top_left2[1]:bottom_right2[1], top_left2[0]:bottom_right2[0]] = (255,255,255)
-        cv2.waitKey(0)

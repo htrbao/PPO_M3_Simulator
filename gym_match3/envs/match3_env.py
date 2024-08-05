@@ -166,7 +166,6 @@ class Match3Env(gym.Env):
             # print(reward) #openlater
             self.result_step += 1
             obs, infos = self.reset()
-            reward
 
             return obs, reward, episode_over, infos
         else:
@@ -197,7 +196,10 @@ class Match3Env(gym.Env):
         )
 
     def reset(self, *args, **kwargs):
-        board, list_monsters = self.levels.next()
+        if( self.__episode_counter <= self.rollout_len and self.__game.get_player_hp() >0):
+            board, list_monsters = self.levels.next()
+        else: 
+            board, list_monsters = self.levels.current()
         self.__game.start(board, list_monsters)
         obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu")
         return self.helper.obs_to_tensor(obs["obs"]), {
@@ -217,7 +219,7 @@ class Match3Env(gym.Env):
     def render(self, action, mode="human", close=False):
         if close:
             warnings.warn("close=True isn't supported yet")
-        print(self.__game.board)
+        # print(self.__game.board)
         tiles = self.__get_action(action)
         p1, p2 = tiles
         x1, y1 = p1.get_coord()
@@ -226,3 +228,9 @@ class Match3Env(gym.Env):
             x1, y1, x2, y2 = x2, y2, x1, y1
 
         self.renderer.render_board(self.__game.board, {"x1": x1, "y1": y1, "x2": x2, "y2": y2})
+        
+    def get_player_hp(self):
+        return self.__game.get_player_hp()
+    
+    def get_current_level(self):
+        return self.levels.get_current_level()

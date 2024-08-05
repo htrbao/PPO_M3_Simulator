@@ -3,7 +3,6 @@ import time
 import torch
 
 from gym_match3.envs.match3_env import Match3Env
-from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.ppo import PPO
 from training.m3_model.m3_cnn import M3CnnFeatureExtractor, M3CnnLargerFeatureExtractor, ResNet
 from training.common.utils import collect_rollouts
@@ -183,7 +182,8 @@ if __name__ == "__main__":
         _checkpoint=args.checkpoint,
         # actor_device_cpu=args.actor_device_cpu,
     )
-    
+    if args.resnet:
+        print("Using ResNet")
     PPO_trainer.policy.share_memory()
     run_i = 0
     

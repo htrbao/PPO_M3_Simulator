@@ -697,6 +697,7 @@ def collect_rollouts_worker(
         with th.no_grad():
             values = policy.predict_values(obs_as_tensor(new_obs, device)).clone().detach()
 
+        print(values)
         buffer.compute_returns_and_advantage(last_values=values, dones=dones)
         # for p in buffer.get(10):
         #     print(p)
@@ -721,6 +722,9 @@ def collect_rollouts(
         PPO_trainer.rollout_buffer.reset()
          
         a=[]
+        for p in PPO_trainer.policy.parameters():
+            a=p
+        print(a)
         for p in PPO_trainer.policy_target.parameters():
             a=p
         print(a)

@@ -195,6 +195,9 @@ class PPO(OnPolicyAlgorithm):
         if self._checkpoint is not None and os.path.exists(self._checkpoint):
             print(f"Load checkpoint from {self._checkpoint}")
             self.policy, self.lr_scheduler = self.policy.load(path=self._checkpoint, device=self.device)
+            for p in self.policy.optimizer.state_dict()['param_groups']:
+                print("Current optim", p)
+                break
             
         self.policy_target.load_state_dict(self.policy.state_dict())
         self.policy_target = self.policy_target.to(self.device)
@@ -359,7 +362,7 @@ class PPO(OnPolicyAlgorithm):
         self.logger.record("train/clip_range", clip_range)
         if self.clip_range_vf is not None:
             self.logger.record("train/clip_range_vf", clip_range_vf)
-
+        print("mean values",np.mean(mean_values))
 
         stats = {
             "lr":self.lr_scheduler.get_lr()[-1], 

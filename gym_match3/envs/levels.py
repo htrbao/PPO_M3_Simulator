@@ -45,13 +45,21 @@ class Match3Levels:
     
     def next(self):
         """
-        :return: board for random level
+        :return: board for next level
         """
         level_template = self.levels[self.__current_lv_idx]
         board = self.create_board(level_template)
         self.__current_lv_idx = (self.__current_lv_idx + 1) % len(self.levels)
         return board, level_template.list_monsters
-
+    
+    def current(self):
+        """
+        :return: board for next level
+        """
+        level_template = self.levels[self.__current_lv_idx-1]
+        board = self.create_board(level_template)
+        return board, level_template.list_monsters
+    
     @staticmethod
     def __set_dim(d, ds):
         """
@@ -126,8 +134,10 @@ class Match3Levels:
                 pad = (extra // 2, extra // 2)
             else:
                 pad = (extra // 2 + 1, extra // 2)
-
         return pad
+    
+    def get_current_level(self):
+        return self.__current_lv_idx-1
     
 easy_levels = []
 for x in range(0, 8):

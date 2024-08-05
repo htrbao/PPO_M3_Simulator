@@ -44,6 +44,7 @@ class M3Helper:
             ]
         else:
             self.obs_order = obs_order
+            
         self.coefficient = {
             "match_normal": 1.3,
             "match_2x2": 1.4,
@@ -162,7 +163,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + j] = 1
                             # print((self.num_col - 1) * i + j)
 
-                            match_normal[i][j + 1] = 1
+                            match_normal[i][j + 1] = self.coefficient["match_normal"]
                             for x, y in check_types[type_c]:
                                 match_normal[i + x][j + 1 + y] = 1
                     for type_c in [8, 9]:
@@ -174,7 +175,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + j] = 1
                             # print((self.num_col - 1) * i + j)
 
-                            match_2x2[i][j + 1] = 1
+                            match_2x2[i][j + 1] = self.coefficient["match_2x2"]
                             for x, y in check_types[type_c]:
                                 match_2x2[i + x][j + 1 + y] = 1
                     for type_c in [12, 13]:
@@ -186,7 +187,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + j] = 1
                             # print((self.num_col - 1) * i + j)
 
-                            match_4_v[i][j + 1] = 1
+                            match_4_v[i][j + 1] = self.coefficient["match_4_v"]
                             for x, y in check_types[type_c]:
                                 match_4_v[i + x][j + 1 + y] = 1
                     for type_c in [15]:
@@ -198,7 +199,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + j] = 1
                             # print((self.num_col - 1) * i + j)
 
-                            match_5[i][j + 1] = 1
+                            match_5[i][j + 1] = self.coefficient["match_5"]
                             for x, y in check_types[type_c]:
                                 match_5[i + x][j + 1 + y] = 1
                     for type_c in [18, 19]:
@@ -210,7 +211,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + j] = 1
                             # print((self.num_col - 1) * i + j)
 
-                            match_L[i][j + 1] = 1
+                            match_L[i][j + 1] = self.coefficient["match_L"]
                             for x, y in check_types[type_c]:
                                 match_L[i + x][j + 1 + y] = 1
                     for type_c in [21]:
@@ -222,7 +223,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + j] = 1
                             # print((self.num_col - 1) * i + j)
 
-                            match_T[i][j + 1] = 1
+                            match_T[i][j + 1] = self.coefficient["match_T"]
                             for x, y in check_types[type_c]:
                                 match_T[i + x][j + 1 + y] = 1
 
@@ -237,7 +238,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + (j - 1)] = 1
                             # print((self.num_col - 1) * i + (j - 1))
 
-                            match_normal[i][j - 1] = 1
+                            match_normal[i][j - 1] = self.coefficient["match_normal"]
                             for x, y in check_types[type_c]:
                                 match_normal[i + x][j - 1 + y] = 1
                     for type_c in [6, 7]:
@@ -249,7 +250,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + (j - 1)] = 1
                             # print((self.num_col - 1) * i + (j - 1))
 
-                            match_2x2[i][j - 1] = 1
+                            match_2x2[i][j - 1] = self.coefficient["match_2x2"]
                             for x, y in check_types[type_c]:
                                 match_2x2[i + x][j - 1 + y] = 1
                     for type_c in [12, 13]:
@@ -261,7 +262,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + (j - 1)] = 1
                             # print((self.num_col - 1) * i + (j - 1))
 
-                            match_4_v[i][j - 1] = 1
+                            match_4_v[i][j - 1] = self.coefficient["match_4_v"]
                             for x, y in check_types[type_c]:
                                 match_4_v[i + x][j - 1 + y] = 1
                     for type_c in [15]:
@@ -273,7 +274,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + (j - 1)] = 1
                             # print((self.num_col - 1) * i + (j - 1))
 
-                            match_5[i][j - 1] = 1
+                            match_5[i][j - 1] = self.coefficient["match_5"]
                             for x, y in check_types[type_c]:
                                 match_5[i + x][j - 1 + y] = 1
                     for type_c in [16, 17]:
@@ -285,7 +286,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + (j - 1)] = 1
                             # print((self.num_col - 1) * i + (j - 1))
 
-                            match_L[i][j - 1] = 1
+                            match_L[i][j - 1] = self.coefficient["match_L"]
                             for x, y in check_types[type_c]:
                                 match_L[i + x][j - 1 + y] = 1
                     for type_c in [23]:
@@ -297,7 +298,7 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + (j - 1)] = 1
                             # print((self.num_col - 1) * i + (j - 1))
 
-                            match_T[i][j - 1] = 1
+                            match_T[i][j - 1] = self.coefficient["match_T"]
                             for x, y in check_types[type_c]:
                                 match_T[i + x][j - 1 + y] = 1
 
@@ -316,7 +317,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_normal[i - 1][j] = 1
+                            match_normal[i - 1][j] = self.coefficient["match_normal"]
                             for x, y in check_types[type_c]:
                                 match_normal[i - 1 + x][j + y] = 1
                     for type_c in [6, 8]:
@@ -332,7 +333,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_2x2[i - 1][j] = 1
+                            match_2x2[i - 1][j] = self.coefficient["match_2x2"]
                             for x, y in check_types[type_c]:
                                 match_2x2[i - 1 + x][j + y] = 1
                     for type_c in [10, 11]:
@@ -348,7 +349,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_4_h[i - 1][j] = 1
+                            match_4_h[i - 1][j] = self.coefficient["match_4_h"]
                             for x, y in check_types[type_c]:
                                 match_4_h[i - 1 + x][j + y] = 1
                     for type_c in [14]:
@@ -364,7 +365,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_5[i - 1][j] = 1
+                            match_5[i - 1][j] = self.coefficient["match_5"]
                             for x, y in check_types[type_c]:
                                 match_5[i - 1 + x][j + y] = 1
                     for type_c in [16, 19]:
@@ -380,7 +381,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_L[i - 1][j] = 1
+                            match_L[i - 1][j] = self.coefficient["match_L"]
                             for x, y in check_types[type_c]:
                                 match_L[i - 1 + x][j + y] = 1
                     for type_c in [20]:
@@ -396,7 +397,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_T[i - 1][j] = 1
+                            match_T[i - 1][j] = self.coefficient["match_T"]
                             for x, y in check_types[type_c]:
                                 match_T[i - 1 + x][j + y] = 1
 
@@ -413,7 +414,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                            match_normal[i + 1][j] = 1
+                            match_normal[i + 1][j] = self.coefficient["match_normal"]
                             for x, y in check_types[type_c]:
                                 match_normal[i + 1 + x][j + y] = 1
                     for type_c in [7, 9]:
@@ -427,7 +428,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                            match_2x2[i + 1][j] = 1
+                            match_2x2[i + 1][j] = self.coefficient["match_2x2"]
                             for x, y in check_types[type_c]:
                                 match_2x2[i + 1 + x][j + y] = 1
                     for type_c in [10, 11]:
@@ -441,7 +442,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                            match_4_h[i + 1][j] = 1
+                            match_4_h[i + 1][j] = self.coefficient["match_4_h"]
                             for x, y in check_types[type_c]:
                                 match_4_h[i + 1 + x][j + y] = 1
                     for type_c in [14]:
@@ -455,7 +456,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                            match_5[i + 1][j] = 1
+                            match_5[i + 1][j] = self.coefficient["match_5"]
                             for x, y in check_types[type_c]:
                                 match_5[i + 1 + x][j + y] = 1
                     for type_c in [17, 18]:
@@ -469,7 +470,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                            match_L[i + 1][j] = 1
+                            match_L[i + 1][j] = self.coefficient["match_L"]
                             for x, y in check_types[type_c]:
                                 match_L[i + 1 + x][j + y] = 1
                     for type_c in [22]:
@@ -483,7 +484,7 @@ class M3Helper:
                             ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                            match_T[i + 1][j] = 1
+                            match_T[i + 1][j] = self.coefficient["match_T"]
                             for x, y in check_types[type_c]:
                                 match_T[i + 1 + x][j + y] = 1
                 color_board[i][j] = 1
