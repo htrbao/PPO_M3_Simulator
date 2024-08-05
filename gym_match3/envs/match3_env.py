@@ -23,7 +23,7 @@ class Match3Env(gym.Env):
     result_step = 0
 
     def __init__(
-        self, rollout_len=100, all_moves=False, levels=None, random_state=None, obs_order:list[str] = []
+        self, rollout_len=100, all_moves=False, levels=None, random_state=None, obs_order:list[str] = [], test=False
     ):
         self.num_envs = 1
         self.rollout_len = rollout_len
@@ -35,6 +35,7 @@ class Match3Env(gym.Env):
         self.w = self.levels.w
         self.n_shapes = self.levels.n_shapes
         self.__episode_counter = 0
+        self.test = test
 
         self.__game = Game(
             rows=self.h,
@@ -162,10 +163,16 @@ class Match3Env(gym.Env):
                         )
                     }
                 )
-
+            if self.test:
+                print("GAME DONE")
+                print("Reward", reward)
+                print("Player HP", self.__game.get_player_hp())
+                print("Monsters HP", [mon.get_hp() for mon in self.__game.list_monsters])
+                print("Current level", self.levels.get_current_level())
             # print(reward) #openlater
             self.result_step += 1
-            obs, infos = self.reset()
+            win = reward["game"] > 0
+            obs, infos = self.reset(win)
 
             return obs, reward, episode_over, infos
         else:
@@ -196,7 +203,8 @@ class Match3Env(gym.Env):
         )
 
     def reset(self, *args, **kwargs):
-        if( self.__episode_counter <= self.rollout_len and self.__game.get_player_hp() >0):
+        win = args[0] if args else True
+        if not self.test or win:
             board, list_monsters = self.levels.next()
         else: 
             board, list_monsters = self.levels.current()
@@ -234,3 +242,6 @@ class Match3Env(gym.Env):
     
     def get_current_level(self):
         return self.levels.get_current_level()
+    
+    def get_list_monsters(self):
+        return self.__game.list_monsters

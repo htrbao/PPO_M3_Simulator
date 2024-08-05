@@ -6,6 +6,7 @@ from training.m3_model.m3_cnn import ResNet, M3CnnLargerFeatureExtractor
 from training.common.utils import obs_as_tensor
 import torch
 import argparse
+import time
 
 def test_args_parser():
     parser = argparse.ArgumentParser(
@@ -69,7 +70,7 @@ def test_args_parser():
 if __name__ == "__main__":
     args = test_args_parser()
     print("args:", args)
-    env = Match3Env(90)
+    env = Match3Env(90 ,test=True)
     PPO_test = PPO(
             policy="CnnPolicy",
             env=env,
@@ -100,8 +101,6 @@ if __name__ == "__main__":
     _last_obs, infos = env.reset()
     dones = False
     action_space = infos["action_space"]
-    __num_completed_games = 0
-    __num_win_games = 0
     n_steps = 0
     while True:
         with torch.no_grad():
@@ -129,9 +128,7 @@ if __name__ == "__main__":
                 print("You have lost the game!")
             else:
                 print("You have won the game!")
-            
-            print("Current Level:", env.get_current_level())
-            print("Your HP:", env.get_player_hp())
+            time.sleep(100)
             n_steps = 0
         print('--------------------------------------------------------')
             
