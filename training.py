@@ -183,7 +183,9 @@ if __name__ == "__main__":
         # actor_device_cpu=args.actor_device_cpu,
     )
     if args.resnet:
+        print("We are using ResNet")
         print("Using ResNet")
+    print(args.resnet)
     PPO_trainer.policy.share_memory()
     run_i = 0
     
@@ -196,7 +198,6 @@ if __name__ == "__main__":
         s_t = time.time()  
             
         _, num_completed_games, num_win_games = collect_rollouts(PPO_trainer)
-    
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
         
@@ -205,4 +206,6 @@ if __name__ == "__main__":
             num_completed_games=num_completed_games, num_win_games=num_win_games
         )
         
+        
+        num_completed_games +=1
         print("training time", time.time() - s_t)
