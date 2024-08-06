@@ -177,6 +177,7 @@ for x in range(0, 8):
                 )])
         )
 
+random.shuffle(easy_levels)
 
 LEVELS = [   
           

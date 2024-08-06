@@ -206,6 +206,4 @@ if __name__ == "__main__":
             num_completed_games=num_completed_games, num_win_games=num_win_games
         )
         
-        
-        num_completed_games +=1
         print("training time", time.time() - s_t)

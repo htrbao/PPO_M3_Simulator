@@ -1308,6 +1308,8 @@ class Game(AbstractGame):
         self.list_monsters = copy.deepcopy(list_monsters)
         self.num_mons = len(self.list_monsters)
         self.__player_hp = self.__max_player_hp
+        
+        # self.board.put_shape(Point(1, 1), GameObject.power_disco)
 
         return self
 
@@ -1381,13 +1383,16 @@ class Game(AbstractGame):
                 cancel_score += monster_result.get("cancel_score", 0)
 
         self.__player_hp -= self_dmg
-        if len(matches) > 0 or len(brokens) > 0:
+        if len(matches) > 0 or len(brokens) > 0 or len(disco_brokens) > 0:
             score += len(matches)
             self.board.move(point, direction)
             if len(matches) > 0:
                 self.board.delete(matches)
             if len(brokens) > 0:
                 self.board.delete(brokens)
+            if len(disco_brokens) > 0:
+                self.board.delete(disco_brokens)
+            
             ### Handle add power up
             for _point, _shape in new_power_ups.items():
                 self.board.put_shape(_point, _shape)

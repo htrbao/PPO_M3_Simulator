@@ -128,7 +128,7 @@ if __name__ == "__main__":
                 print("You have lost the game!")
             else:
                 print("You have won the game!")
-            time.sleep(100)
+            time.sleep(10)
             n_steps = 0
         print('--------------------------------------------------------')
-            
+        cv2.waitKey(0)
