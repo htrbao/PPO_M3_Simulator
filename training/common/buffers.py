@@ -289,7 +289,7 @@ class RolloutBuffer(BaseBuffer):
             + reward["power_damage_on_monster"] * 1.5
             + reward["create_pu_score"]
             + reward["cancel_score"]
-            + reward["score"] * (-0.2 if (reward["score"] > 6 and total_dmg == 0) else 0.01)
+            + reward["score"] * (-0.2 if (reward["score"] > 6 and total_dmg == 0) else 0.1)
             - reward["damage_on_user"]
             + reward.get("game", 0)
         )

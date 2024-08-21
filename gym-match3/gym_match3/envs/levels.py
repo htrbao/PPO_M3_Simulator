@@ -146,16 +146,17 @@ for x in range(0, 9):
                     hp=40,
                 )])
         )
-        easy_levels.append(
-            Level(10, 9, 5, copy.deepcopy(easy_board), [
-                DameMonster(
-                    position=Point(x, y),
-                    width=2,
-                    height=2,
-                    hp=random.randint(20, 25),
-                    request_masked=[1, 1, 1, 1, 0]
-                )])
-        )
+        # if random.random() < 0.3:
+        #     easy_levels.append(
+        #         Level(10, 9, 5, copy.deepcopy(easy_board), [
+        #             DameMonster(
+        #                 position=Point(x, y),
+        #                 width=2,
+        #                 height=2,
+        #                 hp=random.randint(20, 25),
+        #                 request_masked=[1, 1, 1, 1, 0]
+        #             )])
+        #     )
         easy_levels.append(
             Level(10, 9, 5, copy.deepcopy(easy_board), [
                 DameMonster(
@@ -170,6 +171,28 @@ for x in range(0, 9):
 
 LEVELS = [   
     *easy_levels,
+    
+    Level(10, 9, 5, [
+        [GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame],
+        [GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame],
+        [-1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ], [
+        DameMonster(position=Point(0, 0),
+                    relax_interval = 2,
+                    setup_interval = 1,
+                    width=9,
+                    height=2,
+                    hp=45,
+                    dame=2,
+                    )
+    ]),
 
     Level(10, 9, 5, [
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -346,12 +369,12 @@ LEVELS = [
         DameMonster(position=Point(0, 7),
                     width=2,
                     height=2,
-                    hp=20
+                    hp=30
                     ),
         DameMonster(position=Point(8, 0),
                     width=2,
                     height=2,
-                    hp=15
+                    hp=25
                     )
     ]),
 
