@@ -1,5 +1,4 @@
-from gym_match3.envs.levels import Level, base_hp
-from gym_match3.envs.constants import GameObject
+from gym_match3.envs.constants import GameObject, Level, base_hp
 from gym_match3.envs.game import Point, Board, DameMonster, BoxMonster
 import numpy as np
 import random
