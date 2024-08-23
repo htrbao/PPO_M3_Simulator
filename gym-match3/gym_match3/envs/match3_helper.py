@@ -26,21 +26,21 @@ class M3Helper:
                 "missile_h",
                 "missile_v",
                 "plane",
-                # "pu",
+                "pu",
                 "blocker",
                 "monster",
                 "monster_match_dmg_mask",
                 "monster_inside_dmg_mask",
                 "self_dmg_mask",
-                # "match_normal",
-                # "match_2x2",
-                # "match_4_v",
-                # "match_4_h",
-                # "match_L",
-                # "match_T",
-                # "match_5",
+                "match_normal",
+                "match_2x2",
+                "match_4_v",
+                "match_4_h",
+                "match_L",
+                "match_T",
+                "match_5",
                 "legal_action",
-                # "heat_mask",
+                "heat_mask",
             ]
         else:
             self.obs_order = obs_order
@@ -522,11 +522,11 @@ class M3Helper:
             # "buff": (board == GameObject.power_disco) \
             #         | (board == GameObject.power_disco) \
             #         | (board == GameObject.power_disco),
-            "pu": (board == GameObject.power_disco) * 4.5 \
-                    + (board == GameObject.power_bomb) * 2.5 \
-                    + (board == GameObject.power_missile_h) * 0.9 \
-                    + (board == GameObject.power_missile_v) * 1 \
-                    + (board == GameObject.power_plane) * 1.5,
+            "pu": (board == GameObject.power_disco)  \
+                    + (board == GameObject.power_bomb)  \
+                    + (board == GameObject.power_missile_h)  \
+                    + (board == GameObject.power_missile_v) \
+                    + (board == GameObject.power_plane) ,
             "blocker": (board == GameObject.blocker_box),
             "monster": (board == GameObject.monster_dame)
             | (board == GameObject.monster_box_box)
