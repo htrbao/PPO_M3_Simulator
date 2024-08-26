@@ -151,7 +151,7 @@ class BaseModel(nn.Module):
             action_space=self.action_space,
             # Passed to the constructor by child class
             # squash_output=self.squash_output,
-            # features_extractor=self.features_extractor
+            features_extractor=self.features_extractor,
             normalize_images=self.normalize_images,
         )
 
