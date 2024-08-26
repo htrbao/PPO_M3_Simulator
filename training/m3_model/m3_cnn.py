@@ -1,6 +1,10 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
+from torch.nn.utils import weight_norm, spectral_norm
+
 from typing import Tuple, List, Dict, Union, Type
+from enum import Enum
 
 
 class M3Aap(nn.AdaptiveMaxPool2d):
@@ -124,6 +128,71 @@ class M3CnnLargerFeatureExtractor(nn.Module):
             input = torch.unsqueeze(input, 0)
         x = self.net(input)
         return x
+
+
+from torch.nn.init import kaiming_uniform_,uniform_,xavier_uniform_,normal_
+def init_linear(m, act_func=None, init='auto', bias_std=0.01):
+    if getattr(m,'bias',None) is not None and bias_std is not None:
+        if bias_std != 0: normal_(m.bias, 0, bias_std)
+        else: m.bias.data.zero_()
+    if init=='auto':
+        if act_func in (F.relu_,F.leaky_relu_): init = kaiming_uniform_
+        else: init = getattr(act_func.__class__, '__default_init__', None)
+        if init is None: init = getattr(act_func, '__default_init__', None)
+    if init is not None: init(m.weight)
+
+
+def _conv_func(ndim=2, transpose=False):
+    "Return the proper conv `ndim` function, potentially `transposed`."
+    assert 1 <= ndim <=3
+    return getattr(nn, f'Conv{"Transpose" if transpose else ""}{ndim}d')
+
+
+NormType = Enum('NormType', 'Batch BatchZero Weight Spectral Instance InstanceZero')
+
+
+class ConvLayer(nn.Sequential):
+    "Create a sequence of convolutional (`ni` to `nf`), ReLU (if `use_activ`) and `norm_type` layers."
+    def __init__(self, ni, nf, ks=3, stride=1, padding=None, bias=None, ndim=2, norm_type=NormType.Batch, bn_1st=True,
+                 act_cls=nn.ReLU, transpose=False, init='auto', xtra=None, bias_std=0.01, **kwargs):
+        if padding is None: padding = ((ks-1)//2 if not transpose else 0)
+        conv_func = _conv_func(ndim, transpose=transpose)
+        conv = conv_func(ni, nf, kernel_size=ks, bias=bias, stride=stride, padding=padding, **kwargs)
+        act = None if act_cls is None else act_cls()
+        init_linear(conv, act, init=init, bias_std=bias_std)
+        if norm_type==NormType.Spectral: conv = spectral_norm(conv)
+        layers = [conv]
+        act_bn = []
+        if act is not None: act_bn.append(act)
+        if bn_1st: act_bn.reverse()
+        layers += act_bn
+        if xtra: layers.append(xtra)
+        super().__init__(*layers)
+
+class M3SelfAttentionFeatureExtractor(nn.Module):
+    "Self attention layer for `n_channels`."
+    def __init__(self, in_channels: int, **kwargs):
+        super().__init__()
+        n_channels = in_channels.shape[0]
+        out_channels = n_channels//8
+        
+        self.query,self.key,self.value = [self._conv(n_channels, c) for c in (out_channels,out_channels,n_channels)]
+        self.gamma = nn.Parameter(torch.tensor([0.]))
+        self.features_dim = n_channels * in_channels.shape[1] * in_channels.shape[2]
+
+    def _conv(self,n_in,n_out):
+        return ConvLayer(n_in, n_out, ks=1, ndim=1, norm_type=NormType.Spectral, bias=False)
+
+    def forward(self, x):
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
+        #Notation from the paper.
+        size = x.size()
+        x = x.view(*size[:2],-1)
+        f,g,h = self.query(x),self.key(x),self.value(x)
+        beta = F.softmax(torch.bmm(f.transpose(1,2), g), dim=1)
+        o = self.gamma * torch.bmm(h, beta) + x
+        return o.view(size[0], -1).contiguous()
 
 
 class M3MlpExtractor(nn.Module):
