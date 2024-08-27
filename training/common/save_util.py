@@ -352,7 +352,7 @@ def save_to_zip_file(
                 ) as param_file:
                     th.save(dict_, param_file)
         # Save metadata: library version when file was saved
-        archive.writestr("_stable_baselines3_version", sb3.__version__)
+        archive.writestr("_training_version", sb3.__version__)
         # Save system info about the current python env
         archive.writestr("system_info.txt", get_system_info(print_info=False)[1])
 

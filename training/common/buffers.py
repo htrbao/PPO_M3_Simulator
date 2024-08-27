@@ -272,7 +272,7 @@ class RolloutBuffer(BaseBuffer):
         self.returns = self.advantages + self.values
         # print(self.returns)
 
-    def compute_rewards(self, reward: dict) -> int:
+    def compute_rewards(self, rewards: list[dict]) -> int:
         """
             "score": score,
             "cancel_score": cancel_score,
@@ -281,24 +281,26 @@ class RolloutBuffer(BaseBuffer):
             "power_damage_on_monster": total_power_dmg,
             "damage_on_user": self_dmg,
         """
+        new_rewards = []
+        for reward in rewards:
+            total_dmg = reward["match_damage_on_monster"] + reward["power_damage_on_monster"]
 
-        total_dmg = reward["match_damage_on_monster"] + reward["power_damage_on_monster"]
-
-        _reward = (
-            reward["match_damage_on_monster"] * 1
-            + reward["power_damage_on_monster"] * 1.5
-            + reward["create_pu_score"]
-            + reward["cancel_score"]
-            + reward["score"] * (-0.2 if (reward["score"] > 6 and total_dmg == 0) else 0.1)
-            - reward["damage_on_user"]
-            + reward.get("game", 0)
-        )
-        target_min, target_max = -30, 24
-        reward_min, reward_max = -100, 75
-        new_reward = (_reward - reward_min) / (reward_max - reward_min) * (
-            target_max - target_min
-        ) + target_min
-        print(new_reward)
+            _reward = (
+                reward["match_damage_on_monster"] * 1
+                + reward["power_damage_on_monster"] * 1.5
+                + reward["create_pu_score"]
+                + reward["cancel_score"]
+                + reward["score"] * (-0.2 if (reward["score"] > 6 and total_dmg == 0) else 0.1)
+                - reward["damage_on_user"]
+                + reward.get("game", 0)
+            )
+            target_min, target_max = -30, 24
+            reward_min, reward_max = -100, 75
+            new_reward = (_reward - reward_min) / (reward_max - reward_min) * (
+                target_max - target_min
+            ) + target_min
+            new_rewards.append(new_reward)
+        print(new_rewards)
         return new_reward
 
     def add(

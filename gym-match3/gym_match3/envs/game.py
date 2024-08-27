@@ -8,6 +8,9 @@ import numpy as np
 import random
 from collections import Counter
 
+import concurrent.futures
+import threading
+
 from gym_match3.envs.constants import GameObject, mask_immov_mask, need_to_match
 
 
@@ -523,11 +526,47 @@ class MatchesSearcher(AbstractSearcher):
 
     def __init__(self, length, board_ndim):
         self.__3length, self.__4length, self.__5length = range(2, 5)
+        self.stop_event = threading.Event()
         super().__init__(board_ndim)
+
+    # def scan_board_for_matches(self, board: Board, need_all: bool = True, checking_point: list[Point] = []):
+    #     matches = set()
+    #     new_power_ups = dict()
+    #     self.stop_event = threading.Event()
+
+    #     lst = []
+    #     s_t = time.time()
+    #     with concurrent.futures.ThreadPoolExecutor(max_workers=90) as executor:
+            
+    #             # if not need_all:
+    #             #     assert checking_point is not None, "checking_point must have if need_all is False"
+    #             #     if point not in checking_point:
+    #             #         continue
+    #             futures = [executor.submit(self.__get_match3_for_point, board, point, need_all=need_all) for point in self.points_generator(board) if (need_all or (not need_all and point in checking_point))]
+    #             done, not_done = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
+                
+    #             for future in concurrent.futures.as_completed(futures):
+    #                 to_del, to_add = future.result()
+    #                 if to_del:
+    #                     lst.append((to_del, to_add))
+    #                     if not need_all:
+    #                         print("set stop event")
+    #                         self.stop_event.set()
+    #                         break
+        
+    #     e_t = time.time()
+    #     print("scan board", e_t - s_t)
+    #     for i in range(len(lst)):
+    #         matches.update(lst[i][0])
+    #         new_power_ups.update(lst[i][1])
+        
+
+    #     return matches, new_power_ups
 
     def scan_board_for_matches(self, board: Board, need_all: bool = True, checking_point: list[Point] = []):
         matches = set()
         new_power_ups = dict()
+        total_time = 0
         for point in self.points_generator(board):
             if not need_all:
                 assert checking_point is not None, "checking_point must have if need_all is False"
@@ -542,7 +581,6 @@ class MatchesSearcher(AbstractSearcher):
                 new_power_ups.update(to_add)
                 if not need_all:
                     break
-
         return matches, new_power_ups
 
     def __get_match3_for_point(self, board: Board, point: Point, need_all: bool = True):
@@ -572,7 +610,6 @@ class MatchesSearcher(AbstractSearcher):
 
         if len(match3_list) > 0:
             match3_list.append(Cell(shape, *point.get_coord()))
-
         return match3_list, power_up_list
 
     def __generator_neighbours(
@@ -1430,8 +1467,6 @@ class Game(AbstractGame):
             ###
             self.__filler.move_and_fill(self.board)
             self.__operate_until_possible_moves()
-
-        # print("refill", time.time() - s_t)
         reward = {
             "score": score,
             "cancel_score": cancel_score,
@@ -1520,7 +1555,6 @@ class Game(AbstractGame):
         return score
 
     def __shuffle_until_possible(self):
-        s_t = time.time()
         possible_moves = self.__get_possible_moves()
         while len(possible_moves) == 0:
             print("not have move")

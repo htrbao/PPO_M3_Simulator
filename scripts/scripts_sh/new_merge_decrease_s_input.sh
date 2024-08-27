@@ -8,4 +8,4 @@ CUDA_VISIBLE_DEVICES=1 python training.py \
     --n_steps 32768 \
     --lr 0.00002 \
     --gamma 0.85 \
-    --wandb
+    --num_envs 10

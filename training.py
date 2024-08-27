@@ -4,6 +4,7 @@ import torch
 
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
+from training.common.vec_env import SubprocVecEnv
 from training.ppo import PPO
 from training.m3_model.m3_cnn import M3CnnFeatureExtractor, M3CnnLargerFeatureExtractor, M3SelfAttentionFeatureExtractor
 
@@ -97,50 +98,70 @@ def get_args():
         help="Whether want to logging onto Wandb",
     )
 
+    # Number of parallel environments
+    parser.add_argument(
+        "--num_envs",
+        type=int,
+        default=4,
+        help="Number of parallel environments to run (default: 4)",
+    )
+
+
     return parser.parse_args()
 
 
-args = get_args()
-env = Match3Env(90, obs_order=args.obs_order)
+def make_env(rank, obs_order):
+    def _init():
+        env = Match3Env(90, obs_order=obs_order)
+        return env
+    return _init
 
-print(env.observation_space)
-print(env.action_space)
+def main():
+    args = get_args()
+    envs = SubprocVecEnv([make_env(i, args.obs_order) for i in range(args.num_envs)])
+    # env = Match3Env(90, obs_order=args.obs_order)
 
-PPO_trainer = PPO(
-    policy="CnnPolicy",
-    env=env,
-    learning_rate=args.lr,
-    n_steps=args.n_steps,
-    gamma=args.gamma,
-    ent_coef=0.00001,
-    policy_kwargs={
-        "net_arch": dict(pi=args.pi, vf=args.vf),
-        "features_extractor_class": M3SelfAttentionFeatureExtractor,
-        "features_extractor_kwargs": {
-            "mid_channels": args.mid_channels,
-            "out_channels": 161,
-            "num_first_cnn_layer": args.num_first_cnn_layer,
+    print(envs.observation_space)
+    print(envs.action_space)
+
+    PPO_trainer = PPO(
+        policy="CnnPolicy",
+        env=envs,
+        learning_rate=args.lr,
+        n_steps=args.n_steps,
+        gamma=args.gamma,
+        ent_coef=0.00001,
+        policy_kwargs={
+            "net_arch": dict(pi=args.pi, vf=args.vf),
+            "features_extractor_class": M3SelfAttentionFeatureExtractor,
+            "features_extractor_kwargs": {
+                "mid_channels": args.mid_channels,
+                "out_channels": 161,
+                "num_first_cnn_layer": args.num_first_cnn_layer,
+            },
+            "optimizer_class": torch.optim.Adam,
+            "share_features_extractor": False,
         },
-        "optimizer_class": torch.optim.Adam,
-        "share_features_extractor": False,
-    },
-    _checkpoint=args.checkpoint,
-    _wandb=args.wandb,
-    device="cuda",
-    prefix_name=args.prefix_name,
-)
-run_i = 0
-while run_i < 300:
-    run_i += 1
-    s_t = time.time()
-    _, num_completed_games, num_win_games = PPO_trainer.collect_rollouts(
-        PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps
+        _checkpoint=args.checkpoint,
+        _wandb=args.wandb,
+        device="cuda",
+        prefix_name=args.prefix_name,
     )
-    win_rate = num_win_games / num_completed_games * 100
-    print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
-    s_t = time.time()
-    PPO_trainer.train(
-        num_completed_games=num_completed_games, num_win_games=num_win_games
-    )
-    
-    print("training time", time.time() - s_t)
+    run_i = 0
+    while run_i < 300:
+        run_i += 1
+        s_t = time.time()
+        _, num_completed_games, num_win_games = PPO_trainer.collect_rollouts(
+            PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps
+        )
+        win_rate = num_win_games / num_completed_games * 100
+        print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
+        s_t = time.time()
+        PPO_trainer.train(
+            num_completed_games=num_completed_games, num_win_games=num_win_games
+        )
+        
+        print("training time", time.time() - s_t)
+
+if __name__ == "__main__":
+    main()

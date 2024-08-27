@@ -166,9 +166,11 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
         n_steps = 0
         rollout_buffer.reset()
-        self._last_obs, infos = env.reset()
+        # self._last_obs, infos = env.reset()
+        self._last_obs = env.reset()
+        action_space = np.stack([x["action_space"] for x in env.reset_infos])
         dones = False
-        action_space = infos["action_space"]
+        # action_space = infos["action_space"]
         # Sample new weights for the state dependent exploration
         if self.use_sde:
             self.policy.reset_noise(env.num_envs)
@@ -176,7 +178,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         print("Start rollout data")
 
         while (
-            n_steps < n_rollout_steps
+            self.num_timesteps < n_rollout_steps
         ):  # or (n_steps >= n_rollout_steps and not dones):
             if (
                 self.use_sde
@@ -192,10 +194,12 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                 action_space = obs_as_tensor(action_space, self.device)
                 actions, values, log_probs = self.policy(obs_tensor, action_space)
             actions = actions.cpu().numpy()
+            print(actions)
             print(values)
 
             # Rescale and perform action
-            clipped_actions = actions[0]
+            # clipped_actions = actions[0]
+            clipped_actions = actions
 
             if isinstance(self.action_space, spaces.Box):
                 if self.policy.squash_output:
@@ -212,11 +216,13 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             print(rewards)
 
-            if "game" in rewards.keys():
-                __num_completed_games += 1
-                __num_win_games += 0 if rewards["game"] < 0 else 1
+            for rew in rewards:
+                if "game" in rew.keys():
+                    __num_completed_games += 1
+                    __num_win_games += 0 if rew["game"] < 0 else 1
 
-            action_space = infos["action_space"]
+            # action_space = infos["action_space"]
+            action_space = np.stack([x["action_space"] for x in infos])
 
             self.num_timesteps += env.num_envs
 
