@@ -110,15 +110,15 @@ def get_args():
     return parser.parse_args()
 
 
-def make_env(rank, obs_order):
+def make_env(rank, obs_order, num_per_group):
     def _init():
-        env = Match3Env(90, obs_order=obs_order)
+        env = Match3Env(90, obs_order=obs_order, level_group=(rank * num_per_group, (rank + 1) * num_per_group))
         return env
     return _init
 
 def main():
     args = get_args()
-    envs = SubprocVecEnv([make_env(i, args.obs_order) for i in range(args.num_envs)])
+    envs = SubprocVecEnv([make_env(i, args.obs_order, len(LEVELS) // args.num_envs) for i in range(args.num_envs)])
     # env = Match3Env(90, obs_order=args.obs_order)
 
     print(envs.observation_space)
