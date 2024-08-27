@@ -128,7 +128,7 @@ def main():
         policy="CnnPolicy",
         env=envs,
         learning_rate=args.lr,
-        n_steps=args.n_steps,
+        n_steps=args.n_steps // args.num_envs,
         gamma=args.gamma,
         ent_coef=0.00001,
         policy_kwargs={
@@ -148,6 +148,7 @@ def main():
         prefix_name=args.prefix_name,
     )
     run_i = 0
+    print(PPO_trainer.n_steps)
     while run_i < 300:
         run_i += 1
         s_t = time.time()

@@ -178,7 +178,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         print("Start rollout data")
 
         while (
-            self.num_timesteps < n_rollout_steps
+            n_steps < n_rollout_steps
         ):  # or (n_steps >= n_rollout_steps and not dones):
             if (
                 self.use_sde
@@ -187,7 +187,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             ):
                 # Sample a new noise matrix
                 self.policy.reset_noise(env.num_envs)
-
+            print(n_steps, n_rollout_steps)
             with th.no_grad():
                 # Convert to pytorch tensor or to TensorDict
                 obs_tensor = obs_as_tensor(self._last_obs, self.device)
