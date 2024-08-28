@@ -368,7 +368,7 @@ class PPO(OnPolicyAlgorithm):
             "Reward/rewards":np.mean(mean_rewards),
 
             "Stats/Win rates": num_win_games / num_completed_games,
-            "Stats/Avg steps": self.n_steps / num_completed_games
+            "Stats/Avg steps": self.n_steps * self.env.num_envs / num_completed_games
         }
         # if hasattr(self._policy, "log_std"):
         #     stats["train/std"]=th.exp(self._policy.log_std).mean().item(),
