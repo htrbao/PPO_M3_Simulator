@@ -169,7 +169,7 @@ class ConvLayer(nn.Sequential):
         if xtra: layers.append(xtra)
         super().__init__(*layers)
 
-class M3SelfAttentionFeatureExtractor(nn.Module):
+class CnnSelfAttention(nn.Module):
     "Self attention layer for `n_channels`."
     def __init__(self, in_channels: int, **kwargs):
         super().__init__()
@@ -178,7 +178,6 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
         
         self.query,self.key,self.value = [self._conv(n_channels, c) for c in (out_channels,out_channels,n_channels)]
         self.gamma = nn.Parameter(torch.tensor([0.]))
-        self.features_dim = n_channels * in_channels.shape[1] * in_channels.shape[2]
 
     def _conv(self,n_in,n_out):
         return ConvLayer(n_in, n_out, ks=1, ndim=1, norm_type=NormType.Spectral, bias=False)
@@ -192,7 +191,27 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
         f,g,h = self.query(x),self.key(x),self.value(x)
         beta = F.softmax(torch.bmm(f.transpose(1,2), g), dim=1)
         o = self.gamma * torch.bmm(h, beta) + x
-        return o.view(size[0], -1).contiguous()
+        return o.view(*size).contiguous()
+
+class M3SelfAttentionFeatureExtractor(nn.Module):
+    """
+    Constructs a self-attention feature extractor for the M3 algorithm.
+    """
+    def __init__(self, in_channels: int, **kwargs):
+        num_self_attention_layers = kwargs.get('num_self_attention_layers', 1)
+        super().__init__()
+
+        layers = [CnnSelfAttention(in_channels, **kwargs) for _ in range(num_self_attention_layers)]
+        self.cnn_self_attention = nn.Sequential(*layers)
+        self.features_dim = in_channels.shape[0] * in_channels.shape[1] * in_channels.shape[2]
+
+    def forward(self, x: torch.Tensor):
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
+
+        x = self.cnn_self_attention(x)
+        x = x.view(x.shape[0], -1).contiguous()
+        return torch.relu(x)
 
 
 class M3MlpExtractor(nn.Module):

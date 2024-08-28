@@ -52,6 +52,12 @@ def get_args():
         default=4,
         help="Number of intermediary layers in CNN model",
     )
+    parser.add_argument(
+        "--num_self_attention_layers",
+        type=int,
+        default=6,
+        help="Number of intermediary layers in CNN model",
+    )
 
     # Rollout Data
     parser.add_argument(
@@ -133,11 +139,12 @@ def main():
         ent_coef=0.00001,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3CnnLargerFeatureExtractor,
+            "features_extractor_class": M3SelfAttentionFeatureExtractor,
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 161,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
+                "num_self_attention_layers": args.num_self_attention_layers,
             },
             "optimizer_class": torch.optim.Adam,
             "share_features_extractor": False,
