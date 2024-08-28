@@ -133,7 +133,7 @@ def main():
         ent_coef=0.00001,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3SelfAttentionFeatureExtractor,
+            "features_extractor_class": M3CnnLargerFeatureExtractor,
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 161,
