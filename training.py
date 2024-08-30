@@ -55,7 +55,7 @@ def get_args():
     parser.add_argument(
         "--num_self_attention_layers",
         type=int,
-        default=6,
+        default=8,
         help="Number of intermediary layers in CNN model",
     )
 
@@ -136,7 +136,8 @@ def main():
         learning_rate=args.lr,
         n_steps=args.n_steps // args.num_envs,
         gamma=args.gamma,
-        ent_coef=0.00001,
+        batch_size=1024,
+        ent_coef=0.001,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
             "features_extractor_class": M3SelfAttentionFeatureExtractor,
