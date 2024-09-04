@@ -1,6 +1,6 @@
 CUDA_VISIBLE_DEVICES=1 python training.py \
-    --prefix_name multienv_85gamma_full_input \
-    --pi 512 512 512 512 512 512 \
+    --prefix_name multienv_85gamma_full_input_self_attention \
+    --pi 512 \
     --vf 1024 512 256 512 256 128 64 32 16 8 4 2 \
     --mid_channels 32 \
     --num_first_cnn_layer 10 \

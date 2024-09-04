@@ -31,6 +31,7 @@ def get_args():
     parser.add_argument(
         "--obs-order",
         type=str,
+        default=[],
         nargs="+",
         help="Which features you want to use?",
     )
@@ -148,7 +149,7 @@ def main():
                 "num_self_attention_layers": args.num_self_attention_layers,
             },
             "optimizer_class": torch.optim.Adam,
-            "share_features_extractor": False,
+            "share_features_extractor": True,
         },
         _checkpoint=args.checkpoint,
         _wandb=args.wandb,
