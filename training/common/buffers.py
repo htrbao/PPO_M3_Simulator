@@ -295,7 +295,7 @@ class RolloutBuffer(BaseBuffer):
             )
             
             new_rewards.append(_reward)
-        print(new_rewards)
+        # print(new_rewards)
         return new_rewards
 
     def add(
