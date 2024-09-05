@@ -284,7 +284,7 @@ class RolloutBuffer(BaseBuffer):
         new_rewards = []
         for reward in rewards:
             total_dmg = reward["match_damage_on_monster"] + reward["power_damage_on_monster"]
-            near_monster = 1 - reward["near_monster"] / np.sqrt(10 * 10 + 9 * 9)
+            near_monster = 1 - reward.get("near_monster", np.sqrt(10 * 10 + 9 * 9)) / np.sqrt(10 * 10 + 9 * 9)
 
             _reward = (
                 reward["match_damage_on_monster"] * 1
