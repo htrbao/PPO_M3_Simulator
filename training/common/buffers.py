@@ -300,8 +300,8 @@ class RolloutBuffer(BaseBuffer):
                 target_max - target_min
             ) + target_min
             new_rewards.append(new_reward)
-        print(new_rewards)
-        return new_reward
+        # print(new_rewards)
+        return new_rewards
 
     def add(
         self,

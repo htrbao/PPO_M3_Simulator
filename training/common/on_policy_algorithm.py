@@ -187,15 +187,15 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             ):
                 # Sample a new noise matrix
                 self.policy.reset_noise(env.num_envs)
-            print(n_steps, n_rollout_steps)
+            # print(n_steps, n_rollout_steps)
             with th.no_grad():
                 # Convert to pytorch tensor or to TensorDict
                 obs_tensor = obs_as_tensor(self._last_obs, self.device)
                 action_space = obs_as_tensor(action_space, self.device)
                 actions, values, log_probs = self.policy(obs_tensor, action_space)
             actions = actions.cpu().numpy()
-            print(actions)
-            print(values)
+            # print(actions)
+            # print(values)
 
             # Rescale and perform action
             # clipped_actions = actions[0]
@@ -214,7 +214,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                     )
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
-            print(rewards)
+            # print(rewards)
 
             for rew in rewards:
                 if "game" in rew.keys():
