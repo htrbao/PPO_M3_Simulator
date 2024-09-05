@@ -193,9 +193,9 @@ class CnnSelfAttention(nn.Module):
         o = self.gamma * torch.bmm(h, beta) + x
         return o.view(*size).contiguous()
 
-class M3SelfAttentionFeatureExtractor(nn.Module):
+class M3CnnSelfAttentionFeatureExtractor(nn.Module):
     """
-    Constructs a self-attention feature extractor for the M3 algorithm.
+    Constructs a CNN self-attention on channels feature extractor for the M3 algorithm.
     """
     def __init__(self, in_channels: int, **kwargs):
         num_self_attention_layers = kwargs.get('num_self_attention_layers', 1)
@@ -212,6 +212,27 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
         x = self.cnn_self_attention(x)
         x = x.view(x.shape[0], -1).contiguous()
         return torch.relu(x)
+    
+class M3SelfAttentionFeatureExtractor(nn.Module):
+    """
+    Constructs a self-attention on tiles feature extractor for the M3 algorithm.
+    """
+    def __init__(self, in_channels, **kwargs):
+        super().__init__()
+        num_heads = kwargs.get('num_heads', 2)
+        n_channels = in_channels.shape[0]
+        self.multihead_attn = nn.MultiheadAttention(n_channels, num_heads)
+        self.activator = nn.ReLU()
+
+        self.features_dim = n_channels * num_heads
+
+    def forward(self, x: torch.Tensor):
+        x = x.view(x.shape[:2], -1)
+        x = x.transpose(1, 2)
+        attn_output = self.multihead_attn(x, x, x, need_weights=False)
+
+        x = self.activator(attn_output.view(attn_output.shape[0], -1))
+        return x
 
 
 class M3MlpExtractor(nn.Module):
