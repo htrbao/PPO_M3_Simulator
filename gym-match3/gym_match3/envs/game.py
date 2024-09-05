@@ -1427,7 +1427,6 @@ class Game(AbstractGame):
         for i in range(len(self.list_monsters)):
             near_monster = min(near_monster, point.euclidean_distance(self.list_monsters[i]._position))
             match_damage, pu_damage = self.list_monsters[i].get_dame(matches, inside_brokens, disco_brokens)
-            print("o ngoai", match_damage, pu_damage)
             total_match_dmg += match_damage / self.list_monsters[i]._origin_hp
             total_power_dmg += pu_damage / self.list_monsters[i]._origin_hp
             score -= pu_damage
