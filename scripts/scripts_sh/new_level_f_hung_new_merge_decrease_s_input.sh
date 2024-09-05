@@ -7,7 +7,7 @@ CUDA_VISIBLE_DEVICES=1 python training.py \
     --num_first_cnn_layer 10 \
     --n_steps 32768 \
     --lr 0.00002 \
-    --gamma 0.85 \
+    --gamma 0.95 \
     --num_envs 8 \
     --wandb
 

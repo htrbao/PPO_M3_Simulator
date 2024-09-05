@@ -528,13 +528,14 @@ class M3Helper:
                     + (board == GameObject.power_missile_v) \
                     + (board == GameObject.power_plane) ,
             "blocker": (board == GameObject.blocker_box),
-            "monster": (board == GameObject.monster_dame)
-            | (board == GameObject.monster_box_box)
-            | (board == GameObject.monster_box_bomb)
-            | (board == GameObject.monster_box_thorny)
-            | (board == GameObject.monster_box_both)
-            | (board == GameObject.blocker_thorny)
-            | (board == GameObject.blocker_bomb),
+            # "monster": ((board == GameObject.monster_dame)
+            # | (board == GameObject.monster_box_box)
+            # | (board == GameObject.monster_box_bomb)
+            # | (board == GameObject.monster_box_thorny)
+            # | (board == GameObject.monster_box_both)
+            # | (board == GameObject.blocker_thorny)
+            # | (board == GameObject.blocker_bomb)),
+            "monster":np.zeros((self.num_row, self.num_col)),
             "monster_match_dmg_mask": np.zeros((self.num_row, self.num_col)),
             "monster_inside_dmg_mask": np.zeros((self.num_row, self.num_col)),
             "self_dmg_mask": np.zeros((self.num_row, self.num_col)),
@@ -576,6 +577,11 @@ class M3Helper:
                 _cur_heat -= 0.1 * _cur_heat
 
         for _mons in list_monsters:
+            for p in _mons.mons_positions:
+                try:
+                    obs["monster"][p.get_coord()] = _mons.get_hp() / _mons._origin_hp
+                except IndexError:
+                    continue
             if isinstance(_mons, ThornyBlocker):
                 for p in _mons.inside_dmg_mask:
                     try:
@@ -594,6 +600,8 @@ class M3Helper:
                     obs["monster_match_dmg_mask"][p.get_coord()] = 1
                 except IndexError:
                     continue
+
+        print(obs["monster"])
 
         for r in range(self.num_row):
             for c in range(self.num_col):

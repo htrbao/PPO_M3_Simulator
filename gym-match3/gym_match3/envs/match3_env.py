@@ -23,14 +23,22 @@ class Match3Env(gym.Env):
     result_step = 0
 
     def __init__(
-        self, rollout_len=100, all_moves=False, levels=None, random_state=None, obs_order:list[str] = [], level_group:tuple[int, int] = (0, 10)
+        self,
+        rollout_len=100,
+        all_moves=False,
+        levels=None,
+        random_state=None,
+        obs_order: list[str] = [],
+        level_group: tuple[int, int] = (0, 10),
     ):
         self.num_envs = 1
         self.rollout_len = rollout_len
         self.random_state = random_state
         self.all_moves = all_moves
         self.levels = levels or Match3Levels(LEVELS[level_group[0] : level_group[1]])
-        print(f"This env manages level from group {level_group[0]} to group {level_group[1]}")
+        print(
+            f"This env manages level from group {level_group[0]} to group {level_group[1]}"
+        )
         self.helper = M3Helper(10, 9, obs_order)
         self.h = self.levels.h
         self.w = self.levels.w
@@ -143,22 +151,34 @@ class Match3Env(gym.Env):
             self.__episode_counter = 0
 
             if self.__game.get_player_hp() <= 0:
-                reward.update({"game": -100})
+                reward.update(
+                    {
+                        "game": -2
+                        - 1
+                        * sum(
+                            [
+                                mon.get_hp() / mon._origin_hp
+                                for mon in self.__game.list_monsters
+                                if mon.real_monster
+                            ]
+                        )
+                    }
+                )
             else:
                 reward.update(
                     {
                         "game": (
-                            -30
+                            -1.5
                             - 1
                             * sum(
                                 [
-                                    mon.get_hp()
+                                    mon.get_hp() / mon._origin_hp
                                     for mon in self.__game.list_monsters
                                     if mon.real_monster
                                 ]
                             )
                             if not is_early_done_game
-                            else 30 + 10 * self.__game.num_mons
+                            else 1.5 + 1 * self.__game.num_mons
                         )
                     }
                 )
@@ -179,11 +199,10 @@ class Match3Env(gym.Env):
         if 1 not in np.unique(obs["action_space"]):
             episode_over = True
             self.__episode_counter = 0
-            reward.update({"game": -99})
+            reward.update({"game": -2.5})
 
             obs, infos = self.reset()
             return obs, reward, episode_over, infos
-
 
         return (
             self.helper.obs_to_tensor(obs["obs"]),

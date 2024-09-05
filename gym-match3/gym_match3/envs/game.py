@@ -50,6 +50,9 @@ class Point(AbstractPoint):
 
     def get_coord(self):
         return self.__row, self.__col
+    
+    def euclidean_distance(self, another):
+        return np.linalg.norm(np.array(self.get_coord()) - np.array(another.get_coord()))
 
     def __add__(self, other):
         row1, col1 = self.get_coord()
@@ -992,6 +995,7 @@ class AbstractMonster(ABC):
     ):
         self.real_monster = True
         self._hp = hp
+        self._origin_hp = hp
         self._progress = 0
         self._relax_interval = relax_interval
         self._setup_interval = setup_interval
@@ -1033,6 +1037,10 @@ class AbstractMonster(ABC):
     @property
     def inside_dmg_mask(self):
         return self.__inside_dmg_mask if self.available_mask[4] else []
+    
+    @property
+    def mons_positions(self):
+        return self.__inside_dmg_mask
 
     @abstractmethod
     def act(self):
@@ -1103,12 +1111,13 @@ class AbstractMonster(ABC):
         """
         return: match_damage, pu_damage
         """
-        # print("Im mons, get dame from brokens", brokens)
         __matches = [ele.point for ele in matches]
         mons_inside_dmg = 0 
         for coor in brokens:
             if coor in set(self.inside_dmg_mask):
                 mons_inside_dmg += 1
+        print(len(set(self.dmg_mask) & set(__matches)), \
+            mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens)))
         return len(set(self.dmg_mask) & set(__matches)), \
             mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens))
 
@@ -1403,6 +1412,7 @@ class Game(AbstractGame):
 
     def __move(self, point: Point, direction: Point):
         score = 0
+        near_monster = 100
         cancel_score = 0
         create_pu_score = 0
         total_match_dmg = 0
@@ -1415,9 +1425,11 @@ class Game(AbstractGame):
         score += len(brokens) + len(disco_brokens)
 
         for i in range(len(self.list_monsters)):
+            near_monster = min(near_monster, point.euclidean_distance(self.list_monsters[i]._position))
             match_damage, pu_damage = self.list_monsters[i].get_dame(matches, inside_brokens, disco_brokens)
-            total_match_dmg += match_damage
-            total_power_dmg += pu_damage
+            print("o ngoai", match_damage, pu_damage)
+            total_match_dmg += match_damage / self.list_monsters[i]._origin_hp
+            total_power_dmg += pu_damage / self.list_monsters[i]._origin_hp
             score -= pu_damage
 
             self.list_monsters[i].attacked(match_damage, pu_damage)
@@ -1470,6 +1482,7 @@ class Game(AbstractGame):
         reward = {
             "score": score,
             "cancel_score": cancel_score,
+            "near_monster": near_monster,
             "create_pu_score": create_pu_score,
             "match_damage_on_monster": total_match_dmg,
             "power_damage_on_monster": total_power_dmg,
