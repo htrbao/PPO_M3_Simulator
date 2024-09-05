@@ -187,7 +187,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             ):
                 # Sample a new noise matrix
                 self.policy.reset_noise(env.num_envs)
-            print(n_steps, n_rollout_steps)
+            # print(n_steps, n_rollout_steps)
             with th.no_grad():
                 # Convert to pytorch tensor or to TensorDict
                 obs_tensor = obs_as_tensor(self._last_obs, self.device)
