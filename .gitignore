@@ -162,4 +162,4 @@ cython_debug/
 wandb/
 # _saved_model/*.pt
 /*.out
-_saved_model/*
+_saved_model/*.pt
