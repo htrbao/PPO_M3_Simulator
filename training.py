@@ -78,6 +78,7 @@ def get_args():
     )
     parser.add_argument("--batch_size", default=128, type=int)
     parser.add_argument("--epochs", default=20, type=int)
+    parser.add_argument("--ent_coef", default=0.01, type=int)
 
     # Reward Config
     parser.add_argument(
@@ -136,7 +137,8 @@ def main():
         learning_rate=args.lr,
         n_steps=args.n_steps // args.num_envs,
         gamma=args.gamma,
-        ent_coef=0.00001,
+        batch_size=args.batch_size,
+        ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
             "features_extractor_class": M3SelfAttentionFeatureExtractor,
