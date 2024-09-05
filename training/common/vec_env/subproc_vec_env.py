@@ -121,7 +121,7 @@ class SubprocVecEnv(VecEnv):
         super().__init__(len(env_fns), observation_space, action_space)
 
     def step_async(self, actions: np.ndarray) -> None:
-        print(actions)
+        # print(actions)
         for remote, action in zip(self.remotes, actions):
             remote.send(("step", action))
         self.waiting = True

@@ -1116,8 +1116,6 @@ class AbstractMonster(ABC):
         for coor in brokens:
             if coor in set(self.inside_dmg_mask):
                 mons_inside_dmg += 1
-        print(len(set(self.dmg_mask) & set(__matches)), \
-            mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens)))
         return len(set(self.dmg_mask) & set(__matches)), \
             mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens))
 
