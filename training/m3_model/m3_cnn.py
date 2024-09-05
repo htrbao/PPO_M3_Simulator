@@ -224,14 +224,14 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
         self.multihead_attn = nn.MultiheadAttention(n_channels, num_heads)
         self.activator = nn.ReLU()
 
-        self.features_dim = n_channels * num_heads
+        self.features_dim = n_channels * in_channels.shape[1] * in_channels.shape[2]
 
     def forward(self, x: torch.Tensor):
-        x = x.view(x.shape[:2], -1)
+        x = x.view(*x.shape[:2], -1)
         x = x.transpose(1, 2)
-        attn_output = self.multihead_attn(x, x, x, need_weights=False)
-
-        x = self.activator(attn_output.view(attn_output.shape[0], -1))
+        attn_output, _ = self.multihead_attn(x, x, x, need_weights=False)
+        attn_output = attn_output.flatten(start_dim=1)
+        x = self.activator(attn_output)
         return x
 
 
