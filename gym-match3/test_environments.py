@@ -15,14 +15,16 @@ _last_obs, infos = env.reset()
 dones = False
 action_space = infos["action_space"]
 
+selected_action = 0
+
 while not dones:
     # Identify the indices where the value is 1
     indices_with_one = [index for index, value in enumerate(action_space) if value == 1]
 
     # Randomly select one of those indices
     if indices_with_one:
-        selected_action = random.choice(indices_with_one)
-        print("Selected index:", selected_action)
+        selected_action = int(input("CHOOSE 1 ACTION"))
+        env.render(selected_action)
         obs, reward, dones, infos = env.step(selected_action)
 
         print(obs.shape)

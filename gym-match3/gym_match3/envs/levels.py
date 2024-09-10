@@ -149,7 +149,7 @@ for x in range(0, 9):
                     hp=40,
                 )])
         )
-        if random.random() < 0.3:
+        if random.random() < 0.7:
             easy_levels.append(
                 Level(10, 9, 5, copy.deepcopy(easy_board), [
                     DameMonster(

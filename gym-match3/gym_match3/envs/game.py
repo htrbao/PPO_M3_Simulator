@@ -8,6 +8,8 @@ import numpy as np
 import random
 from collections import Counter
 
+import traceback
+
 import concurrent.futures
 import threading
 
@@ -780,6 +782,12 @@ class AbstractMonster(ABC):
         for coor in brokens:
             if coor in set(self.inside_dmg_mask):
                 mons_inside_dmg += 1
+        print("dmg_mask:", self.dmg_mask)
+        print("dmg_pus:", self.inside_dmg_mask)
+        print(self.available_mask)
+        print(self.__right_dmg_mask)
+        print(self.__down_dmg_mask)
+
         return len(set(self.dmg_mask) & set(__matches)), \
             mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens))
 
@@ -1001,7 +1009,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                 return_brokens.add(_p)
                                 disco_brokens.add(_p)
                                 shape2 = shape2 if (shape2 > GameObject.power_missile_v) else random.choice([GameObject.power_missile_h, GameObject.power_missile_v])
-                                brokens.extend(self.__activate_not_merge(shape2, _p, board, None))
+                                brokens.extend(self.__activate_not_merge(shape2, _p, board, list_monsters, None))
                 else:
                     brokens = [Point(i, j) for i, j in product(range(board.board_size[0]), range(board.board_size[1]))]
                     disco_brokens = set(brokens)
@@ -1015,7 +1023,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     if shape2 != GameObject.power_plane:
                         random_mons = mons_pos[np.random.randint(0, len(mons_pos))]
                         brokens.append(random_mons)
-                        brokens.extend(self.__activate_not_merge(shape2, random_mons, board, None))
+                        brokens.extend(self.__activate_not_merge(shape2, random_mons, board, list_monsters, None))
                     else:
                         brokens.extend(random.sample(mons_pos, 6) if len(mons_pos) > 6 else mons_pos)
                 except:
@@ -1027,7 +1035,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 if shape2  != GameObject.power_bomb:
                     for i in range(-1,2,1):
                         dir = Point(i,0) if shape2 == GameObject.power_missile_h else Point(0,i)
-                        brokens.extend(self.__activate_not_merge(shape2, point + dir, board, None))
+                        brokens.extend(self.__activate_not_merge(shape2, point + dir, board, list_monsters, None))
                 else:
                     for i in range(-4, 5, 1):
                         for j in range(-4, 5, 1):
@@ -1035,26 +1043,26 @@ class PowerUpActivator(AbstractPowerUpActivator):
                             brokens.append(point + Point(i, j))
             # With missiles
             else:
-                brokens.extend(self.__activate_not_merge( GameObject.power_missile_h, point, board, None))
-                brokens.extend(self.__activate_not_merge( GameObject.power_missile_v, point, board, None))
+                brokens.extend(self.__activate_not_merge( GameObject.power_missile_h, point, board, list_monsters, None))
+                brokens.extend(self.__activate_not_merge( GameObject.power_missile_v, point, board, list_monsters, None))
 
         elif shape1 in GameObject.powers:
             return_brokens.add(point)
             if shape1 == GameObject.power_disco:
                 disco_brokens |= set(
-                    self.__activate_not_merge(shape1, point, board, shape2)
+                    self.__activate_not_merge(shape1, point, board, list_monsters, shape2)
                 )
             else:
-                brokens = self.__activate_not_merge(shape1, point, board, shape2)
+                brokens = self.__activate_not_merge(shape1, point, board, list_monsters, shape2)
                 
         elif shape2 in GameObject.powers:
             return_brokens.add(point2)
             if shape2 == GameObject.power_disco:
                 disco_brokens |= set(
-                    self.__activate_not_merge(shape2, point2, board, shape1)
+                    self.__activate_not_merge(shape2, point2, board, list_monsters, shape1)
                 )
             else:
-                brokens = self.__activate_not_merge(shape2, point2, board, shape1)
+                brokens = self.__activate_not_merge(shape2, point2, board, list_monsters, shape1)
                 
         inside_brokens = copy.copy(brokens)
         brokens = list(set(brokens))
@@ -1072,12 +1080,12 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     if shape_c == GameObject.power_disco:
                         disco_brokens |= set(
                             self.__activate_not_merge(
-                                shape_c, consider_point, board, shape1
+                                shape_c, consider_point, board, list_monsters, shape1
                             )
                         )
                     else:
                         more_pu =   self.__activate_not_merge(
-                                shape_c, consider_point, board, shape1
+                                shape_c, consider_point, board, list_monsters, shape1
                             )
                         brokens.extend(more_pu)
                         inside_brokens.extend(more_pu)
@@ -1116,18 +1124,21 @@ class PowerUpActivator(AbstractPowerUpActivator):
             return [3]
 
     def check_shield(self, prev_point: Point, cur_point: Point, board: Board, list_monsters: list[AbstractMonster]):
-        if prev_point == cur_point:
+        try:
+            if prev_point == cur_point:
+                return False
+            shape1 = board.get_shape(prev_point)
+            shape2 = board.get_shape(cur_point)
+            if shape1 not in GameObject.monsters or shape2 in GameObject.monsters:
+                affect_dirs = self.get_dir(prev_point, cur_point)
+                for mons in list_monsters:
+                    if cur_point in mons.mons_positions:
+                        for __adir in affect_dirs:
+                            if mons.available_mask[__adir] == 0:
+                                return True
             return False
-        shape1 = board.get_shape(prev_point)
-        shape2 = board.get_shape(cur_point)
-        if shape1 not in GameObject.monsters or shape2 in GameObject.monsters:
-            affect_dirs = self.get_dir(prev_point, cur_point)
-            for mons in list_monsters:
-                if cur_point in mons.mons_positions:
-                    for __adir in affect_dirs:
-                        if mons.available_mask[__adir] == 0:
-                            return True
-        return False
+        except OutOfBoardError:
+            return True    
 
     def __activate_not_merge(
         self, power_up_type: int, point: Point, board: Board, list_monsters, _color: int = None
@@ -1137,7 +1148,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
         if power_up_type == GameObject.power_plane:
             for _dir in self.__plane_affect:
                 cur_point = point + Point(*_dir)
-                if not self.check_shield(point, cur_point):
+                if not self.check_shield(point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
                 else:
                     break
@@ -1154,7 +1165,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             #backward move
             for i in range(pos[1] - 1, 0, -1):
                 cur_point = Point(pos[0], i)
-                if not self.check_shield(prev_point, cur_point):
+                if not self.check_shield(prev_point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
                 else:
                     break
@@ -1163,17 +1174,18 @@ class PowerUpActivator(AbstractPowerUpActivator):
             prev_point = point
             for i in range(pos[1] + 1, board.board_size[1]):
                 cur_point = Point(pos[0], i)
-                if not self.check_shield(prev_point, cur_point):
+                if not self.check_shield(prev_point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
                 else:
                     break
                 prev_point = cur_point
         elif power_up_type == GameObject.power_missile_v:
             pos = point.get_coord()
+            prev_point = point
             #backward move
             for i in range(pos[0] - 1, 0, -1):
                 cur_point = Point(i, pos[1])
-                if not self.check_shield(prev_point, cur_point):
+                if not self.check_shield(prev_point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
                 else:
                     break
@@ -1182,7 +1194,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             prev_point = point
             for i in range(pos[0] + 1, board.board_size[0]):
                 cur_point = Point(i, pos[1])
-                if not self.check_shield(prev_point, cur_point):
+                if not self.check_shield(prev_point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
                 else:
                     break
@@ -1193,20 +1205,20 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 prev_coeff = i - 1
                 
                 # check for vertical
-                if is_po_v and not self.check_shield(point + Point(prev_coeff, 0), point + Point(i, 0)):
+                if is_po_v and not self.check_shield(point + Point(prev_coeff, 0), point + Point(i, 0), board, list_monsters):
                     brokens.append(point + Point(i, 0))
                 else:
                     is_po_v = False
-                if is_ne_v and not self.check_shield(point + Point(-prev_coeff, 0), point + Point(-i, 0)):
+                if is_ne_v and not self.check_shield(point + Point(-prev_coeff, 0), point + Point(-i, 0), board, list_monsters):
                     brokens.append(point + Point(-i, 0))
                 else:
                     is_ne_v = False
                 #check for horizontal
-                if is_po_h and not self.check_shield(point + Point(0, prev_coeff), point + Point(0, i)):
+                if is_po_h and not self.check_shield(point + Point(0, prev_coeff), point + Point(0, i), board, list_monsters):
                     brokens.append(point + Point(0, i))
                 else:
                     is_po_h = False
-                if is_ne_h and not self.check_shield(point + Point(0, -prev_coeff), point + Point(0, -i)):
+                if is_ne_h and not self.check_shield(point + Point(0, -prev_coeff), point + Point(0, -i), board, list_monsters):
                     brokens.append(point + Point(0, -i))
                 else:
                     is_ne_h = False
@@ -1216,15 +1228,15 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 for j in range(-1, 1, 2):
                     prev_point = point
                     cur_point = point + Point(i, j)
-                    if not self.check_shield(prev_point, cur_point):
+                    if not self.check_shield(prev_point, cur_point, board, list_monsters):
                         brokens.append(cur_point)
                         prev_point = cur_point
 
-                        if self.check_shield(prev_point, prev_point + Point(i, 0)):
+                        if self.check_shield(prev_point, prev_point + Point(i, 0), board, list_monsters):
                             brokens.append(prev_point + Point(i, 0))
-                        if self.check_shield(prev_point, prev_point + Point(0, j)):
+                        if self.check_shield(prev_point, prev_point + Point(0, j), board, list_monsters):
                             brokens.append(prev_point + Point(0, j))
-                        if self.check_shield(prev_point, prev_point + Point(i, j)):
+                        if self.check_shield(prev_point, prev_point + Point(i, j), board, list_monsters):
                             brokens.append(prev_point + Point(i, j))
                     else:
                         continue
@@ -1505,6 +1517,7 @@ class Game(AbstractGame):
             
             return score
         except Exception as e:
+            print(traceback.format_exc())
             print("Error when swaping", e)
             print("There was an error when swaping", [mon.get_hp() for mon in self.list_monsters])
             return {
