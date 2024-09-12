@@ -314,6 +314,7 @@ class Board(AbstractBoard):
                 raise ImmovableShapeError
 
     def delete(self, points: set, allow_delete_monsters: bool = False):
+        points = [p for p in points if self.get_shape(p) != GameObject.immovable_shape]
         self._check_availability(*points)
         if allow_delete_monsters:
             coordinates = tuple(np.array([i.get_coord() for i in points]).T.tolist())
