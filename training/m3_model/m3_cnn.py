@@ -89,8 +89,8 @@ class M3CnnLargerFeatureExtractor(nn.Module):
         # mid_channels: int, out_channels: int = 160, num_first_cnn_layer: int = 10, **kwargs
         super(M3CnnLargerFeatureExtractor, self).__init__()
 
-        target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [5, 4]))
-        # target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [7, 6]))
+        # target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [5, 4]))
+        target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [7, 6]))
 
         layers = []
         layers.append(
@@ -234,6 +234,34 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
         x = self.activator(attn_output)
         return x
 
+class M3ExplainationFeatureExtractor(nn.Module):
+    def __init__(self, in_channels, **kwargs) -> None:
+        super().__init__()
+
+        core_cls = kwargs.get("core_cls", M3CnnLargerFeatureExtractor)
+
+        self.pu_emb = nn.Embedding(6, 1)
+        self.core_model = core_cls(in_channels, **kwargs)
+        self.features_dim = self.core_model.features_dim
+
+    def forward(self, x: torch.Tensor):
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
+
+        pu_m = x[:,6:11,:,:] # batch_sz, 5, 10, 9
+        for idx, pu_v in enumerate([1, 1.5, 2, 2.5, 4.5]):
+            pu_m[pu_m == pu_v] = idx + 1
+        pu_m = pu_m.int()
+        pu_m_ori_shape = pu_m.shape
+        pu_m = torch.flatten(pu_m, start_dim=2) # batch_sz, 5, 90
+        pu_m = self.pu_emb(pu_m) # batch_sz, 5, 90, 1
+        pu_m = torch.squeeze(pu_m, -1)
+        pu_m = pu_m.view(pu_m_ori_shape)
+
+        x[:,6:11,:,:] = pu_m
+
+        x = self.core_model(x)
+        return x
 
 class M3MlpExtractor(nn.Module):
     """

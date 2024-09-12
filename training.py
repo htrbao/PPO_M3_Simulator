@@ -6,7 +6,12 @@ from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.common.vec_env import SubprocVecEnv
 from training.ppo import PPO
-from training.m3_model.m3_cnn import M3CnnFeatureExtractor, M3CnnLargerFeatureExtractor, M3SelfAttentionFeatureExtractor
+from training.m3_model.m3_cnn import (
+    M3CnnFeatureExtractor,
+    M3CnnLargerFeatureExtractor,
+    M3SelfAttentionFeatureExtractor,
+    M3ExplainationFeatureExtractor
+)
 
 
 def get_args():
@@ -113,19 +118,29 @@ def get_args():
         help="Number of parallel environments to run (default: 4)",
     )
 
-
     return parser.parse_args()
 
 
 def make_env(rank, obs_order, num_per_group):
     def _init():
-        env = Match3Env(90, obs_order=obs_order, level_group=(rank * num_per_group, (rank + 1) * num_per_group))
+        env = Match3Env(
+            90,
+            obs_order=obs_order,
+            level_group=(rank * num_per_group, (rank + 1) * num_per_group),
+        )
         return env
+
     return _init
+
 
 def main():
     args = get_args()
-    envs = SubprocVecEnv([make_env(i, args.obs_order, len(LEVELS) // args.num_envs) for i in range(args.num_envs)])
+    envs = SubprocVecEnv(
+        [
+            make_env(i, args.obs_order, len(LEVELS) // args.num_envs)
+            for i in range(args.num_envs)
+        ]
+    )
     # env = Match3Env(90, obs_order=args.obs_order)
 
     print(envs.observation_space)
@@ -141,7 +156,7 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3SelfAttentionFeatureExtractor,
+            "features_extractor_class": M3ExplainationFeatureExtractor,
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 161,
@@ -170,8 +185,9 @@ def main():
         PPO_trainer.train(
             num_completed_games=num_completed_games, num_win_games=num_win_games
         )
-        
+
         print("training time", time.time() - s_t)
+
 
 if __name__ == "__main__":
     main()
