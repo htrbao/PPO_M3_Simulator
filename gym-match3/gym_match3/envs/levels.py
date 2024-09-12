@@ -22,6 +22,7 @@ class Match3Levels:
         self.__h = self.__set_dim(h, [lvl.h for lvl in levels])
         self.__w = self.__set_dim(w, [lvl.w for lvl in levels])
         self.__n_shapes = self.__set_dim(n_shapes, [lvl.n_shapes for lvl in levels])
+        self.__choosing_ratio = np.full(levels.shape, 1. / len(levels))
 
     @property
     def h(self):
@@ -71,6 +72,12 @@ class Match3Levels:
                 raise ValueError('h, w, and n_shapes have to be greater or equal '
                                  'to maximum in levels')
         return d
+    
+    def __calc_ratio(self, num_wins, num_plays):
+        return num_wins / num_plays
+    
+    def apply_ratio(self, num_wins, num_plays):
+        self.__choosing_ratio = self.__calc_ratio(num_wins, num_plays)
 
     def create_board(self, level: Level) -> Board:
         empty_board = np.random.randint(GameObject.color1, self.n_shapes, size=(self.__h, self.__w))
