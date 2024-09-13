@@ -258,7 +258,7 @@ class M3ExplainationFeatureExtractor(nn.Module):
         pu_m = torch.squeeze(pu_m, -1)
         pu_m = pu_m.reshape(pu_m_ori_shape)
 
-        x[:,6:11,:,:] = pu_m
+        x = torch.concat((x[:,:6,:,:], pu_m, x[:,11:,:,:]), dim=1)
 
         x = self.core_model(x)
         return x
