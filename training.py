@@ -10,7 +10,8 @@ from training.m3_model.m3_cnn import (
     M3CnnFeatureExtractor,
     M3CnnLargerFeatureExtractor,
     M3SelfAttentionFeatureExtractor,
-    M3ExplainationFeatureExtractor
+    M3ExplainationFeatureExtractor,
+    M3MlpFeatureExtractor
 )
 
 
@@ -156,12 +157,13 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3ExplainationFeatureExtractor,
+            "features_extractor_class": M3MlpFeatureExtractor,
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 161,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
                 "num_self_attention_layers": args.num_self_attention_layers,
+                "layers_dims": [4096, 2048, 2048, 2048]
             },
             "optimizer_class": torch.optim.Adam,
             "share_features_extractor": False,

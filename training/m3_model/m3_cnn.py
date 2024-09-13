@@ -263,6 +263,29 @@ class M3ExplainationFeatureExtractor(nn.Module):
         x = self.core_model(x)
         return x
 
+class M3MlpFeatureExtractor(nn.Module):
+    def __init__(self, in_channels, **kwargs):
+        super().__init__()
+        self.features_dim = in_channels.shape[0] * in_channels.shape[1] * in_channels.shape[2]
+        layers_dims = kwargs.get('layers_dims', [])
+
+        net = []
+        for curr_layer_dim in layers_dims:
+            net.append(nn.Linear(self.features_dim, curr_layer_dim))
+            net.append(nn.ReLU())
+            self.features_dim = curr_layer_dim
+
+        self.net = nn.Sequential(*net)
+
+    def forward(self, x: torch.Tensor):
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
+
+        x = x.flatten(start_dim=1)
+        x = self.net(x)
+
+        return x
+
 class M3MlpExtractor(nn.Module):
     """
     Constructs an MLP that receives the output from a previous features extractor (i.e. a CNN) or directly
