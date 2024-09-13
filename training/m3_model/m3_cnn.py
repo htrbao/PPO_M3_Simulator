@@ -256,7 +256,7 @@ class M3ExplainationFeatureExtractor(nn.Module):
         pu_m = torch.flatten(pu_m, start_dim=2) # batch_sz, 5, 90
         pu_m = self.pu_emb(pu_m) # batch_sz, 5, 90, 1
         pu_m = torch.squeeze(pu_m, -1)
-        pu_m = pu_m.view(pu_m_ori_shape)
+        pu_m = pu_m.reshape(pu_m_ori_shape)
 
         x[:,6:11,:,:] = pu_m
 
