@@ -61,9 +61,9 @@ class Match3Levels:
             [i for i in range(len(self.levels))],
             weights=[
                 (
-                    1 - self.__num_wins[i] / self.__num_plays[i]
+                    2 - self.__num_wins[i] / self.__num_plays[i]
                     if self.__num_plays[i] != 0
-                    else 1
+                    else 2
                 )
                 for i in range(len(self.levels))
             ],
