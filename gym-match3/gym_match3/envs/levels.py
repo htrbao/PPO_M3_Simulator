@@ -70,15 +70,6 @@ class Match3Levels:
             k=1
         )[0]
 
-        print([
-                (
-                    1 - self.__num_wins[i] / self.__num_plays[i]
-                    if self.__num_plays[i] != 0
-                    else 1
-                )
-                for i in range(len(self.levels))
-            ])
-
         level_template = self.levels[self.__current_lv_idx]
         board = self.create_board(level_template)
         return board, level_template.list_monsters
