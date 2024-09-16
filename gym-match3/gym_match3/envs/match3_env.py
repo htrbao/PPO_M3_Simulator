@@ -185,8 +185,9 @@ class Match3Env(gym.Env):
 
             # print(reward) #openlater
             self.result_step += 1
-            obs, infos = self.reset()
-            reward
+            obs, infos = self.reset(
+                is_win=True if reward["game"] > 0 else False
+            )
 
             return obs, reward, episode_over, infos
         else:
@@ -201,7 +202,7 @@ class Match3Env(gym.Env):
             self.__episode_counter = 0
             reward.update({"game": -2.5})
 
-            obs, infos = self.reset()
+            obs, infos = self.reset(is_win=False)
             return obs, reward, episode_over, infos
 
         return (
@@ -212,7 +213,8 @@ class Match3Env(gym.Env):
         )
 
     def reset(self, *args, **kwargs):
-        board, list_monsters = self.levels.next()
+        is_win = kwargs.get("is_win", None)
+        board, list_monsters = self.levels.next(is_win)
         self.__game.start(board, list_monsters)
         obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu")
         return self.helper.obs_to_tensor(obs["obs"]), {
