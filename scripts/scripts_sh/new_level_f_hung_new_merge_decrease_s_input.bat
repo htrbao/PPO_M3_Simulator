@@ -1,1 +1,1 @@
-python training.py --prefix_name multienv_mha_95gamma_new_reward_new_input --pi 512 512 512 512 256 128 --vf 512 512 512 512 256 128 64 32 16 --mid_channels 32 --num_first_cnn_layer 10 --n_steps 32768 --batch_size 1024 --lr 0.00003 --gamma 0.95 --num_envs 32 --wandb
+python training.py --prefix_name multienv_cnn_95gamma_new_reward_new_input --pi 4096 2048 2048 2048 2048 2048 2048 --vf 4096 2048 2048 2048 2048 1024 512 256 128 64 32 16 --mid_channels 32 --num_first_cnn_layer 10 --n_steps 32768 --batch_size 1024 --lr 0.00003 --gamma 0.95 --num_envs 32 --wandb
