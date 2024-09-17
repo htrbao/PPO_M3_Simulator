@@ -700,7 +700,6 @@ class ActorCriticPolicy(BasePolicy):
         distribution = self._get_action_dist_from_latent(
             latent_pi, legal_action=legal_action
         )
-        print(distribution)
         actions = distribution.get_actions(deterministic=deterministic)
         log_prob = distribution.log_prob(actions)
         actions = actions.reshape((-1, *self.action_space.shape))  # type: ignore[misc]

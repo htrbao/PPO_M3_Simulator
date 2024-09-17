@@ -135,7 +135,6 @@ class M3LocFeatureExtractor(nn.Module):
         
         input = torch.cat((input_emb, input_keep), dim=1)
         x = self.net(input)
-        print(x)
         return x
 
 
