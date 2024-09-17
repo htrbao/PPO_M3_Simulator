@@ -274,26 +274,35 @@ class RolloutBuffer(BaseBuffer):
 
     def compute_rewards(self, rewards: list[dict]) -> int:
         """
-            "score": score,
-            "cancel_score": cancel_score,
-            "create_pu_score": create_pu_score,
-            "match_damage_on_monster": total_match_dmg,
-            "power_damage_on_monster": total_power_dmg,
-            "damage_on_user": self_dmg,
+        "score": score,
+        "cancel_score": cancel_score,
+        "create_pu_score": create_pu_score,
+        "match_damage_on_monster": total_match_dmg,
+        "power_damage_on_monster": total_power_dmg,
+        "damage_on_user": self_dmg,
         """
         new_rewards = []
         for reward in rewards:
-            total_dmg = reward["match_damage_on_monster"] + reward["power_damage_on_monster"]
-            near_monster = 1 - reward.get("near_monster", np.sqrt(10 * 10 + 9 * 9)) / np.sqrt(10 * 10 + 9 * 9)
+            total_dmg = (
+                reward["match_damage_on_monster"] + reward["power_damage_on_monster"]
+            )
+            near_monster = 1 - reward.get(
+                "near_monster", np.sqrt(10 * 10 + 9 * 9)
+            ) / np.sqrt(10 * 10 + 9 * 9)
 
             _reward = (
                 reward["match_damage_on_monster"] * 1
                 + reward["power_damage_on_monster"] * 1.5
                 + reward["create_pu_score"] / 4.5 / 10
-                + reward["score"] * 0.01 * near_monster
+                + (reward["score"] * 0.01)
+                * (
+                    near_monster
+                    if total_dmg > 0 or (6 > reward["score"] and reward["score"] > 3)
+                    else -(1 - near_monster)
+                )
                 + reward.get("game", 0)
             )
-            
+
             new_rewards.append(_reward)
         # print(new_rewards)
         return new_rewards

@@ -222,6 +222,8 @@ class PPO(OnPolicyAlgorithm):
         """
         num_completed_games = kwargs["num_completed_games"]
         num_win_games = kwargs["num_win_games"]
+        num_damage = kwargs["num_damage"]
+        num_hit = kwargs["num_hit"]
 
         # Switch to train mode (this affects batch norm / dropout)
         self.policy.set_training_mode(True)
@@ -368,7 +370,10 @@ class PPO(OnPolicyAlgorithm):
             "Reward/rewards":np.mean(mean_rewards),
 
             "Stats/Win rates": num_win_games / num_completed_games,
-            "Stats/Avg steps": self.n_steps * self.env.num_envs / num_completed_games
+            "Stats/Avg steps": self.n_steps * self.env.num_envs / num_completed_games,
+            "Stats/Hit rate": num_hit / self.n_steps * self.env.num_envs,
+            "Stats/Avg damage per action": num_damage / self.n_steps * self.env.num_envs,
+            "Stats/Avg damage per hit": num_damage / num_hit
         }
         # if hasattr(self._policy, "log_std"):
         #     stats["train/std"]=th.exp(self._policy.log_std).mean().item(),

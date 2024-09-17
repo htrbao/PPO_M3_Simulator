@@ -163,6 +163,8 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         # Some stats about the play ability in current epoch.
         __num_completed_games = 0
         __num_win_games = 0
+        __num_damage = 0
+        __num_hit = 0
 
         n_steps = 0
         rollout_buffer.reset()
@@ -220,6 +222,9 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                 if "game" in rew.keys():
                     __num_completed_games += 1
                     __num_win_games += 0 if rew["game"] < 0 else 1
+                    total_dmg = rew["match_damage_on_monster"] + rew["power_damage_on_monster"]
+                    __num_damage += total_dmg
+                    __num_hit += 0 if total_dmg == 0 else 1
 
             # action_space = infos["action_space"]
             action_space = np.stack([x["action_space"] for x in infos])
@@ -266,7 +271,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
         print("End rollout data")
 
-        return True, __num_completed_games, __num_win_games
+        return True, __num_completed_games, __num_win_games, __num_damage, __num_hit
 
     def train(self) -> None:
         """
