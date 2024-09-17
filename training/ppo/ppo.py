@@ -371,8 +371,8 @@ class PPO(OnPolicyAlgorithm):
 
             "Stats/Win rates": num_win_games / num_completed_games,
             "Stats/Avg steps": self.n_steps * self.env.num_envs / num_completed_games,
-            "Stats/Hit rate": num_hit / self.n_steps * self.env.num_envs,
-            "Stats/Avg damage per action": num_damage / self.n_steps * self.env.num_envs,
+            "Stats/Hit rate": num_hit / (self.n_steps * self.env.num_envs),
+            "Stats/Avg damage per action": num_damage / (self.n_steps * self.env.num_envs),
             "Stats/Avg damage per hit": num_damage / num_hit
         }
         # if hasattr(self._policy, "log_std"):
