@@ -70,6 +70,73 @@ class M3CnnFeatureExtractor(nn.Module):
             input = torch.unsqueeze(input, 0)
         x = self.net(input)
         return x
+    
+
+class M3LocFeatureExtractor(nn.Module):
+    """
+    Model architecture with CNN base.
+    `Input`:
+    - in_chanels: size of input channels
+    - kwargs["mid_channels"]: size of mid channels
+    `Output`:
+    - `Tensor`: [batch, action_space_size]
+    """
+    def __init__(self, in_channels: int, **kwargs) -> None:
+        # mid_channels: int, out_channels: int = 160, num_first_cnn_layer: int = 10, **kwargs
+        super(M3LocFeatureExtractor, self).__init__()
+
+        layers = []
+        layers.append(
+            nn.Conv2d(
+                in_channels.shape[0]-kwargs["num_tile"] + kwargs["embedding_dim"], kwargs["mid_channels"], 3, stride=1, padding=1
+            )
+        )  # (batch, mid_channels, (size))
+        layers.append(nn.GELU())
+        for idx in range(kwargs["num_first_cnn_layer"]):
+            first_channels = min(kwargs["max_channels"], kwargs["mid_channels"]*(idx + 1))
+            second_channels = min(kwargs["max_channels"], kwargs["mid_channels"]*(idx + 2))
+            layers.append(
+                nn.Conv2d(
+                    first_channels,
+                    second_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                )
+            )  # (batch, mid_channels, (size))
+            layers.append(nn.GELU())
+            
+        layers.append(
+            nn.Conv2d(
+                second_channels, kwargs["out_channels"], 3, stride=1, padding=1
+            )
+        )  # (batch, out_channels, (size))
+        layers.append(nn.GELU())
+        layers.append(nn.Flatten(1, -1))
+        self.layers = layers
+        self.num_first_cnn_layer = kwargs["num_first_cnn_layer"]
+        self.net = nn.Sequential(*layers)
+        self.embedding = nn.Embedding(kwargs["num_tile"], kwargs["embedding_dim"])
+        self.features_dim = kwargs["out_channels"] * kwargs["size"]
+        self.num_embedding_tile = kwargs["num_tile"]-1 # 12 - 1 = 11
+
+
+    def forward(self, input: torch.Tensor):
+        if len(input.shape) == 3:
+            input = torch.unsqueeze(input, 0)
+        batch, feat, width, height = input.shape
+
+        input_emb = input[:, :self.num_embedding_tile, :, :].sum(dim=1).to(torch.long).flatten(start_dim=1)
+        input_emb = self.embedding(input_emb)
+
+        input_emb = input_emb.reshape(batch, -1, width, height)
+
+        input_keep = input[:, self.num_embedding_tile+1:, :, :]
+        
+        input = torch.cat((input_emb, input_keep), dim=1)
+        x = self.net(input)
+        print(x)
+        return x
 
 
 # With square kernels and equal stride

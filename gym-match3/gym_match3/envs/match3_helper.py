@@ -508,17 +508,17 @@ class M3Helper:
 
         action_space = np.zeros((self.num_action))
         obs = {
-            "none_tile": (board == GameObject.immovable_shape),
-            "color_1": (board == GameObject.color1),
-            "color_2": (board == GameObject.color2),
-            "color_3": (board == GameObject.color3),
-            "color_4": (board == GameObject.color4),
-            "color_5": (board == GameObject.color5),
-            "disco": (board == GameObject.power_disco) * 4.5,
-            "bomb": (board == GameObject.power_bomb) * 2.5,
-            "missile_h": (board == GameObject.power_missile_h) * 1.0,
-            "missile_v": (board == GameObject.power_missile_v) * 1.5,
-            "plane": (board == GameObject.power_plane) * 2,
+            "none_tile": (board == GameObject.immovable_shape)*1,
+            "color_1": (board == GameObject.color1)*2,
+            "color_2": (board == GameObject.color2)*3,
+            "color_3": (board == GameObject.color3)*4,
+            "color_4": (board == GameObject.color4)*5,
+            "color_5": (board == GameObject.color5)*6,
+            "disco": (board == GameObject.power_disco)*7,
+            "bomb": (board == GameObject.power_bomb)*8,
+            "missile_h": (board == GameObject.power_missile_h)*9,
+            "missile_v": (board == GameObject.power_missile_v)*10,
+            "plane": (board == GameObject.power_plane)*11,
             # "buff": (board == GameObject.power_disco) \
             #         | (board == GameObject.power_disco) \
             #         | (board == GameObject.power_disco),

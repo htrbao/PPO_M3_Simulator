@@ -12,6 +12,7 @@ from training.m3_model.m3_cnn import (
     M3SelfAttentionFeatureExtractor,
     M3ExplainationFeatureExtractor,
     M3MlpFeatureExtractor,
+    M3LocFeatureExtractor
 )
 
 
@@ -164,8 +165,12 @@ def main():
                 "num_first_cnn_layer": args.num_first_cnn_layer,
                 "num_self_attention_layers": args.num_self_attention_layers,
                 "layers_dims": [4096, 2048, 2048, 2048],
+                "num_tile": 12,
+                "embedding_dim": 5,
+                "max_channels": 512,
+                "size": 9*10
             },
-            "optimizer_class": torch.optim.Adam,
+            "optimizer_class": torch.optim.AdamW,
             "share_features_extractor": False,
         },
         _checkpoint=args.checkpoint,
@@ -173,6 +178,7 @@ def main():
         device="cuda",
         prefix_name=args.prefix_name,
     )
+    print("feature dims", PPO_trainer.policy.features_extractor.features_dim)
     run_i = 0
     print(PPO_trainer.n_steps)
     while run_i < 300:
