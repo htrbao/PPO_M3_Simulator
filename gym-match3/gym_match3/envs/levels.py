@@ -72,7 +72,7 @@ class Match3Levels:
 
         self.__current_lv_idx += 1
 
-        level_template = self.levels[self.__current_lv_idx]
+        level_template = self.levels[self.__current_lv_idx % len(self.levels)]
         board = self.create_board(level_template)
         return board, level_template.list_monsters
 
