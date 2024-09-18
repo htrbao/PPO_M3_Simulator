@@ -54,21 +54,23 @@ class Match3Levels:
         """
         :return: board for random level
         """
-        if is_win is not None:
-            self.__num_plays[self.__current_lv_idx] += 1
-            self.__num_wins[self.__current_lv_idx] += int(is_win)
-        self.__current_lv_idx = random.choices(
-            [i for i in range(len(self.levels))],
-            weights=[
-                (
-                    2 - self.__num_wins[i] / self.__num_plays[i]
-                    if self.__num_plays[i] != 0
-                    else 2
-                )
-                for i in range(len(self.levels))
-            ],
-            k=1
-        )[0]
+        # if is_win is not None:
+        #     self.__num_plays[self.__current_lv_idx] += 1
+        #     self.__num_wins[self.__current_lv_idx] += int(is_win)
+        # self.__current_lv_idx = random.choices(
+        #     [i for i in range(len(self.levels))],
+        #     weights=[
+        #         (
+        #             2 - self.__num_wins[i] / self.__num_plays[i]
+        #             if self.__num_plays[i] != 0
+        #             else 2
+        #         )
+        #         for i in range(len(self.levels))
+        #     ],
+        #     k=1
+        # )[0]
+
+        self.__current_lv_idx += 1
 
         level_template = self.levels[self.__current_lv_idx]
         board = self.create_board(level_template)

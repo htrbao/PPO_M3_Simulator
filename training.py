@@ -84,7 +84,7 @@ def get_args():
         help="learning rate (default: 0.0003)",
     )
     parser.add_argument("--batch_size", default=128, type=int)
-    parser.add_argument("--epochs", default=20, type=int)
+    parser.add_argument("--epochs", default=10, type=int)
     parser.add_argument("--ent_coef", default=0.01, type=int)
 
     # Reward Config
