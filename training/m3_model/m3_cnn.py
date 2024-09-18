@@ -126,7 +126,7 @@ class M3LocFeatureExtractor(nn.Module):
             input = torch.unsqueeze(input, 0)
         batch, feat, width, height = input.shape
 
-        input_emb = input[:, :self.num_embedding_tile, :, :].sum(dim=1).to(torch.long).flatten(start_dim=1)
+        input_emb = input[:, :self.num_embedding_tile, :, :].sum(dim=1).to(torch.long).detach().flatten(start_dim=1)
         input_emb = self.embedding(input_emb)
 
         input_emb = input_emb.reshape(batch, -1, width, height)

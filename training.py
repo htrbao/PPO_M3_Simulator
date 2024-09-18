@@ -91,7 +91,7 @@ def get_args():
     parser.add_argument(
         "--gamma",
         type=float,
-        default=0.90,
+        default=0.95,
         metavar="gamma",
         help="Gamma in Reinforcement Learning",
     )
@@ -158,7 +158,7 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3CnnLargerFeatureExtractor,
+            "features_extractor_class": M3LocFeatureExtractor,
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 161,
@@ -170,7 +170,7 @@ def main():
                 "max_channels": 512,
                 "size": 9*10
             },
-            "optimizer_class": torch.optim.AdamW,
+            "optimizer_class": torch.optim.Adam,
             "share_features_extractor": False,
         },
         _checkpoint=args.checkpoint,

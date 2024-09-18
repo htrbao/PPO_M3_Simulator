@@ -508,17 +508,17 @@ class M3Helper:
 
         action_space = np.zeros((self.num_action))
         obs = {
-            "none_tile": (board == GameObject.immovable_shape)*1,
-            "color_1": (board == GameObject.color1)*2,
-            "color_2": (board == GameObject.color2)*3,
-            "color_3": (board == GameObject.color3)*4,
-            "color_4": (board == GameObject.color4)*5,
-            "color_5": (board == GameObject.color5)*6,
-            "disco": (board == GameObject.power_disco)*7,
-            "bomb": (board == GameObject.power_bomb)*8,
-            "missile_h": (board == GameObject.power_missile_h)*9,
-            "missile_v": (board == GameObject.power_missile_v)*10,
-            "plane": (board == GameObject.power_plane)*11,
+            "none_tile": (board == GameObject.immovable_shape),
+            "color_1": (board == GameObject.color1),
+            "color_2": (board == GameObject.color2),
+            "color_3": (board == GameObject.color3),
+            "color_4": (board == GameObject.color4),
+            "color_5": (board == GameObject.color5),
+            "disco": (board == GameObject.power_disco),
+            "bomb": (board == GameObject.power_bomb),
+            "missile_h": (board == GameObject.power_missile_h),
+            "missile_v": (board == GameObject.power_missile_v),
+            "plane": (board == GameObject.power_plane),
             # "buff": (board == GameObject.power_disco) \
             #         | (board == GameObject.power_disco) \
             #         | (board == GameObject.power_disco),
@@ -554,6 +554,7 @@ class M3Helper:
                 ]
             ),
         }
+        
 
         for _mons in list_monsters:
             _radius = 0
@@ -643,7 +644,22 @@ class M3Helper:
                 obs["legal_action"],
                 action_space,
             )
-
+        list_tiles = [
+            "none_tile",
+            "color_1",
+            "color_2",
+            "color_3",
+            "color_4",
+            "color_5",
+            "disco",
+            "bomb",
+            "missile_h",
+            "missile_v",
+            "plane",
+        ]
+        
+        for idx, tile in enumerate(list_tiles):
+            obs[tile] = obs[tile].astype(np.int64) * (idx + 1)
         return dict(obs=obs, action_space=action_space)
 
     def obs_to_tensor(self, obs):
