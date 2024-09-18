@@ -170,8 +170,9 @@ def main():
                 "max_channels": 512,
                 "size": 9*10
             },
-            "optimizer_class": torch.optim.Adam,
+            "optimizer_class": torch.optim.AdamW,
             "share_features_extractor": False,
+            "activation_fn": torch.nn.GELU
         },
         _checkpoint=args.checkpoint,
         _wandb=args.wandb,
