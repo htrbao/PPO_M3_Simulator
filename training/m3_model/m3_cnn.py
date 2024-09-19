@@ -88,7 +88,7 @@ class M3LocFeatureExtractor(nn.Module):
         layers = []
         layers.append(
             nn.Conv2d(
-                in_channels.shape[0]-kwargs["num_tile"] + kwargs["embedding_dim"], kwargs["mid_channels"], 3, stride=1, padding=1
+                in_channels.shape[0]-kwargs["num_tile"] + kwargs["embedding_dim"]-1, kwargs["mid_channels"], 3, stride=1, padding=1
             )
         )  # (batch, mid_channels, (size))
         layers.append(nn.GELU())
@@ -131,7 +131,7 @@ class M3LocFeatureExtractor(nn.Module):
 
         input_emb = input_emb.reshape(batch, -1, width, height)
 
-        input_keep = input[:, self.num_embedding_tile+1:, :, :]
+        input_keep = input[:, self.num_embedding_tile+1:-1, :, :]
         
         input = torch.cat((input_emb, input_keep), dim=1)
         x = self.net(input)

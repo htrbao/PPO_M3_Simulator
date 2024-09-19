@@ -85,13 +85,13 @@ def get_args():
     )
     parser.add_argument("--batch_size", default=128, type=int)
     parser.add_argument("--epochs", default=10, type=int)
-    parser.add_argument("--ent_coef", default=0.01, type=int)
+    parser.add_argument("--ent_coef", default=0.01, type=float)
 
     # Reward Config
     parser.add_argument(
         "--gamma",
         type=float,
-        default=0.95,
+        default=0.98,
         metavar="gamma",
         help="Gamma in Reinforcement Learning",
     )
@@ -147,7 +147,7 @@ def main():
 
     print(envs.observation_space)
     print(envs.action_space)
-
+    print(args.ent_coef)
     PPO_trainer = PPO(
         policy="CnnPolicy",
         env=envs,
@@ -179,7 +179,7 @@ def main():
         device="cuda",
         prefix_name=args.prefix_name,
     )
-    print("feature dims", PPO_trainer.policy.features_extractor.features_dim)
+    print("trainable parameters", sum(p.numel() for p in PPO_trainer.policy.parameters() if p.requires_grad))
     run_i = 0
     print(PPO_trainer.n_steps)
     while run_i < 300:
