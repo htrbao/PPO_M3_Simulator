@@ -575,8 +575,6 @@ class M3Helper:
                 except IndexError:
                     continue
         
-        print(obs["heat_mask"])
-        print(obs["monster"])
         for r in range(self.num_row):
             for c in range(self.num_col):
                 tile = board[r][c]
