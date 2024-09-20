@@ -185,7 +185,7 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=40,
+                        hp=20,
                     )
                 ],
             )
@@ -202,7 +202,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=random.randint(20, 25),
+                            hp=random.randint(12),
                             request_masked=[1, 1, 1, 1, 0],
                         )
                     ],
@@ -219,7 +219,7 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=40,
+                        hp=20,
                         request_masked=[0, 0, 0, 0, 1],
                     )
                 ],
