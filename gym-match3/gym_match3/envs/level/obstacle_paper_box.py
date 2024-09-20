@@ -19,7 +19,7 @@ level_6 = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     have_paper_box=True
                     )
@@ -42,7 +42,7 @@ level_6 = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=35+ base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     have_paper_box=True
                     )
@@ -64,7 +64,7 @@ level_6 = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=35+ base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     have_paper_box=True
                     )
@@ -86,7 +86,7 @@ level_6 = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=30+ base_hp,
+                    hp=30+base_hp,
                     dame=2,
                     have_paper_box=True
                     )
@@ -108,7 +108,7 @@ level_6 = [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30+ base_hp,
+                    hp=30+base_hp,
                     dame=2,
                     have_paper_box=True
                     )
@@ -130,7 +130,7 @@ level_6 = [
                 setup_interval=2,
                 width=2,
                 height=2,
-                hp=25+ base_hp,
+                hp=25+base_hp,
                 dame=3,
                 have_paper_box=True
                 ),
@@ -152,7 +152,7 @@ level_6 = [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30+ base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     have_paper_box=True
                     )
@@ -175,7 +175,7 @@ level_6 = [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30+ base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     have_paper_box=True
                     )
@@ -198,7 +198,7 @@ level_6 = [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30+ base_hp,
+                    hp=30+base_hp,
                     dame=2,
                     have_paper_box=True
                     )
@@ -220,7 +220,7 @@ level_6 = [
                 setup_interval=1,
                 width=2,
                 height=2,
-                hp=35+ base_hp,
+                hp=22+base_hp,
                 dame=3,
                 have_paper_box=True
                 )
