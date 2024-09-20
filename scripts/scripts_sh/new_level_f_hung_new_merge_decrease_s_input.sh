@@ -1,9 +1,9 @@
 CUDA_VISIBLE_DEVICES=1 python training.py \
     --prefix_name sequence_multienv_mlp_95gamma_new_reward_new_stats143 \
-    --pi 2048 2048 2048 2048 \
+    --pi 512 512 512 512 512 512 \
     --vf 2048 2048 2048 2048 2048 2048 \
     --mid_channels 32 \
-    --num_first_cnn_layer 10 \
+    --num_first_cnn_layer 4 \
     --n_steps 131072 \
     --batch_size 1024 \
     --lr 0.00003 \

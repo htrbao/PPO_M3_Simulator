@@ -157,7 +157,7 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3MlpFeatureExtractor,
+            "features_extractor_class": M3CnnLargerFeatureExtractor,
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 161,

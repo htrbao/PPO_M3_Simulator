@@ -2,7 +2,7 @@ import numpy as np
 from collections import namedtuple
 
 Level = namedtuple("Level", ["h", "w", "n_shapes", "board", "list_monsters"])
-base_hp = -7
+base_hp = 0
 
 class GameObject:
     immovable_shape = -1
