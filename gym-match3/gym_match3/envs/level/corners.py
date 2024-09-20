@@ -18,7 +18,7 @@ for i in range(10):
                 position=Point(mons_coor[0], mons_coor[1]),
                 width=2,
                 height=2,
-                hp=random.randint(15,25)+ base_hp,
+                hp=15+base_hp,
                 request_masked=[1,1,1,1,1]
             )
         ])
