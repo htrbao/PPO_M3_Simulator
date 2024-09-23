@@ -97,7 +97,7 @@ MY_LEVEL = [
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0 ,0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -107,7 +107,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=15 + base_hp,
+                    hp=15+base_hp,
                     dame=2,
                     )
     ]),
@@ -128,7 +128,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=20 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     )
     ]),
@@ -150,7 +150,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=3,
                     height=3,
-                    hp=12 + base_hp,
+                    hp=12+base_hp,
                     dame=2,
                     )
     ]),
@@ -171,7 +171,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=3,
                     height=3,
-                    hp=15 + base_hp,
+                    hp=15+base_hp,
                     dame=2,
                     )    
     ]),
@@ -193,7 +193,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=20 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
         )
     ]),
@@ -214,7 +214,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=20 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
         )
     ]),
