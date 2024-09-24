@@ -840,19 +840,14 @@ class DameMonster(AbstractMonster):
         damage = match_damage + pu_damage
 
         if (
-            self._relax_interval < self._progress
+            self.have_paper_box and self._relax_interval < self._progress
             and self._progress <= self._relax_interval + self._setup_interval
         ):
-            if not self.have_paper_box:
-                self._cancel -= damage
-            else:
-                if self._paper_box_hp <= 0:
-                    self._paper_box_hp = self._setup_interval
-                    self.available_mask = [1, 1, 1, 1, 0]
-                super().attacked(match_damage, pu_damage)
-
-        else:
-            super().attacked(match_damage, pu_damage)
+            if self._paper_box_hp <= 0:
+                self._paper_box_hp = self._setup_interval
+                self.available_mask = [1, 1, 1, 1, 0]
+        
+        super().attacked(match_damage, pu_damage)
 
 
 class BoxMonster(AbstractMonster):

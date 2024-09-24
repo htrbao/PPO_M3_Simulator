@@ -138,6 +138,9 @@ class Match3Env(gym.Env):
         # print(m3_action) #openlater
         ob = {}
         reward = self.__swap(*m3_action)
+        reward.update({
+            "current_level": self.levels.current_level_idx
+        })
         is_early_done_game = self.__game._sweep_died_monster()
 
         # change counter even action wasn't successful
@@ -195,7 +198,6 @@ class Match3Env(gym.Env):
             ob["board"] = self.__get_board()
             ob["list_monster"] = self.__game.list_monsters
 
-        print(self.__episode_counter)
         obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu", self.__episode_counter / self.rollout_len)
         # Check if non legal_action
         if 1 not in np.unique(obs["action_space"]):

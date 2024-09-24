@@ -143,7 +143,8 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         env,
         rollout_buffer: RolloutBuffer,
         n_rollout_steps: int,
-    ) -> bool:
+        **kwargs,
+    ) -> dict:
         """
         Collect experiences using the current policy and fill a ``RolloutBuffer``.
         The term rollout here refers to the model-free notion and should not
@@ -157,10 +158,16 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         :return: True if function returned with at least `n_rollout_steps`
             collected, False if callback terminated rollout prematurely.
         """
+        # Some input from kwargs
+        n_levels = kwargs.get('n_levels', None)
+        n_levels_per_group = kwargs.get('n_levels_per_group', None)
+
         # Switch to eval mode (this affects batch norm / dropout)
         self.policy.set_training_mode(False)
 
         # Some stats about the play ability in current epoch.
+        __num_levels_win = np.zeros((n_levels))
+        __num_levels_play = np.zeros((n_levels))
         __num_completed_games = 0
         __num_win_games = 0
         __num_damage = 0
@@ -218,8 +225,11 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             # print(rewards)
 
-            for rew in rewards:
+            for idx, rew in enumerate(rewards):
                 if "game" in rew.keys():
+                    __num_levels_play[idx * n_levels_per_group + rew["current_level"]] += 1
+                    __num_levels_win[idx * n_levels_per_group + rew["current_level"]] += 0 if rew["game"] < 0 else 1
+
                     __num_completed_games += 1
                     __num_win_games += 0 if rew["game"] < 0 else 1
                     total_dmg = rew["match_damage_on_monster"] + rew["power_damage_on_monster"]
@@ -271,7 +281,15 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
         print("End rollout data")
 
-        return True, __num_completed_games, __num_win_games, __num_damage, __num_hit
+        return dict(
+            _=True, 
+            num_levels_play = __num_levels_play,
+            num_levels_win = __num_levels_win,
+            num_completed_games=__num_completed_games, 
+            num_win_games=__num_win_games, 
+            num_damage=__num_damage, 
+            num_hit=__num_hit
+        )
 
     def train(self) -> None:
         """

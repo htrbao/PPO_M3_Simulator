@@ -136,13 +136,15 @@ def make_env(rank, obs_order, num_per_group):
 
 def main():
     args = get_args()
+    num_level_per_group = len(LEVELS) // args.num_envs
+    for idx, lvl in enumerate(LEVELS):
+        print(idx, lvl.board)
     envs = SubprocVecEnv(
         [
-            make_env(i, args.obs_order, len(LEVELS) // args.num_envs)
+            make_env(i, args.obs_order, num_level_per_group)
             for i in range(args.num_envs)
         ]
     )
-    # env = Match3Env(90, obs_order=args.obs_order)
 
     print(envs.observation_space)
     print(envs.action_space)
@@ -174,23 +176,34 @@ def main():
         prefix_name=args.prefix_name,
     )
     run_i = 0
-    print(PPO_trainer.n_steps)
     while run_i < 300:
         run_i += 1
         s_t = time.time()
-        _, num_completed_games, num_win_games, num_damage, num_hit = (
+        res = (
             PPO_trainer.collect_rollouts(
-                PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps
+                PPO_trainer.env,
+                PPO_trainer.rollout_buffer,
+                PPO_trainer.n_steps,
+                n_levels=len(LEVELS),
+                n_levels_per_group=num_level_per_group
             )
         )
-        win_rate = num_win_games / num_completed_games * 100
+        # Logging
+        win_rate = res["num_win_games"] / res["num_completed_games"] * 100
+        res["num_levels_play"][res["num_levels_play"] == 0] = 999
+        print([{idx: {
+            "w": res["num_levels_win"][idx],
+            "p": res["num_levels_play"][idx],
+            "r": res["num_levels_win"][idx] / res["num_levels_play"][idx],
+        }} for idx in range(len(LEVELS))])
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}")
+
         s_t = time.time()
         PPO_trainer.train(
-            num_completed_games=num_completed_games,
-            num_win_games=num_win_games,
-            num_damage=num_damage,
-            num_hit=num_hit
+            num_completed_games=res["num_completed_games"],
+            num_win_games=res["num_win_games"],
+            num_damage=res["num_damage"],
+            num_hit=["num_hit"]
         )
 
         print("training time", time.time() - s_t)
