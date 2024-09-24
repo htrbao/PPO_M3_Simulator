@@ -41,6 +41,10 @@ class Match3Levels:
     @property
     def levels(self):
         return self.__levels
+    
+    @property
+    def current_level(self):
+        return self.__current_lv_idx % len(self.levels)
 
     def sample(self):
         """

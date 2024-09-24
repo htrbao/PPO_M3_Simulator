@@ -88,7 +88,7 @@ class M3LocFeatureExtractor(nn.Module):
         layers = []
         layers.append(
             nn.Conv2d(
-                in_channels.shape[0]-kwargs["num_tile"] + kwargs["embedding_dim"]-1, kwargs["mid_channels"], 3, stride=1, padding=1
+                in_channels.shape[0], kwargs["mid_channels"], 3, stride=1, padding=1
             )
         )  # (batch, mid_channels, (size))
         layers.append(nn.GELU())
@@ -108,7 +108,7 @@ class M3LocFeatureExtractor(nn.Module):
             
         layers.append(
             nn.Conv2d(
-                second_channels, kwargs["out_channels"], 3, stride=1, padding=1
+                second_channels, kwargs["max_channels"], 3, stride=1, padding=1
             )
         )  # (batch, out_channels, (size))
         layers.append(nn.GELU())
@@ -116,24 +116,13 @@ class M3LocFeatureExtractor(nn.Module):
         self.layers = layers
         self.num_first_cnn_layer = kwargs["num_first_cnn_layer"]
         self.net = nn.Sequential(*layers)
-        self.embedding = nn.Embedding(kwargs["num_tile"], kwargs["embedding_dim"])
-        self.features_dim = kwargs["out_channels"] * kwargs["size"]
-        self.num_embedding_tile = kwargs["num_tile"]-1 # 12 - 1 = 11
+        self.features_dim = kwargs["max_channels"] * kwargs["size"]
+
 
 
     def forward(self, input: torch.Tensor):
         if len(input.shape) == 3:
             input = torch.unsqueeze(input, 0)
-        batch, feat, width, height = input.shape
-
-        input_emb = input[:, :self.num_embedding_tile, :, :].sum(dim=1).to(torch.long).detach().flatten(start_dim=1)
-        input_emb = self.embedding(input_emb)
-
-        input_emb = input_emb.reshape(batch, -1, width, height)
-
-        input_keep = input[:, self.num_embedding_tile+1:-1, :, :]
-        
-        input = torch.cat((input_emb, input_keep), dim=1)
         x = self.net(input)
         return x
 

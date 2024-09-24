@@ -36,6 +36,7 @@ class Match3Env(gym.Env):
         self.random_state = random_state
         self.all_moves = all_moves
         self.levels = levels or Match3Levels(LEVELS[level_group[0] : level_group[1]])
+        self.current_group = level_group[0]
         print(
             f"This env manages level from group {level_group[0]} to group {level_group[1]}"
         )
@@ -209,7 +210,8 @@ class Match3Env(gym.Env):
             self.helper.obs_to_tensor(obs["obs"]),
             reward,
             episode_over,
-            {"action_space": obs["action_space"]},
+            {"action_space": obs["action_space"],
+            "current_level": self.levels.current_level + self.current_group},
         )
 
     def reset(self, *args, **kwargs):
@@ -218,7 +220,8 @@ class Match3Env(gym.Env):
         self.__game.start(board, list_monsters)
         obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu")
         return self.helper.obs_to_tensor(obs["obs"]), {
-            "action_space": obs["action_space"]
+            "action_space": obs["action_space"],
+            "current_level": self.levels.current_level + self.current_group
         }
 
     def __swap(self, point1, point2):

@@ -644,22 +644,7 @@ class M3Helper:
                 obs["legal_action"],
                 action_space,
             )
-        list_tiles = [
-            "none_tile",
-            "color_1",
-            "color_2",
-            "color_3",
-            "color_4",
-            "color_5",
-            "disco",
-            "bomb",
-            "missile_h",
-            "missile_v",
-            "plane",
-        ]
-        
-        for idx, tile in enumerate(list_tiles):
-            obs[tile] = obs[tile].astype(np.int64) * (idx + 1)
+
         return dict(obs=obs, action_space=action_space)
 
     def obs_to_tensor(self, obs):
