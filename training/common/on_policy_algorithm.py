@@ -174,6 +174,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         __num_hit = 0
 
         n_steps = 0
+        __win_list = []
         rollout_buffer.reset()
         # self._last_obs, infos = env.reset()
         self._last_obs = env.reset()
@@ -224,8 +225,11 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             # print(rewards)
+            if dones.sum() > 0:
+                __win_list.extend(np.stack([x["current_level"] for x in infos])[np.nonzero(dones)])
+                
 
-            for idx, rew in enumerate(rewards):
+            for rew in rewards:
                 if "game" in rew.keys():
                     __num_levels_play[idx * n_levels_per_group + rew["current_level"]] += 1
                     __num_levels_win[idx * n_levels_per_group + rew["current_level"]] += 0 if rew["game"] < 0 else 1
@@ -272,7 +276,6 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             )
             self._last_obs = new_obs  # type: ignore[assignment]
             self._last_episode_starts = dones
-
         with th.no_grad():
             # Compute value for the last timestep
             values = self.policy.predict_values(obs_as_tensor(new_obs, self.device))  # type: ignore[arg-type]
@@ -281,15 +284,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
         print("End rollout data")
 
-        return dict(
-            _=True, 
-            num_levels_play = __num_levels_play,
-            num_levels_win = __num_levels_win,
-            num_completed_games=__num_completed_games, 
-            num_win_games=__num_win_games, 
-            num_damage=__num_damage, 
-            num_hit=__num_hit
-        )
+        return True, __num_completed_games, __num_win_games, __num_damage, __num_hit, __win_list
 
     def train(self) -> None:
         """
