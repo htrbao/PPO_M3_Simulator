@@ -172,8 +172,8 @@ class Match3Levels:
 
 
 easy_levels = []
-for x in range(1, 9):
-    for y in range(1, 8):
+for x in range(0, 9):
+    for y in range(0, 8):
         easy_board = [[0 for _ in range(9)] for _ in range(10)]
         for _x in range(x, x + 2):
             for _y in range(y, y + 2):
@@ -229,7 +229,7 @@ for x in range(1, 9):
                 ],
             )
         )
-
+random.shuffle(easy_levels)
 LEVELS = [
     *easy_levels,
     Level(
