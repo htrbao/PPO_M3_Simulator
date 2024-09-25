@@ -126,7 +126,7 @@ def get_args():
 def make_env(rank, obs_order, num_per_group):
     def _init():
         env = Match3Env(
-            90,
+            120,
             obs_order=obs_order,
             level_group=(rank * num_per_group, (rank + 1) * num_per_group),
         )
@@ -171,7 +171,7 @@ def main():
                 "num_first_cnn_layer": args.num_first_cnn_layer,
                 "num_self_attention_layers": args.num_self_attention_layers,
                 "layers_dims": [4096, 2048, 2048, 2048],
-                "max_channels": 256,
+                "max_channels": 512,
                 "size": 9*10
             },
             "optimizer_class": torch.optim.AdamW,

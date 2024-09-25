@@ -169,7 +169,7 @@ class Match3Env(gym.Env):
                 reward.update(
                     {
                         "game": (
-                            -1.5
+                            -2
                             - 1
                             * sum(
                                 [
@@ -179,7 +179,7 @@ class Match3Env(gym.Env):
                                 ]
                             )
                             if not is_early_done_game
-                            else 1.5 + 1 * self.__game.num_mons
+                            else 2 + 1 * self.__game.num_mons
                         )
                     }
                 )

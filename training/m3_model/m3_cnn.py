@@ -84,6 +84,7 @@ class M3LocFeatureExtractor(nn.Module):
     def __init__(self, in_channels: int, **kwargs) -> None:
         # mid_channels: int, out_channels: int = 160, num_first_cnn_layer: int = 10, **kwargs
         super(M3LocFeatureExtractor, self).__init__()
+        target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [7, 6]))
 
         layers = []
         layers.append(
@@ -105,18 +106,20 @@ class M3LocFeatureExtractor(nn.Module):
                 )
             )  # (batch, mid_channels, (size))
             layers.append(nn.GELU())
-            
+        last_channels = min(kwargs["max_channels"], kwargs["mid_channels"] + second_channels)
         layers.append(
             nn.Conv2d(
-                second_channels, kwargs["max_channels"], 3, stride=1, padding=1
+                second_channels, last_channels, 3, stride=1, padding=1
             )
         )  # (batch, out_channels, (size))
         layers.append(nn.GELU())
+        layers.append(M3Aap(target_pooling_shape))  # (batch, out_channels)
         layers.append(nn.Flatten(1, -1))
         self.layers = layers
         self.num_first_cnn_layer = kwargs["num_first_cnn_layer"]
         self.net = nn.Sequential(*layers)
-        self.features_dim = kwargs["max_channels"] * kwargs["size"]
+        self.features_dim = last_channels * target_pooling_shape[0] * (target_pooling_shape[1] if len(target_pooling_shape) == 2 else 1)
+
 
 
 
