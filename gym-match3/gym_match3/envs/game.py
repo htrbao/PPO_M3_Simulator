@@ -1529,7 +1529,7 @@ class Game(AbstractGame):
     def __move(self, point: Point, direction: Point):
         score = 0
         point2 = point + direction
-        near_monster = 100
+        near_monster = np.sqrt(10 * 10 + 9 * 9)
         cancel_score = 0
         create_pu_score = 0
         total_match_dmg = 0
