@@ -149,7 +149,7 @@ MY_LEVEL = [
                     relax_interval = 2,
                     setup_interval = 1,
                     width=3,
-                    height=3,
+                    height=2,
                     hp=12+base_hp,
                     dame=2,
                     )

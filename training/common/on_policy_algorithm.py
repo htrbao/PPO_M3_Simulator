@@ -224,14 +224,11 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             # print(rewards)
-            if dones.sum() > 0:
-                __win_list.extend(np.stack([x["current_level"] for x in infos])[np.nonzero(dones)])
-                
 
-            for rew in rewards:
+            for idx, rew in enumerate(rewards):
                 for p in rew["mons"]:
-                    print(p)
                     if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 9:
+                        print("out of table", rew["current_level"])
                         continue
                     hit_mask[rew["current_level"], p[0], p[1]] = 999
 
