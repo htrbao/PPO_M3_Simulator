@@ -139,8 +139,11 @@ class Match3Env(gym.Env):
         # print(m3_action) #openlater
         ob = {}
         reward = self.__swap(*m3_action)
+        p1, p2 = m3_action
         reward.update({
-            "current_level": self.levels.current_level_idx
+            "tile": [*p1.get_coord(), *p2.get_coord()],
+            "current_level": self.levels.current_level + self.current_group,
+            "mons": [p.get_coord() for mon in self.__game.list_monsters for p in mon.mons_positions]
         })
         is_early_done_game = self.__game._sweep_died_monster()
 
@@ -213,8 +216,9 @@ class Match3Env(gym.Env):
             self.helper.obs_to_tensor(obs["obs"]),
             reward,
             episode_over,
-            {"action_space": obs["action_space"],
-            "current_level": self.levels.current_level + self.current_group},
+            {
+                "action_space": obs["action_space"],
+            },
         )
 
     def reset(self, *args, **kwargs):
