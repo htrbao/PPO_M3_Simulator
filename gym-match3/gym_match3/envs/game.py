@@ -189,7 +189,7 @@ class Board(AbstractBoard):
             raise ValueError("Immovable shape has to be less or greater than n_shapes")
 
     def __getitem__(self, indx: Point):
-        self.__check_board()
+        # self.__check_board()
         self.__validate_points(indx)
         if isinstance(indx, Point):
             return self.board.__getitem__(indx.get_coord())
@@ -533,7 +533,11 @@ class MatchesSearcher(AbstractSearcher):
     def __init__(self, length, board_ndim):
         self.__3length, self.__4length, self.__5length = range(2, 5)
         self.stop_event = threading.Event()
+
         super().__init__(board_ndim)
+
+        self.search_directions_2m = self.normal_directions + self.plane_directions
+        self.search_directions_3m = self.normal_directions + self.directions
 
     # def scan_board_for_matches(self, board: Board, need_all: bool = True, checking_point: list[Point] = []):
     #     matches = set()
@@ -625,23 +629,24 @@ class MatchesSearcher(AbstractSearcher):
         early_stop: bool = False,
         only_2_matches: bool = False,
     ):
-        for idx, axis_dirs in enumerate(
-            self.normal_directions + self.plane_directions
-            if only_2_matches
-            else self.directions
-        ):
-            new_points = [point + Point(*dir_) for dir_ in axis_dirs]
-            try:
-                yield [
-                    Cell(board.get_shape(new_p), *new_p.get_coord())
-                    for new_p in new_points
-                ], len(axis_dirs), idx
-            except OutOfBoardError:
-                continue
-            finally:
-                if early_stop:  # Check if flag is set to exit generator
+        for idx, axis_dirs in enumerate(self.search_directions_2m if only_2_matches else self.search_directions_3m):
+            is_continue = False
+            newCells = []
+            for dir_ in axis_dirs:
+                try:
+                    new_p = point + Point(*dir_)
+                    cell = Cell(board.get_shape(new_p), *new_p.get_coord())
+                    newCells.append(cell)
+                except OutOfBoardError:
+                    is_continue = True
                     break
-                yield [], 0, -1
+
+            if not is_continue: yield newCells, len(axis_dirs), idx
+
+            if early_stop:
+                break
+            yield [], 0, -1
+
 
     @staticmethod
     def __filter_cells_by_shape(shape, *args):
