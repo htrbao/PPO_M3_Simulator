@@ -194,8 +194,6 @@ def main():
                 "layers_dims": [4096, 2048, 2048, 2048],
                 "max_channels": 256,
                 "size": 9*10
-                "max_channels": 256,
-                "size": 9*10
             },
             "optimizer_class": torch.optim.AdamW,
             "share_features_extractor": False,
