@@ -160,6 +160,7 @@ def make_env_loc(args, milestones=0, step=4):
 
 
 def main():
+    
     args = get_args()
     envs = make_env_loc(args)
     # env = Match3Env(90, obs_order=args.obs_order)
@@ -236,8 +237,6 @@ def main():
         )
 
         print("training time", time.time() - s_t)
-
-        exit()
         
         if win_rate > 60.0:
             milestone += 1
