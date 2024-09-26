@@ -1,6 +1,8 @@
+import os
 import argparse
 import time
 import torch
+import numpy as np
 
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
@@ -147,7 +149,13 @@ def make_env_loc(args, milestones=0, step=4):
 
 def main():
     args = get_args()
-    envs = make_env_loc(args)
+    max_level = len(LEVELS)
+    envs = SubprocVecEnv(
+        [
+            make_env(i, args.obs_order, max_level // args.num_envs)
+            for i in range(args.num_envs)
+        ]
+    )
     # env = Match3Env(90, obs_order=args.obs_order)
 
     print(envs.observation_space)
@@ -188,11 +196,25 @@ def main():
     while run_i < 300:
         run_i += 1
         s_t = time.time()
-        _, num_completed_games, num_win_games, num_damage, num_hit, win_list = (
+        res = (
             PPO_trainer.collect_rollouts(
-                PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps
+                PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps,
+                num_levels = len(LEVELS)
             )
         )
+        # extract stat
+        num_win_games = res.get('num_win_games', None)
+        num_completed_games = res.get('num_completed_games', None)
+        num_damage = res.get('num_damage', None)
+        num_hit = res.get('num_hit', None)
+        win_list = res.get('win_list', None)
+        hit_mask = res.get('hit_mask', None)
+
+        if not os.path.isdir(f'./statistics/hit_mask/{PPO_trainer._model_name}'):
+            os.makedirs(f'./statistics/hit_mask/{PPO_trainer._model_name}')
+        with open(f'./statistics/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
+            np.save(f, hit_mask)
+
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}\nmilestone: {milestone}")
         print(f"{win_list}")
@@ -206,12 +228,14 @@ def main():
         )
 
         print("training time", time.time() - s_t)
+
+        exit()
         
-        if win_rate > 80.0:
-            milestone += 1
-            envs = make_env_loc(args, milestone)
-            PPO_trainer.set_env(envs)
-            PPO_trainer.set_random_seed(13)
+        # if win_rate > 80.0:
+        #     milestone += 1
+        #     envs = make_env_loc(args, milestone)
+        #     PPO_trainer.set_env(envs)
+        #     PPO_trainer.set_random_seed(13)
 
 
 if __name__ == "__main__":

@@ -229,15 +229,14 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             print(infos)
 
             for idx, rew in enumerate(rewards):
-                if "mons" in infos[idx].keys():
-                    for p in infos[idx]["mons"]:
-                        print(p)
-                        if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 9:
-                            continue
-                        hit_mask[infos[idx]["current_level"], p[0], p[1]] = 999
+                for p in rew["mons"]:
+                    print(p)
+                    if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 9:
+                        continue
+                    hit_mask[rew["current_level"], p[0], p[1]] = 999
 
-                hit_mask[infos[idx]["current_level"], rew["tile"][0], rew["tile"][1]] += 1
-                hit_mask[infos[idx]["current_level"], rew["tile"][2], rew["tile"][3]] += 1
+                hit_mask[rew["current_level"], rew["tile"][0], rew["tile"][1]] += 1
+                hit_mask[rew["current_level"], rew["tile"][2], rew["tile"][3]] += 1
                 if "game" in rew.keys():
                     if rew["game"] > 0:
                         __win_list.append(rew["current_level"])
