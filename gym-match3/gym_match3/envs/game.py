@@ -1528,6 +1528,7 @@ class Game(AbstractGame):
 
     def __move(self, point: Point, direction: Point):
         score = 0
+        point2 = point + direction
         near_monster = 100
         cancel_score = 0
         create_pu_score = 0
@@ -1536,12 +1537,13 @@ class Game(AbstractGame):
         dmg = 0
         self_dmg = 0
 
-        matches, new_power_ups, brokens, disco_brokens , inside_brokens = self.__check_matches(point, direction)
+        matches, new_power_ups, brokens, disco_brokens, inside_brokens = self.__check_matches(point, direction)
 
         score += len(brokens) + len(disco_brokens)
 
         for i in range(len(self.list_monsters)):
-            near_monster = min(near_monster, point.euclidean_distance(self.list_monsters[i]._position))
+            for target_point in self.list_monsters[i].dmg_mask:
+                near_monster = min(near_monster, point2.euclidean_distance(target_point))
             match_damage, pu_damage = self.list_monsters[i].get_dame(matches, inside_brokens, disco_brokens)
             total_match_dmg += match_damage / self.list_monsters[i]._origin_hp
             total_power_dmg += pu_damage / self.list_monsters[i]._origin_hp
