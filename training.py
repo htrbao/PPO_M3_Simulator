@@ -139,10 +139,21 @@ def make_env(rank, obs_order, num_per_group):
 def make_env_loc(args, milestones=0, step=4):
     max_level = min(len(LEVELS), args.num_envs + step*milestones)
     
+    r = max_level % args.num_envs
+    
+    num_keeps = args.num_envs - r
+    
     envs = SubprocVecEnv(
         [
             make_env(i, args.obs_order, max_level // args.num_envs)
-            for i in range(args.num_envs)
+            for i in range(num_keeps)
+        ]
+        
+        + 
+        
+        [
+            make_env(i, args.obs_order, max_level // args.num_envs + 1)
+            for i in range(num_keeps, args.num_envs)
         ]
     )
     return envs
@@ -150,13 +161,7 @@ def make_env_loc(args, milestones=0, step=4):
 
 def main():
     args = get_args()
-    max_level = len(LEVELS)
-    envs = SubprocVecEnv(
-        [
-            make_env(i, args.obs_order, max_level // args.num_envs)
-            for i in range(args.num_envs)
-        ]
-    )
+    envs = make_env_loc(args)
     # env = Match3Env(90, obs_order=args.obs_order)
 
     print(envs.observation_space)
@@ -179,7 +184,7 @@ def main():
                 "num_first_cnn_layer": args.num_first_cnn_layer,
                 "num_self_attention_layers": args.num_self_attention_layers,
                 "layers_dims": [4096, 2048, 2048, 2048],
-                "max_channels": 512,
+                "max_channels": 128,
                 "size": 9*10
             },
             "optimizer_class": torch.optim.AdamW,
@@ -234,11 +239,11 @@ def main():
 
         exit()
         
-        # if win_rate > 80.0:
-        #     milestone += 1
-        #     envs = make_env_loc(args, milestone)
-        #     PPO_trainer.set_env(envs)
-        #     PPO_trainer.set_random_seed(13)
+        if win_rate > 60.0:
+            milestone += 1
+            envs = make_env_loc(args, milestone)
+            PPO_trainer.set_env(envs)
+            PPO_trainer.set_random_seed(13)
 
 
 if __name__ == "__main__":
