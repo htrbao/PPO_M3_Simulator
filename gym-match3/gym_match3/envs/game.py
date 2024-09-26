@@ -294,6 +294,13 @@ class Board(AbstractBoard):
     def get_shape(self, point: Point):
         return self[point]
 
+    def get_valid_shape(self, indx: Point):
+        if isinstance(indx, Point):
+            return self.board.__getitem__(indx.get_coord())
+        else:
+            raise ValueError("Only Point class supported for getting shapes")
+
+
     def __validate_points(self, *args):
         for point in args:
             is_valid = self.__is_valid_point(point)
@@ -302,6 +309,12 @@ class Board(AbstractBoard):
 
     def __is_valid_point(self, point: Point):
         row, col = point.get_coord()
+        board_rows, board_cols = self.board_size
+        correct_row = ((row + 1) <= board_rows) and (row >= 0)
+        correct_col = ((col + 1) <= board_cols) and (col >= 0)
+        return correct_row and correct_col
+
+    def is_valid_point(self, row, col):
         board_rows, board_cols = self.board_size
         correct_row = ((row + 1) <= board_rows) and (row >= 0)
         correct_col = ((col + 1) <= board_cols) and (col >= 0)
@@ -536,9 +549,6 @@ class MatchesSearcher(AbstractSearcher):
 
         super().__init__(board_ndim)
 
-        self.search_directions_2m = self.normal_directions + self.plane_directions
-        self.search_directions_3m = self.normal_directions + self.directions
-
     # def scan_board_for_matches(self, board: Board, need_all: bool = True, checking_point: list[Point] = []):
     #     matches = set()
     #     new_power_ups = dict()
@@ -629,19 +639,20 @@ class MatchesSearcher(AbstractSearcher):
         early_stop: bool = False,
         only_2_matches: bool = False,
     ):
-        for idx, axis_dirs in enumerate(self.search_directions_2m if only_2_matches else self.search_directions_3m):
-            is_continue = False
+        curRow, curCol = point.get_coord()
+        for idx, axis_dirs in enumerate(self.normal_directions + self.plane_directions
+            if only_2_matches
+            else self.directions):
             newCells = []
             for dir_ in axis_dirs:
-                try:
-                    new_p = point + Point(*dir_)
-                    cell = Cell(board.get_shape(new_p), *new_p.get_coord())
-                    newCells.append(cell)
-                except OutOfBoardError:
-                    is_continue = True
-                    break
+                newRow, newCol = curRow + dir_[0], curCol + dir_[1]
+                if not board.is_valid_point(newRow, newCol): break
 
-            if not is_continue: yield newCells, len(axis_dirs), idx
+                new_p = Point(newRow, newCol)
+                cell = Cell(board.get_valid_shape(new_p), newRow, newCol)
+                newCells.append(cell)
+            else:
+                yield newCells, len(axis_dirs), idx
 
             if early_stop:
                 break
