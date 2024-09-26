@@ -18,8 +18,6 @@ class Match3Levels:
     def __init__(self, levels, immovable_shape=-1, h=None, w=None, n_shapes=None):
         self.__current_lv_idx = 0
         self.__levels = levels
-        self.__num_plays = [0] * len(levels)
-        self.__num_wins = [0] * len(levels)
         self.__immovable_shape = immovable_shape
         self.__h = self.__set_dim(h, [lvl.h for lvl in levels])
         self.__w = self.__set_dim(w, [lvl.w for lvl in levels])
@@ -43,8 +41,8 @@ class Match3Levels:
         return self.__levels
     
     @property
-    def current_level_idx(self):
-        return self.__current_lv_idx
+    def current_level(self):
+        return self.__current_lv_idx % len(self.levels)
 
     def sample(self):
         """

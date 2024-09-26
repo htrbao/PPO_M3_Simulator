@@ -69,6 +69,12 @@ def get_args():
 
     # Rollout Data
     parser.add_argument(
+        "--strategy",
+        type=str,
+        default="sequential",
+        help="Strategy increasing the number of levels",
+    )
+    parser.add_argument(
         "--n_steps",
         type=int,
         default=32,
@@ -150,13 +156,18 @@ def make_env_loc(args, milestones=0, step=4):
 def main():
     args = get_args()
     max_level = len(LEVELS)
-    envs = SubprocVecEnv(
-        [
-            make_env(i, args.obs_order, max_level // args.num_envs)
-            for i in range(args.num_envs)
-        ]
-    )
-    # env = Match3Env(90, obs_order=args.obs_order)
+    envs = None
+    if args.strategy == 'sequential':
+        envs = SubprocVecEnv(
+            [
+                make_env(i, args.obs_order, max_level // args.num_envs)
+                for i in range(args.num_envs)
+            ]
+        )
+    elif args.strategy == 'milestone':
+        envs = make_env_loc(args)
+    else:
+        raise ValueError(f'Invalid strategy: {args.strategy}')
 
     print(envs.observation_space)
     print(envs.action_space)
