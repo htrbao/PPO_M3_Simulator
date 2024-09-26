@@ -514,11 +514,11 @@ class M3Helper:
             "color_3": (board == GameObject.color3),
             "color_4": (board == GameObject.color4),
             "color_5": (board == GameObject.color5),
-            "disco": (board == GameObject.power_disco) * 4.5,
-            "bomb": (board == GameObject.power_bomb) * 2.5,
-            "missile_h": (board == GameObject.power_missile_h) * 1.0,
-            "missile_v": (board == GameObject.power_missile_v) * 1.5,
-            "plane": (board == GameObject.power_plane) * 2,
+            "disco": (board == GameObject.power_disco),
+            "bomb": (board == GameObject.power_bomb),
+            "missile_h": (board == GameObject.power_missile_h),
+            "missile_v": (board == GameObject.power_missile_v),
+            "plane": (board == GameObject.power_plane),
             # "buff": (board == GameObject.power_disco) \
             #         | (board == GameObject.power_disco) \
             #         | (board == GameObject.power_disco),
@@ -549,6 +549,7 @@ class M3Helper:
             "legal_action": np.zeros((self.num_row, self.num_col)),
             "heat_mask" : np.full((self.num_row, self.num_col), time_factor),
         }
+        
 
         for _mons in list_monsters:
             for p in _mons.mons_positions:

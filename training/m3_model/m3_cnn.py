@@ -70,6 +70,61 @@ class M3CnnFeatureExtractor(nn.Module):
             input = torch.unsqueeze(input, 0)
         x = self.net(input)
         return x
+    
+
+class M3LocFeatureExtractor(nn.Module):
+    """
+    Model architecture with CNN base.
+    `Input`:
+    - in_chanels: size of input channels
+    - kwargs["mid_channels"]: size of mid channels
+    `Output`:
+    - `Tensor`: [batch, action_space_size]
+    """
+    def __init__(self, in_channels: int, **kwargs) -> None:
+        # mid_channels: int, out_channels: int = 160, num_first_cnn_layer: int = 10, **kwargs
+        super(M3LocFeatureExtractor, self).__init__()
+
+        layers = []
+        layers.append(
+            nn.Conv2d(
+                in_channels.shape[0], kwargs["mid_channels"], 3, stride=1, padding=1
+            )
+        )  # (batch, mid_channels, (size))
+        layers.append(nn.GELU())
+        for idx in range(kwargs["num_first_cnn_layer"]):
+            first_channels = min(kwargs["max_channels"], kwargs["mid_channels"]*(idx + 1))
+            second_channels = min(kwargs["max_channels"], kwargs["mid_channels"]*(idx + 2))
+            layers.append(
+                nn.Conv2d(
+                    first_channels,
+                    second_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                )
+            )  # (batch, mid_channels, (size))
+            layers.append(nn.GELU())
+            
+        layers.append(
+            nn.Conv2d(
+                second_channels, kwargs["max_channels"], 3, stride=1, padding=1
+            )
+        )  # (batch, out_channels, (size))
+        layers.append(nn.GELU())
+        layers.append(nn.Flatten(1, -1))
+        self.layers = layers
+        self.num_first_cnn_layer = kwargs["num_first_cnn_layer"]
+        self.net = nn.Sequential(*layers)
+        self.features_dim = kwargs["max_channels"] * kwargs["size"]
+
+
+
+    def forward(self, input: torch.Tensor):
+        if len(input.shape) == 3:
+            input = torch.unsqueeze(input, 0)
+        x = self.net(input)
+        return x
 
 
 # With square kernels and equal stride

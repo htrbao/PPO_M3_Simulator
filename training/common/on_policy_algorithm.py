@@ -224,6 +224,9 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             # print(rewards)
+            if dones.sum() > 0:
+                __win_list.extend(np.stack([x["current_level"] for x in infos])[np.nonzero(dones)])
+                
 
             for rew in rewards:
                 for p in rew["mons"]:

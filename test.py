@@ -1,17 +1,8 @@
-import torch
+from gym_match3.envs.match3_env import Match3Env
+from gym_match3.envs.levels import Match3Levels, LEVELS
 
-tensor = torch.Tensor(
-    [[
-        [1, 1, 1],
-        [2, 2, 2],
-        [3, 3, 3],
-        [4, 4, 4],
-        [5, 5, 5],
-    ]]
+env = Match3Env(
+    90,
+    obs_order=obs_order,
+    level_group=(rank * num_per_group, (rank + 1) * num_per_group),
 )
-
-# Transposing dimensions 1 and 2
-transposed_tensor = tensor.transpose(1, 2)
-
-print("Transposing dimensions", transposed_tensor.shape)
-print(transposed_tensor)
