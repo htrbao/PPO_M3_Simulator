@@ -159,19 +159,18 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             collected, False if callback terminated rollout prematurely.
         """
         # Some input from kwargs
-        n_levels = kwargs.get('n_levels', None)
-        n_levels_per_group = kwargs.get('n_levels_per_group', None)
 
         # Switch to eval mode (this affects batch norm / dropout)
         self.policy.set_training_mode(False)
 
         # Some stats about the play ability in current epoch.
-        __num_levels_win = np.zeros((n_levels))
-        __num_levels_play = np.zeros((n_levels))
+        __num_levels = kwargs.get('num_levels', None)
         __num_completed_games = 0
         __num_win_games = 0
         __num_damage = 0
         __num_hit = 0
+
+        hit_mask = np.zeros((__num_levels, 10, 9))
 
         n_steps = 0
         __win_list = []
@@ -225,21 +224,28 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             # print(rewards)
-            if dones.sum() > 0:
-                __win_list.extend(np.stack([x["current_level"] for x in infos])[np.nonzero(dones)])
-                
+            
+            print(rewards)
+            print(infos)
 
-            for rew in rewards:
+            for idx, rew in enumerate(rewards):
+                if "mons" in infos[idx].keys():
+                    for p in infos[idx]["mons"]:
+                        print(p)
+                        if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 9:
+                            continue
+                        hit_mask[infos[idx]["current_level"], p[0], p[1]] = 999
+
+                hit_mask[infos[idx]["current_level"], rew["tile"][0], rew["tile"][1]] += 1
+                hit_mask[infos[idx]["current_level"], rew["tile"][2], rew["tile"][3]] += 1
                 if "game" in rew.keys():
-                    __num_levels_play[idx * n_levels_per_group + rew["current_level"]] += 1
-                    __num_levels_win[idx * n_levels_per_group + rew["current_level"]] += 0 if rew["game"] < 0 else 1
-
+                    if rew["game"] > 0:
+                        __win_list.append(rew["current_level"])
                     __num_completed_games += 1
                     __num_win_games += 0 if rew["game"] < 0 else 1
                     total_dmg = rew["match_damage_on_monster"] + rew["power_damage_on_monster"]
                     __num_damage += total_dmg
                     __num_hit += 0 if total_dmg == 0 else 1
-
             # action_space = infos["action_space"]
             action_space = np.stack([x["action_space"] for x in infos])
 
@@ -284,7 +290,15 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
         print("End rollout data")
 
-        return True, __num_completed_games, __num_win_games, __num_damage, __num_hit, __win_list
+        return dict(
+            _=True, 
+            num_completed_games=__num_completed_games,
+            num_win_games=__num_win_games,
+            num_damage=__num_damage,
+            num_hit=__num_hit,
+            win_list=__win_list,
+            hit_mask=hit_mask,
+       )
 
     def train(self) -> None:
         """
