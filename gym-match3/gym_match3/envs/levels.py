@@ -11,7 +11,7 @@ import os
 import importlib
 
 dict_levels = {}
-
+random.seed(13)
 
 class Match3Levels:
 
