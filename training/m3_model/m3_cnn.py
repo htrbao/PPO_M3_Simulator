@@ -89,8 +89,8 @@ class M3CnnLargerFeatureExtractor(nn.Module):
         # mid_channels: int, out_channels: int = 160, num_first_cnn_layer: int = 10, **kwargs
         super(M3CnnLargerFeatureExtractor, self).__init__()
 
-        target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [5, 4]))
-        # target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [7, 6]))
+        # target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [5, 4]))
+        target_pooling_shape = tuple(kwargs.get("target_pooling_shape", [7, 6]))
 
         layers = []
         layers.append(
@@ -193,9 +193,9 @@ class CnnSelfAttention(nn.Module):
         o = self.gamma * torch.bmm(h, beta) + x
         return o.view(*size).contiguous()
 
-class M3SelfAttentionFeatureExtractor(nn.Module):
+class M3CnnSelfAttentionFeatureExtractor(nn.Module):
     """
-    Constructs a self-attention feature extractor for the M3 algorithm.
+    Constructs a CNN self-attention on channels feature extractor for the M3 algorithm.
     """
     def __init__(self, in_channels: int, **kwargs):
         num_self_attention_layers = kwargs.get('num_self_attention_layers', 1)
@@ -212,7 +212,79 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
         x = self.cnn_self_attention(x)
         x = x.view(x.shape[0], -1).contiguous()
         return torch.relu(x)
+    
+class M3SelfAttentionFeatureExtractor(nn.Module):
+    """
+    Constructs a self-attention on tiles feature extractor for the M3 algorithm.
+    """
+    def __init__(self, in_channels, **kwargs):
+        super().__init__()
+        num_heads = kwargs.get('num_heads', 2)
+        n_channels = in_channels.shape[0]
+        self.multihead_attn = nn.MultiheadAttention(n_channels, num_heads)
+        self.activator = nn.ReLU()
 
+        self.features_dim = n_channels * in_channels.shape[1] * in_channels.shape[2]
+
+    def forward(self, x: torch.Tensor):
+        x = x.view(*x.shape[:2], -1)
+        x = x.transpose(1, 2)
+        attn_output, _ = self.multihead_attn(x, x, x, need_weights=False)
+        attn_output = attn_output.flatten(start_dim=1)
+        x = self.activator(attn_output)
+        return x
+
+class M3ExplainationFeatureExtractor(nn.Module):
+    def __init__(self, in_channels, **kwargs) -> None:
+        super().__init__()
+
+        core_cls = kwargs.get("core_cls", M3CnnLargerFeatureExtractor)
+
+        self.pu_emb = nn.Embedding(6, 1)
+        self.core_model = core_cls(in_channels, **kwargs)
+        self.features_dim = self.core_model.features_dim
+
+    def forward(self, x: torch.Tensor):
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
+
+        pu_m = x[:,6:11,:,:] # batch_sz, 5, 10, 9
+        for idx, pu_v in enumerate([1, 1.5, 2, 2.5, 4.5]):
+            pu_m[pu_m == pu_v] = idx + 1
+        pu_m = pu_m.int()
+        pu_m_ori_shape = pu_m.shape
+        pu_m = torch.flatten(pu_m, start_dim=2) # batch_sz, 5, 90
+        pu_m = self.pu_emb(pu_m) # batch_sz, 5, 90, 1
+        pu_m = torch.squeeze(pu_m, -1)
+        pu_m = pu_m.reshape(pu_m_ori_shape)
+
+        x = torch.concat((x[:,:6,:,:], pu_m, x[:,11:,:,:]), dim=1)
+
+        x = self.core_model(x)
+        return x
+
+class M3MlpFeatureExtractor(nn.Module):
+    def __init__(self, in_channels, **kwargs):
+        super().__init__()
+        self.features_dim = in_channels.shape[0] * in_channels.shape[1] * in_channels.shape[2]
+        layers_dims = kwargs.get('layers_dims', [])
+
+        net = []
+        for curr_layer_dim in layers_dims:
+            net.append(nn.Linear(self.features_dim, curr_layer_dim))
+            net.append(nn.ReLU())
+            self.features_dim = curr_layer_dim
+
+        self.net = nn.Sequential(*net)
+
+    def forward(self, x: torch.Tensor):
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
+
+        x = x.flatten(start_dim=1)
+        x = self.net(x)
+
+        return x
 
 class M3MlpExtractor(nn.Module):
     """

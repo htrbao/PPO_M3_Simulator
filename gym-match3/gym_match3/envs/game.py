@@ -8,6 +8,8 @@ import numpy as np
 import random
 from collections import Counter
 
+import traceback
+
 import concurrent.futures
 import threading
 
@@ -50,6 +52,9 @@ class Point(AbstractPoint):
 
     def get_coord(self):
         return self.__row, self.__col
+    
+    def euclidean_distance(self, another):
+        return np.linalg.norm(np.array(self.get_coord()) - np.array(another.get_coord()))
 
     def __add__(self, other):
         row1, col1 = self.get_coord()
@@ -309,6 +314,7 @@ class Board(AbstractBoard):
                 raise ImmovableShapeError
 
     def delete(self, points: set, allow_delete_monsters: bool = False):
+        points = [p for p in points if self.get_shape(p) != GameObject.immovable_shape]
         self._check_availability(*points)
         if allow_delete_monsters:
             coordinates = tuple(np.array([i.get_coord() for i in points]).T.tolist())
@@ -642,6 +648,322 @@ class MatchesSearcher(AbstractSearcher):
         return list(filter(lambda x: x.shape == shape, *args))
 
 
+class AbstractMonster(ABC):
+    def __init__(
+        self,
+        relax_interval,
+        setup_interval=0,
+        position: Point = None,
+        hp=30,
+        width: int = 1,
+        height: int = 1,
+        have_paper_box: bool = False,
+        request_masked: list[int] = None
+    ):
+        self.real_monster = True
+        self._hp = hp
+        self._origin_hp = hp
+        self._progress = 0
+        self._relax_interval = relax_interval
+        self._setup_interval = setup_interval
+        self._position = position
+        self._width, self._height = width, height
+        self.have_paper_box = have_paper_box
+        if self.have_paper_box:
+            self._setup_interval = 3
+            self._paper_box_hp = 0
+
+        self.__left_dmg_mask = self.__get_left_mask(self._position, self._height)
+        self.__right_dmg_mask = self.__get_right_mask(
+            self._position + Point(0, self._width - 1), self._height
+        )
+        self.__top_dmg_mask = self.__get_top_mask(self._position, self._width)
+        self.__down_dmg_mask = self.__get_down_mask(
+            self._position + Point(self._height - 1, 0), self._width
+        )
+
+        self.__inside_dmg_mask = [
+            Point(i, j) + position
+            for i, j in product(range(self._height), range(self._width))
+        ]
+        self.cause_dmg_mask = []
+        if request_masked is not None and len(request_masked) == 5:
+            self.available_mask = request_masked
+        else:
+            self.available_mask = [1, 1, 1, 1, 1]  # left, right, top, down, inside
+
+    @property
+    def dmg_mask(self):
+        return (
+            (self.__left_dmg_mask if self.available_mask[0] else [])
+            + (self.__right_dmg_mask if self.available_mask[1] else [])
+            + (self.__top_dmg_mask if self.available_mask[2] else [])
+            + (self.__down_dmg_mask if self.available_mask[3] else [])
+        )
+
+    @property
+    def inside_dmg_mask(self):
+        return self.__inside_dmg_mask if self.available_mask[4] else []
+    
+    @property
+    def mons_positions(self):
+        return self.__inside_dmg_mask
+
+    @abstractmethod
+    def act(self):
+        self._progress += 1
+
+    def set_position(self, position: Point):
+        self._position = position
+        # Update new damage mask
+        self.__left_dmg_mask = self.__get_left_mask(self._position, self._height)
+        self.__right_dmg_mask = self.__get_right_mask(
+            self._position + Point(0, self._width - 1), self._height
+        )
+        self.__top_dmg_mask = self.__get_top_mask(self._position, self._width)
+        self.__down_dmg_mask = self.__get_down_mask(
+            self._position + Point(self._height - 1, 0), self._width
+        )
+
+        self.__inside_dmg_mask = [
+            Point(i, j) + position
+            for i, j in product(range(self._height), range(self._width))
+        ]
+
+    def attacked(self, match_damage, pu_damage):
+        if self.have_paper_box and self._paper_box_hp > 0:
+            self._paper_box_hp -= 1 if match_damage > 0 else 0
+        else:
+            damage = match_damage + pu_damage
+
+            assert self._hp > 0, f"self._hp need to be positive, but self._hp = {self._hp}"
+            self._hp -= damage
+
+    @staticmethod
+    def __get_left_mask(point: Point, height: int):
+        mask = []
+        for i in range(height):
+            _point = point + Point(i, -1)
+            if _point.get_coord()[0] >= 0 and _point.get_coord()[1] >= 0:
+                mask.append(_point)
+        return mask
+
+    @staticmethod
+    def __get_top_mask(point: Point, width: int):
+        mask = []
+        for i in range(width):
+            _point = point + Point(-1, i)
+            if _point.get_coord()[0] >= 0 and _point.get_coord()[1] >= 0:
+                mask.append(_point)
+        return mask
+
+    @staticmethod
+    def __get_right_mask(point: Point, height: int):
+        mask = []
+        for i in range(height):
+            mask.append(point + Point(i, 1))
+        return mask
+
+    @staticmethod
+    def __get_down_mask(point: Point, width: int):
+        mask = []
+        for i in range(width):
+            mask.append(point + Point(1, i))
+        return mask
+
+    def get_hp(self):
+        return self._hp
+
+    def get_dame(self, matches, brokens, disco_brokens):
+        """
+        return: match_damage, pu_damage
+        """
+        __matches = [ele.point for ele in matches]
+        mons_inside_dmg = 0 
+        for coor in brokens:
+            if coor in set(self.inside_dmg_mask):
+                mons_inside_dmg += 1
+        # print("dmg_mask:", self.dmg_mask)
+        # print("dmg_pus:", self.inside_dmg_mask)
+        # print(self.available_mask)
+        # print(self.__right_dmg_mask)
+        # print(self.__down_dmg_mask)
+
+        return len(set(self.dmg_mask) & set(__matches)), \
+            mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens))
+
+
+class DameMonster(AbstractMonster):
+    def __init__(
+        self,
+        position: Point,
+        relax_interval=6,
+        setup_interval=3,
+        hp=20,
+        width: int = 1,
+        height: int = 1,
+        dame=4,
+        cancel_dame=5,
+        have_paper_box: bool = False,
+        request_masked: list[int] = None
+    ):
+        super().__init__(relax_interval, setup_interval, position, hp, width, height, have_paper_box, request_masked)
+
+        self._damage = dame
+
+        self._cancel = cancel_dame
+        self._cancel_dame = cancel_dame
+
+    def act(self):
+        super().act()
+        if not self.have_paper_box:
+            if self._cancel <= 0:
+                self._progress = 0
+                self._hp += self._cancel  # because of negative __cancel
+                self._cancel = self._cancel_dame
+                return {
+                    "damage": 0,
+                    "cancel_score": 2,
+                }
+        else:
+            if self._paper_box_hp < 0:
+                self.available_mask = [1, 1, 1, 1, 1]
+                self._progress = 0
+
+        if self._progress > self._relax_interval + self._setup_interval:
+            self._progress = 0
+            return {"damage": self._damage}
+
+        return {"damage": 0}
+
+    def attacked(self, match_damage, pu_damage):
+        damage = match_damage + pu_damage
+
+        if (
+            self.have_paper_box and self._relax_interval < self._progress
+            and self._progress <= self._relax_interval + self._setup_interval
+        ):
+            if self._paper_box_hp <= 0:
+                self._paper_box_hp = self._setup_interval
+                self.available_mask = [1, 1, 1, 1, 0]
+        
+        super().attacked(match_damage, pu_damage)
+
+
+class BoxMonster(AbstractMonster):
+    def __init__(
+        self,
+        box_mons_type: int,
+        position: Point,
+        relax_interval: int = 8,
+        setup_interval: int = 0,
+        hp=30,
+        width: int = 1,
+        height: int = 1,
+        have_paper_box: bool = False,
+    ):
+        super().__init__(relax_interval, 0, position, hp, width, height, have_paper_box)
+        self.__box_monster_type = box_mons_type
+
+    def act(self):
+        super().act()
+        if self._progress > self._relax_interval + self._setup_interval:
+            self._progress = 0
+            if self.__box_monster_type == GameObject.monster_box_box:
+                return {"box": GameObject.blocker_box}
+            if self.__box_monster_type == GameObject.monster_box_bomb:
+                return {"box": GameObject.blocker_bomb}
+            if self.__box_monster_type == GameObject.monster_box_thorny:
+                return {"box": GameObject.blocker_thorny}
+            if self.__box_monster_type == GameObject.monster_box_both:
+                return {
+                    "box": (
+                        GameObject.blocker_bomb
+                        if np.random.uniform(0, 1.0) <= 0.5
+                        else GameObject.blocker_thorny
+                    )
+                }
+        return {}
+
+
+class BombBlocker(DameMonster):
+    def __init__(
+        self,
+        position: Point,
+        relax_interval=3,
+        setup_interval=0,
+        hp=2,
+        width: int = 1,
+        height: int = 1,
+        dame=2,
+        cancel_dame=5,
+    ):
+        super().__init__(
+            position,
+            relax_interval,
+            setup_interval,
+            hp,
+            width,
+            height,
+            dame,
+            cancel_dame,
+        )
+
+        self.is_box = True if dame == 0 else False
+        self.real_monster = False
+
+    def act(self):
+        if self._progress > self._relax_interval + self._setup_interval:
+            self._progress = 0
+            self._hp = -999
+            return {"damage": self._damage}
+
+        return {"damage": 0}
+
+    def attacked(self, match_damage, pu_damage):
+        return super().attacked(match_damage, pu_damage)
+
+
+class ThornyBlocker(DameMonster):
+    def __init__(
+        self,
+        position: Point,
+        relax_interval=999,
+        setup_interval=999,
+        hp=1,
+        width: int = 1,
+        height: int = 1,
+        dame=1,
+        cancel_dame=5,
+    ):
+        super().__init__(
+            position,
+            relax_interval,
+            setup_interval,
+            hp,
+            width,
+            height,
+            dame,
+            cancel_dame,
+        )
+
+        self.real_monster = False
+
+    def act(self):
+        if self._progress > self._relax_interval + self._setup_interval:
+            self._progress = 0
+            self._hp = -999
+            return {"damage": self._damage}
+
+        return {"damage": 0}
+
+    def attacked(self, match_damage, pu_damage):
+        if pu_damage > 0:
+            self._hp = -999
+        elif match_damage > 0:
+            self._progress = self._relax_interval + self._setup_interval + 1
+
+
 class AbstractPowerUpActivator(ABC):
     @abstractmethod
     def activate_power_up(self, power_up_type: int, point: Point, board: Board):
@@ -653,7 +975,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
         self.__bomb_affect = self.__get_bomb_affect()
         self.__plane_affect = self.__get_plane_affect()
 
-    def activate_power_up(self, point: Point, directions, board: Board):
+    def activate_power_up(self, point: Point, directions, board: Board, list_monsters: list[AbstractMonster]):
         return_brokens, disco_brokens = set(), set()
         brokens = []
         point2 = point + directions
@@ -683,7 +1005,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                 return_brokens.add(_p)
                                 disco_brokens.add(_p)
                                 shape2 = shape2 if (shape2 > GameObject.power_missile_v) else random.choice([GameObject.power_missile_h, GameObject.power_missile_v])
-                                brokens.extend(self.__activate_not_merge(shape2, _p, board, None))
+                                brokens.extend(self.__activate_not_merge(shape2, _p, board, list_monsters, None))
                 else:
                     brokens = [Point(i, j) for i, j in product(range(board.board_size[0]), range(board.board_size[1]))]
                     disco_brokens = set(brokens)
@@ -697,7 +1019,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     if shape2 != GameObject.power_plane:
                         random_mons = mons_pos[np.random.randint(0, len(mons_pos))]
                         brokens.append(random_mons)
-                        brokens.extend(self.__activate_not_merge(shape2, random_mons, board, None))
+                        brokens.extend(self.__activate_not_merge(shape2, random_mons, board, list_monsters, None))
                     else:
                         brokens.extend(random.sample(mons_pos, 6) if len(mons_pos) > 6 else mons_pos)
                 except:
@@ -709,7 +1031,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 if shape2  != GameObject.power_bomb:
                     for i in range(-1,2,1):
                         dir = Point(i,0) if shape2 == GameObject.power_missile_h else Point(0,i)
-                        brokens.extend(self.__activate_not_merge(shape2, point + dir, board, None))
+                        brokens.extend(self.__activate_not_merge(shape2, point + dir, board, list_monsters, None))
                 else:
                     for i in range(-4, 5, 1):
                         for j in range(-4, 5, 1):
@@ -717,26 +1039,26 @@ class PowerUpActivator(AbstractPowerUpActivator):
                             brokens.append(point + Point(i, j))
             # With missiles
             else:
-                brokens.extend(self.__activate_not_merge( GameObject.power_missile_h, point, board, None))
-                brokens.extend(self.__activate_not_merge( GameObject.power_missile_v, point, board, None))
+                brokens.extend(self.__activate_not_merge( GameObject.power_missile_h, point, board, list_monsters, None))
+                brokens.extend(self.__activate_not_merge( GameObject.power_missile_v, point, board, list_monsters, None))
 
         elif shape1 in GameObject.powers:
             return_brokens.add(point)
             if shape1 == GameObject.power_disco:
                 disco_brokens |= set(
-                    self.__activate_not_merge(shape1, point, board, shape2)
+                    self.__activate_not_merge(shape1, point, board, list_monsters, shape2)
                 )
             else:
-                brokens = self.__activate_not_merge(shape1, point, board, shape2)
+                brokens = self.__activate_not_merge(shape1, point, board, list_monsters, shape2)
                 
         elif shape2 in GameObject.powers:
             return_brokens.add(point2)
             if shape2 == GameObject.power_disco:
                 disco_brokens |= set(
-                    self.__activate_not_merge(shape2, point2, board, shape1)
+                    self.__activate_not_merge(shape2, point2, board, list_monsters, shape1)
                 )
             else:
-                brokens = self.__activate_not_merge(shape2, point2, board, shape1)
+                brokens = self.__activate_not_merge(shape2, point2, board, list_monsters, shape1)
                 
         inside_brokens = copy.copy(brokens)
         brokens = list(set(brokens))
@@ -754,12 +1076,12 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     if shape_c == GameObject.power_disco:
                         disco_brokens |= set(
                             self.__activate_not_merge(
-                                shape_c, consider_point, board, shape1
+                                shape_c, consider_point, board, list_monsters, shape1
                             )
                         )
                     else:
                         more_pu =   self.__activate_not_merge(
-                                shape_c, consider_point, board, shape1
+                                shape_c, consider_point, board, list_monsters, shape1
                             )
                         brokens.extend(more_pu)
                         inside_brokens.extend(more_pu)
@@ -776,14 +1098,56 @@ class PowerUpActivator(AbstractPowerUpActivator):
     # ):
     #     pass
 
+    def get_dir(self, prev_point: Point, cur_point: Point):
+        direction: Point = cur_point - prev_point
+        x, y = direction.get_coord()
+        # left, right, top, down, inside
+        if y == 1 and x == 1:
+            return [0, 2]
+        if y == 1 and x == -1:
+            return [0, 3]
+        if y == -1 and x == 1:
+            return [1, 2]
+        if y == -1 and x == -1:
+            return [1, 3]
+        if y == 1:
+            return [0]
+        if y == -1:
+            return [1]
+        if x == 1:
+            return [2]
+        if x == -1:
+            return [3]
+
+    def check_shield(self, prev_point: Point, cur_point: Point, board: Board, list_monsters: list[AbstractMonster]):
+        try:
+            if prev_point == cur_point:
+                return False
+            shape1 = board.get_shape(prev_point)
+            shape2 = board.get_shape(cur_point)
+            if shape1 not in GameObject.monsters or shape2 in GameObject.monsters:
+                affect_dirs = self.get_dir(prev_point, cur_point)
+                for mons in list_monsters:
+                    if cur_point in mons.mons_positions:
+                        for __adir in affect_dirs:
+                            if mons.available_mask[__adir] == 0:
+                                return True
+            return False
+        except OutOfBoardError:
+            return True    
+
     def __activate_not_merge(
-        self, power_up_type: int, point: Point, board: Board, _color: int = None
+        self, power_up_type: int, point: Point, board: Board, list_monsters, _color: int = None
     ):
         brokens = []
         # print("Power up to explode", power_up_type, point)
         if power_up_type == GameObject.power_plane:
             for _dir in self.__plane_affect:
-                brokens.append(point + Point(*_dir))
+                cur_point = point + Point(*_dir)
+                if not self.check_shield(point, cur_point, board, list_monsters):
+                    brokens.append(cur_point)
+                else:
+                    break
             mons_pos = board.get_monster()
             try:
                 brokens.append(mons_pos[np.random.randint(0, len(mons_pos))])
@@ -793,16 +1157,87 @@ class PowerUpActivator(AbstractPowerUpActivator):
 
         elif power_up_type == GameObject.power_missile_h:
             pos = point.get_coord()
-            for i in range(board.board_size[1]):
-                brokens.append(Point(pos[0], i))
+            prev_point = point
+            #backward move
+            for i in range(pos[1] - 1, 0, -1):
+                cur_point = Point(pos[0], i)
+                if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                    brokens.append(cur_point)
+                else:
+                    break
+                prev_point = cur_point
+            #forward move
+            prev_point = point
+            for i in range(pos[1] + 1, board.board_size[1]):
+                cur_point = Point(pos[0], i)
+                if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                    brokens.append(cur_point)
+                else:
+                    break
+                prev_point = cur_point
         elif power_up_type == GameObject.power_missile_v:
             pos = point.get_coord()
-            for i in range(board.board_size[0]):
-                brokens.append(Point(i, pos[1]))
+            prev_point = point
+            #backward move
+            for i in range(pos[0] - 1, 0, -1):
+                cur_point = Point(i, pos[1])
+                if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                    brokens.append(cur_point)
+                else:
+                    break
+                prev_point = cur_point
+            #forward move
+            prev_point = point
+            for i in range(pos[0] + 1, board.board_size[0]):
+                cur_point = Point(i, pos[1])
+                if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                    brokens.append(cur_point)
+                else:
+                    break
+                prev_point = cur_point
         elif power_up_type == GameObject.power_bomb:
-            for i in range(-2, 3, 1):
-                for j in range(-2, 3, 1):
-                    brokens.append(point + Point(i, j))
+            is_ne_v = is_ne_h = is_po_v = is_po_h = True
+            for i in range(1, 3):
+                prev_coeff = i - 1
+                
+                # check for vertical
+                if is_po_v and not self.check_shield(point + Point(prev_coeff, 0), point + Point(i, 0), board, list_monsters):
+                    brokens.append(point + Point(i, 0))
+                else:
+                    is_po_v = False
+                if is_ne_v and not self.check_shield(point + Point(-prev_coeff, 0), point + Point(-i, 0), board, list_monsters):
+                    brokens.append(point + Point(-i, 0))
+                else:
+                    is_ne_v = False
+                #check for horizontal
+                if is_po_h and not self.check_shield(point + Point(0, prev_coeff), point + Point(0, i), board, list_monsters):
+                    brokens.append(point + Point(0, i))
+                else:
+                    is_po_h = False
+                if is_ne_h and not self.check_shield(point + Point(0, -prev_coeff), point + Point(0, -i), board, list_monsters):
+                    brokens.append(point + Point(0, -i))
+                else:
+                    is_ne_h = False
+                
+            # check for diagonal
+            for i in range(-1, 1, 2):
+                for j in range(-1, 1, 2):
+                    prev_point = point
+                    cur_point = point + Point(i, j)
+                    if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                        brokens.append(cur_point)
+                        prev_point = cur_point
+
+                        if self.check_shield(prev_point, prev_point + Point(i, 0), board, list_monsters):
+                            brokens.append(prev_point + Point(i, 0))
+                        if self.check_shield(prev_point, prev_point + Point(0, j), board, list_monsters):
+                            brokens.append(prev_point + Point(0, j))
+                        if self.check_shield(prev_point, prev_point + Point(i, j), board, list_monsters):
+                            brokens.append(prev_point + Point(i, j))
+                    else:
+                        continue
+
+                    
         elif power_up_type == GameObject.power_disco:
             assert _color is not None, "Disco Power Up need color to be cleared"
             for i in range(board.board_size[0]):
@@ -978,317 +1413,6 @@ class PowerUpFactory(AbstractPowerUpFactory, AbstractSearcher):
         super().__init__(board_ndim)
 
 
-class AbstractMonster(ABC):
-    def __init__(
-        self,
-        relax_interval,
-        setup_interval=0,
-        position: Point = None,
-        hp=30,
-        width: int = 1,
-        height: int = 1,
-        have_paper_box: bool = False,
-        request_masked: list[int] = None
-    ):
-        self.real_monster = True
-        self._hp = hp
-        self._progress = 0
-        self._relax_interval = relax_interval
-        self._setup_interval = setup_interval
-        self._position = position
-        self._width, self._height = width, height
-        self.have_paper_box = have_paper_box
-        if self.have_paper_box:
-            self._setup_interval = 3
-            self._paper_box_hp = 0
-
-        self.__left_dmg_mask = self.__get_left_mask(self._position, self._height)
-        self.__right_dmg_mask = self.__get_right_mask(
-            self._position + Point(0, self._width - 1), self._height
-        )
-        self.__top_dmg_mask = self.__get_top_mask(self._position, self._width)
-        self.__down_dmg_mask = self.__get_down_mask(
-            self._position + Point(self._height - 1, 0), self._width
-        )
-
-        self.__inside_dmg_mask = [
-            Point(i, j) + position
-            for i, j in product(range(self._height), range(self._width))
-        ]
-        self.cause_dmg_mask = []
-        if request_masked is not None and len(request_masked) == 5:
-            self.available_mask = request_masked
-        else:
-            self.available_mask = [1, 1, 1, 1, 1]  # left, right, top, down, inside
-
-    @property
-    def dmg_mask(self):
-        return (
-            (self.__left_dmg_mask if self.available_mask[0] else [])
-            + (self.__right_dmg_mask if self.available_mask[1] else [])
-            + (self.__top_dmg_mask if self.available_mask[2] else [])
-            + (self.__down_dmg_mask if self.available_mask[3] else [])
-        )
-
-    @property
-    def inside_dmg_mask(self):
-        return self.__inside_dmg_mask if self.available_mask[4] else []
-
-    @abstractmethod
-    def act(self):
-        self._progress += 1
-
-    def set_position(self, position: Point):
-        self._position = position
-        # Update new damage mask
-        self.__left_dmg_mask = self.__get_left_mask(self._position, self._height)
-        self.__right_dmg_mask = self.__get_right_mask(
-            self._position + Point(0, self._width - 1), self._height
-        )
-        self.__top_dmg_mask = self.__get_top_mask(self._position, self._width)
-        self.__down_dmg_mask = self.__get_down_mask(
-            self._position + Point(self._height - 1, 0), self._width
-        )
-
-        self.__inside_dmg_mask = [
-            Point(i, j) + position
-            for i, j in product(range(self._height), range(self._width))
-        ]
-
-    def attacked(self, match_damage, pu_damage):
-        if self.have_paper_box and self._paper_box_hp > 0:
-            self._paper_box_hp -= 1 if match_damage > 0 else 0
-        else:
-            damage = match_damage + pu_damage
-
-            assert self._hp > 0, f"self._hp need to be positive, but self._hp = {self._hp}"
-            self._hp -= damage
-
-    @staticmethod
-    def __get_left_mask(point: Point, height: int):
-        mask = []
-        for i in range(height):
-            _point = point + Point(i, -1)
-            if _point.get_coord()[0] >= 0 and _point.get_coord()[1] >= 0:
-                mask.append(_point)
-        return mask
-
-    @staticmethod
-    def __get_top_mask(point: Point, width: int):
-        mask = []
-        for i in range(width):
-            _point = point + Point(-1, i)
-            if _point.get_coord()[0] >= 0 and _point.get_coord()[1] >= 0:
-                mask.append(_point)
-        return mask
-
-    @staticmethod
-    def __get_right_mask(point: Point, height: int):
-        mask = []
-        for i in range(height):
-            mask.append(point + Point(i, 1))
-        return mask
-
-    @staticmethod
-    def __get_down_mask(point: Point, width: int):
-        mask = []
-        for i in range(width):
-            mask.append(point + Point(1, i))
-        return mask
-
-    def get_hp(self):
-        return self._hp
-
-    def get_dame(self, matches, brokens, disco_brokens):
-        """
-        return: match_damage, pu_damage
-        """
-        # print("Im mons, get dame from brokens", brokens)
-        __matches = [ele.point for ele in matches]
-        mons_inside_dmg = 0 
-        for coor in brokens:
-            if coor in set(self.inside_dmg_mask):
-                mons_inside_dmg += 1
-        return len(set(self.dmg_mask) & set(__matches)), \
-            mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens))
-
-
-class DameMonster(AbstractMonster):
-    def __init__(
-        self,
-        position: Point,
-        relax_interval=6,
-        setup_interval=3,
-        hp=20,
-        width: int = 1,
-        height: int = 1,
-        dame=4,
-        cancel_dame=5,
-        have_paper_box: bool = False,
-        request_masked: list[int] = None
-    ):
-        super().__init__(relax_interval, setup_interval, position, hp, width, height, have_paper_box, request_masked)
-
-        self._damage = dame
-
-        self._cancel = cancel_dame
-        self._cancel_dame = cancel_dame
-
-    def act(self):
-        super().act()
-        if not self.have_paper_box:
-            if self._cancel <= 0:
-                self._progress = 0
-                self._hp += self._cancel  # because of negative __cancel
-                self._cancel = self._cancel_dame
-                return {
-                    "damage": 0,
-                    "cancel_score": 2,
-                }
-        else:
-            if self._paper_box_hp < 0:
-                self.available_mask = [1, 1, 1, 1, 1]
-                self._progress = 0
-
-        if self._progress > self._relax_interval + self._setup_interval:
-            self._progress = 0
-            return {"damage": self._damage}
-
-        return {"damage": 0}
-
-    def attacked(self, match_damage, pu_damage):
-        damage = match_damage + pu_damage
-
-        if (
-            self._relax_interval < self._progress
-            and self._progress <= self._relax_interval + self._setup_interval
-        ):
-            if not self.have_paper_box:
-                self._cancel -= damage
-            else:
-                if self._paper_box_hp <= 0:
-                    self._paper_box_hp = self._setup_interval
-                    self.available_mask = [1, 1, 1, 1, 0]
-                super().attacked(match_damage, pu_damage)
-
-        else:
-            super().attacked(match_damage, pu_damage)
-
-
-class BoxMonster(AbstractMonster):
-    def __init__(
-        self,
-        box_mons_type: int,
-        position: Point,
-        relax_interval: int = 8,
-        setup_interval: int = 0,
-        hp=30,
-        width: int = 1,
-        height: int = 1,
-        have_paper_box: bool = False,
-    ):
-        super().__init__(relax_interval, 0, position, hp, width, height, have_paper_box)
-        self.__box_monster_type = box_mons_type
-
-    def act(self):
-        super().act()
-        if self._progress > self._relax_interval + self._setup_interval:
-            self._progress = 0
-            if self.__box_monster_type == GameObject.monster_box_box:
-                return {"box": GameObject.blocker_box}
-            if self.__box_monster_type == GameObject.monster_box_bomb:
-                return {"box": GameObject.blocker_bomb}
-            if self.__box_monster_type == GameObject.monster_box_thorny:
-                return {"box": GameObject.blocker_thorny}
-            if self.__box_monster_type == GameObject.monster_box_both:
-                return {
-                    "box": (
-                        GameObject.blocker_bomb
-                        if np.random.uniform(0, 1.0) <= 0.5
-                        else GameObject.blocker_thorny
-                    )
-                }
-        return {}
-
-
-class BombBlocker(DameMonster):
-    def __init__(
-        self,
-        position: Point,
-        relax_interval=3,
-        setup_interval=0,
-        hp=2,
-        width: int = 1,
-        height: int = 1,
-        dame=2,
-        cancel_dame=5,
-    ):
-        super().__init__(
-            position,
-            relax_interval,
-            setup_interval,
-            hp,
-            width,
-            height,
-            dame,
-            cancel_dame,
-        )
-
-        self.is_box = True if dame == 0 else False
-        self.real_monster = False
-
-    def act(self):
-        if self._progress > self._relax_interval + self._setup_interval:
-            self._progress = 0
-            self._hp = -999
-            return {"damage": self._damage}
-
-        return {"damage": 0}
-
-    def attacked(self, match_damage, pu_damage):
-        return super().attacked(match_damage, pu_damage)
-
-
-class ThornyBlocker(DameMonster):
-    def __init__(
-        self,
-        position: Point,
-        relax_interval=999,
-        setup_interval=999,
-        hp=1,
-        width: int = 1,
-        height: int = 1,
-        dame=1,
-        cancel_dame=5,
-    ):
-        super().__init__(
-            position,
-            relax_interval,
-            setup_interval,
-            hp,
-            width,
-            height,
-            dame,
-            cancel_dame,
-        )
-
-        self.real_monster = False
-
-    def act(self):
-        if self._progress > self._relax_interval + self._setup_interval:
-            self._progress = 0
-            self._hp = -999
-            return {"damage": self._damage}
-
-        return {"damage": 0}
-
-    def attacked(self, match_damage, pu_damage):
-        if pu_damage > 0:
-            self._hp = -999
-        elif match_damage > 0:
-            self._progress = self._relax_interval + self._setup_interval + 1
-
-
 class BlockerFactory:
     def __init__(self):
         pass
@@ -1389,6 +1513,7 @@ class Game(AbstractGame):
             
             return score
         except Exception as e:
+            print(traceback.format_exc())
             print("Error when swaping", e)
             print("There was an error when swaping", [mon.get_hp() for mon in self.list_monsters])
             return {
@@ -1403,6 +1528,7 @@ class Game(AbstractGame):
 
     def __move(self, point: Point, direction: Point):
         score = 0
+        near_monster = 100
         cancel_score = 0
         create_pu_score = 0
         total_match_dmg = 0
@@ -1415,9 +1541,10 @@ class Game(AbstractGame):
         score += len(brokens) + len(disco_brokens)
 
         for i in range(len(self.list_monsters)):
+            near_monster = min(near_monster, point.euclidean_distance(self.list_monsters[i]._position))
             match_damage, pu_damage = self.list_monsters[i].get_dame(matches, inside_brokens, disco_brokens)
-            total_match_dmg += match_damage
-            total_power_dmg += pu_damage
+            total_match_dmg += match_damage / self.list_monsters[i]._origin_hp
+            total_power_dmg += pu_damage / self.list_monsters[i]._origin_hp
             score -= pu_damage
 
             self.list_monsters[i].attacked(match_damage, pu_damage)
@@ -1470,6 +1597,7 @@ class Game(AbstractGame):
         reward = {
             "score": score,
             "cancel_score": cancel_score,
+            "near_monster": near_monster,
             "create_pu_score": create_pu_score,
             "match_damage_on_monster": total_match_dmg,
             "power_damage_on_monster": total_power_dmg,
@@ -1481,7 +1609,7 @@ class Game(AbstractGame):
         tmp_board = self.__get_copy_of_board()
         tmp_board.move(point, direction)
         return_brokens, disco_brokens, inside_brokens= self.__pu_activator.activate_power_up(
-            point, direction, tmp_board
+            point, direction, tmp_board, self.list_monsters
         )
         if return_brokens:
             tmp_board.delete(return_brokens)

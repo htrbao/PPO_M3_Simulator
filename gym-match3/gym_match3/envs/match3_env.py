@@ -23,14 +23,23 @@ class Match3Env(gym.Env):
     result_step = 0
 
     def __init__(
-        self, rollout_len=100, all_moves=False, levels=None, random_state=None, obs_order:list[str] = [], level_group:tuple[int, int] = (0, 10)
+        self,
+        rollout_len=100,
+        all_moves=False,
+        levels=None,
+        random_state=None,
+        obs_order: list[str] = [],
+        level_group: tuple[int, int] = (0, 10),
     ):
         self.num_envs = 1
         self.rollout_len = rollout_len
         self.random_state = random_state
         self.all_moves = all_moves
         self.levels = levels or Match3Levels(LEVELS[level_group[0] : level_group[1]])
-        print(f"This env manages level from group {level_group[0]} to group {level_group[1]}")
+        self.current_group = level_group[0]
+        print(
+            f"This env manages level from group {level_group[0]} to group {level_group[1]}"
+        )
         self.helper = M3Helper(10, 9, obs_order)
         self.h = self.levels.h
         self.w = self.levels.w
@@ -130,6 +139,12 @@ class Match3Env(gym.Env):
         # print(m3_action) #openlater
         ob = {}
         reward = self.__swap(*m3_action)
+        p1, p2 = m3_action
+        reward.update({
+            "tile": [*p1.get_coord(), *p2.get_coord()],
+            "current_level": self.levels.current_level + self.current_group,
+            "mons": [p.get_coord() for mon in self.__game.list_monsters for p in mon.mons_positions]
+        })
         is_early_done_game = self.__game._sweep_died_monster()
 
         # change counter even action wasn't successful
@@ -143,30 +158,43 @@ class Match3Env(gym.Env):
             self.__episode_counter = 0
 
             if self.__game.get_player_hp() <= 0:
-                reward.update({"game": -100})
+                reward.update(
+                    {
+                        "game": -2
+                        - 1
+                        * sum(
+                            [
+                                mon.get_hp() / mon._origin_hp
+                                for mon in self.__game.list_monsters
+                                if mon.real_monster
+                            ]
+                        )
+                    }
+                )
             else:
                 reward.update(
                     {
                         "game": (
-                            -30
+                            -1.5
                             - 1
                             * sum(
                                 [
-                                    mon.get_hp()
+                                    mon.get_hp() / mon._origin_hp
                                     for mon in self.__game.list_monsters
                                     if mon.real_monster
                                 ]
                             )
                             if not is_early_done_game
-                            else 30 + 10 * self.__game.num_mons
+                            else 1.5 + 1 * self.__game.num_mons
                         )
                     }
                 )
 
             # print(reward) #openlater
             self.result_step += 1
-            obs, infos = self.reset()
-            reward
+            obs, infos = self.reset(
+                is_win=True if reward["game"] > 0 else False
+            )
 
             return obs, reward, episode_over, infos
         else:
@@ -174,30 +202,33 @@ class Match3Env(gym.Env):
             ob["board"] = self.__get_board()
             ob["list_monster"] = self.__game.list_monsters
 
-        obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu")
+        obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu", self.__episode_counter / self.rollout_len)
         # Check if non legal_action
         if 1 not in np.unique(obs["action_space"]):
             episode_over = True
             self.__episode_counter = 0
-            reward.update({"game": -99})
+            reward.update({"game": -2.5})
 
-            obs, infos = self.reset()
+            obs, infos = self.reset(is_win=False)
             return obs, reward, episode_over, infos
-
 
         return (
             self.helper.obs_to_tensor(obs["obs"]),
             reward,
             episode_over,
-            {"action_space": obs["action_space"]},
+            {
+                "action_space": obs["action_space"],
+            },
         )
 
     def reset(self, *args, **kwargs):
-        board, list_monsters = self.levels.next()
+        is_win = kwargs.get("is_win", None)
+        board, list_monsters = self.levels.next(is_win)
         self.__game.start(board, list_monsters)
-        obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu")
+        obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu", 0 / self.rollout_len)
         return self.helper.obs_to_tensor(obs["obs"]), {
-            "action_space": obs["action_space"]
+            "action_space": obs["action_space"],
+            "current_level": self.levels.current_level + self.current_group
         }
 
     def __swap(self, point1, point2):
@@ -210,8 +241,15 @@ class Match3Env(gym.Env):
     def __get_board(self):
         return self.__game.board.board.copy()
 
-    def render(self, mode="human", close=False):
+    def render(self, action, mode="human", close=False):
         if close:
             warnings.warn("close=True isn't supported yet")
-        self.renderer.render_board(self.__game.board)
-        print(self.__game.board)
+        # print(self.__game.board)
+        tiles = self.__get_action(action)
+        p1, p2 = tiles
+        x1, y1 = p1.get_coord()
+        x2, y2 = p2.get_coord()
+        if x1 > x2 or y1 > y2:
+            x1, y1, x2, y2 = x2, y2, x1, y1
+
+        self.renderer.render_board(self.__game.board, {"x1": x1, "y1": y1, "x2": x2, "y2": y2})

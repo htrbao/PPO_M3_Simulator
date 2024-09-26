@@ -160,6 +160,8 @@ cython_debug/
 #.idea/
 
 wandb/
-# _saved_model/*.pt
+_saved_model/*.pt
+_saved_csv/*
+_saved_stat/*
 /*.out
 _saved_model/*.pt

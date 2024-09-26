@@ -491,7 +491,7 @@ class M3Helper:
         )
 
     def _format_observation(
-        self, board: np.array, list_monsters: list[AbstractMonster], device
+        self, board: np.array, list_monsters: list[AbstractMonster], device, time_factor: float
     ):
         """
         A utility function to process observations and move them to CUDA.
@@ -528,13 +528,14 @@ class M3Helper:
                     + (board == GameObject.power_missile_v) \
                     + (board == GameObject.power_plane) ,
             "blocker": (board == GameObject.blocker_box),
-            "monster": (board == GameObject.monster_dame)
-            | (board == GameObject.monster_box_box)
-            | (board == GameObject.monster_box_bomb)
-            | (board == GameObject.monster_box_thorny)
-            | (board == GameObject.monster_box_both)
-            | (board == GameObject.blocker_thorny)
-            | (board == GameObject.blocker_bomb),
+            # "monster": ((board == GameObject.monster_dame)
+            # | (board == GameObject.monster_box_box)
+            # | (board == GameObject.monster_box_bomb)
+            # | (board == GameObject.monster_box_thorny)
+            # | (board == GameObject.monster_box_both)
+            # | (board == GameObject.blocker_thorny)
+            # | (board == GameObject.blocker_bomb)),
+            "monster":np.zeros((self.num_row, self.num_col)),
             "monster_match_dmg_mask": np.zeros((self.num_row, self.num_col)),
             "monster_inside_dmg_mask": np.zeros((self.num_row, self.num_col)),
             "self_dmg_mask": np.zeros((self.num_row, self.num_col)),
@@ -546,36 +547,15 @@ class M3Helper:
             "match_T": np.zeros((self.num_row, self.num_col)),
             "match_5": np.zeros((self.num_row, self.num_col)),
             "legal_action": np.zeros((self.num_row, self.num_col)),
-            "heat_mask" : np.array(
-                [
-                    [start_value + row * increment for _ in range(self.num_col)] 
-                    for row in range(self.num_row)
-                ]
-            ),
+            "heat_mask" : np.full((self.num_row, self.num_col), time_factor),
         }
 
         for _mons in list_monsters:
-            _radius = 0
-            _mons_point_x, _mons_point_y = _mons._position.get_coord()
-            _cur_heat = 1.2
-            for i in range(2):
-                for _w in range(_radius, _mons._width - _radius, 1):
-                    for _h in range(_radius, _mons._height - _radius, 1):
-                        if _mons_point_x + _w >= 0 and _mons_point_x + _w < self.num_row:
-                            if _mons_point_y + _radius >= 0:
-                                obs["heat_mask"][_mons_point_x + _w][_mons_point_y + _radius] = _cur_heat
-                            if _mons_point_y + _mons._height - _radius < self.num_row:
-                                obs["heat_mask"][_mons_point_x + _w][_mons_point_y + _mons._height - _radius - 1] = _cur_heat
-                        if _mons_point_y + _h >= 0 and _mons_point_y + _h < self.num_col:
-                            if _mons_point_x + _radius >= 0:
-                                obs["heat_mask"][_mons_point_x + _radius][_mons_point_y + _h] = _cur_heat
-                            if _mons_point_x + _mons._width - _radius < self.num_col:
-                                obs["heat_mask"][_mons_point_x + _mons._width - _radius - 1][_mons_point_y + _h] = _cur_heat
-
-                _radius -= 1
-                _cur_heat -= 0.1 * _cur_heat
-
-        for _mons in list_monsters:
+            for p in _mons.mons_positions:
+                try:
+                    obs["monster"][p.get_coord()] = _mons.get_hp() / _mons._origin_hp
+                except IndexError:
+                    continue
             if isinstance(_mons, ThornyBlocker):
                 for p in _mons.inside_dmg_mask:
                     try:
@@ -594,7 +574,7 @@ class M3Helper:
                     obs["monster_match_dmg_mask"][p.get_coord()] = 1
                 except IndexError:
                     continue
-
+        
         for r in range(self.num_row):
             for c in range(self.num_col):
                 tile = board[r][c]

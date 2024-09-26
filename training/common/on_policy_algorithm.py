@@ -143,7 +143,8 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         env,
         rollout_buffer: RolloutBuffer,
         n_rollout_steps: int,
-    ) -> bool:
+        **kwargs,
+    ) -> dict:
         """
         Collect experiences using the current policy and fill a ``RolloutBuffer``.
         The term rollout here refers to the model-free notion and should not
@@ -157,14 +158,22 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         :return: True if function returned with at least `n_rollout_steps`
             collected, False if callback terminated rollout prematurely.
         """
+        # Some input from kwargs
+
         # Switch to eval mode (this affects batch norm / dropout)
         self.policy.set_training_mode(False)
 
         # Some stats about the play ability in current epoch.
+        __num_levels = kwargs.get('num_levels', None)
         __num_completed_games = 0
         __num_win_games = 0
+        __num_damage = 0
+        __num_hit = 0
+
+        hit_mask = np.zeros((__num_levels, 10, 9))
 
         n_steps = 0
+        __win_list = []
         rollout_buffer.reset()
         # self._last_obs, infos = env.reset()
         self._last_obs = env.reset()
@@ -217,10 +226,22 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             # print(rewards)
 
             for rew in rewards:
+                for p in rew["mons"]:
+                    print(p)
+                    if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 9:
+                        continue
+                    hit_mask[rew["current_level"], p[0], p[1]] = 999
+
+                hit_mask[rew["current_level"], rew["tile"][0], rew["tile"][1]] += 1
+                hit_mask[rew["current_level"], rew["tile"][2], rew["tile"][3]] += 1
                 if "game" in rew.keys():
+                    if rew["game"] > 0:
+                        __win_list.append(rew["current_level"])
                     __num_completed_games += 1
                     __num_win_games += 0 if rew["game"] < 0 else 1
-
+                    total_dmg = rew["match_damage_on_monster"] + rew["power_damage_on_monster"]
+                    __num_damage += total_dmg
+                    __num_hit += 0 if total_dmg == 0 else 1
             # action_space = infos["action_space"]
             action_space = np.stack([x["action_space"] for x in infos])
 
@@ -257,7 +278,6 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             )
             self._last_obs = new_obs  # type: ignore[assignment]
             self._last_episode_starts = dones
-
         with th.no_grad():
             # Compute value for the last timestep
             values = self.policy.predict_values(obs_as_tensor(new_obs, self.device))  # type: ignore[arg-type]
@@ -266,7 +286,15 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
         print("End rollout data")
 
-        return True, __num_completed_games, __num_win_games
+        return dict(
+            _=True, 
+            num_completed_games=__num_completed_games,
+            num_win_games=__num_win_games,
+            num_damage=__num_damage,
+            num_hit=__num_hit,
+            win_list=__win_list,
+            hit_mask=hit_mask,
+       )
 
     def train(self) -> None:
         """

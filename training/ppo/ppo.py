@@ -12,8 +12,10 @@ from training.common.on_policy_algorithm import OnPolicyAlgorithm
 from training.common.policies import ActorCriticCnnPolicy, ActorCriticPolicy, BasePolicy, MultiInputActorCriticPolicy
 from training.common.type_aliases import GymEnv, Schedule
 from training.common.utils import explained_variance, get_schedule_fn
-
+from gym_match3.envs.levels import LEVELS
 from training.common import utils
+from collections import Counter
+import os
 import wandb
 logger = utils.configure_logger(1)
 
@@ -215,6 +217,17 @@ class PPO(OnPolicyAlgorithm):
         if self._wandb:
             wandb.log(stats)
         pass
+    
+    def csv_log(self, count_win):
+        log_dir = os.path.join("_saved_csv", self._model_name)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+            
+        with open(os.path.join(log_dir, f"csv_log_count_win.csv"), "a") as f:
+            _str = []
+            for i in range(len(LEVELS)):
+                _str.append(f"{str(count_win.get(i, 0))}")
+            f.write(",".join(_str)+"\n")
 
     def train(self, **kwargs) -> None:
         """
@@ -222,7 +235,11 @@ class PPO(OnPolicyAlgorithm):
         """
         num_completed_games = kwargs["num_completed_games"]
         num_win_games = kwargs["num_win_games"]
-
+        num_damage = kwargs["num_damage"]
+        num_hit = kwargs["num_hit"]
+        win_list = kwargs["win_list"]
+        count_win = Counter(win_list)
+        self.csv_log(count_win)
         # Switch to train mode (this affects batch norm / dropout)
         self.policy.set_training_mode(True)
         # Compute current clip range
@@ -348,7 +365,6 @@ class PPO(OnPolicyAlgorithm):
         self.logger.record("train/clip_range", clip_range)
         if self.clip_range_vf is not None:
             self.logger.record("train/clip_range_vf", clip_range_vf)
-
         stats = {
             "lr":self.lr_scheduler.get_lr()[-1], 
             "Train/entropy_loss":np.mean(entropy_losses),
@@ -368,8 +384,12 @@ class PPO(OnPolicyAlgorithm):
             "Reward/rewards":np.mean(mean_rewards),
 
             "Stats/Win rates": num_win_games / num_completed_games,
-            "Stats/Avg steps": self.n_steps * self.env.num_envs / num_completed_games
+            "Stats/Avg steps": self.n_steps * self.env.num_envs / num_completed_games,
+            "Stats/Hit rate": num_hit / (self.n_steps * self.env.num_envs),
+            "Stats/Avg damage per action": num_damage / (self.n_steps * self.env.num_envs),
+            "Stats/Avg damage per hit": num_damage / num_hit
         }
+        
         # if hasattr(self._policy, "log_std"):
         #     stats["train/std"]=th.exp(self._policy.log_std).mean().item(),
 

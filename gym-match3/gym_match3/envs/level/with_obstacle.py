@@ -20,7 +20,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -42,7 +42,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=3,
                     height=3,
-                    hp=40 + base_hp,
+                    hp=40+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -65,7 +65,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=25 + base_hp,
+                    hp=25+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -88,7 +88,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -111,7 +111,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -133,7 +133,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -155,7 +155,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -177,7 +177,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -200,7 +200,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
                     )
@@ -223,7 +223,7 @@ MY_LEVEL =  [
                     setup_interval=1,
                     width=2,
                     height=2,
-                    hp=30 + base_hp,
+                    hp=20+base_hp,
                     dame=2,
                     request_masked=[1,1,1,1,1]
         )
