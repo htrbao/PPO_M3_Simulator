@@ -14,6 +14,7 @@ from training.m3_model.m3_cnn import (
     M3SelfAttentionFeatureExtractor,
     M3ExplainationFeatureExtractor,
     M3MlpFeatureExtractor,
+    M3LocFeatureExtractor
 )
 
 
@@ -39,6 +40,7 @@ def get_args():
     parser.add_argument(
         "--obs-order",
         type=str,
+        default=[],
         nargs="+",
         help="Which features you want to use?",
     )
@@ -63,7 +65,7 @@ def get_args():
     parser.add_argument(
         "--num_self_attention_layers",
         type=int,
-        default=6,
+        default=8,
         help="Number of intermediary layers in CNN model",
     )
 
@@ -92,13 +94,13 @@ def get_args():
     )
     parser.add_argument("--batch_size", default=128, type=int)
     parser.add_argument("--epochs", default=10, type=int)
-    parser.add_argument("--ent_coef", default=0.01, type=int)
+    parser.add_argument("--ent_coef", default=0.01, type=float)
 
     # Reward Config
     parser.add_argument(
         "--gamma",
         type=float,
-        default=0.90,
+        default=0.98,
         metavar="gamma",
         help="Gamma in Reinforcement Learning",
     )
@@ -171,7 +173,7 @@ def main():
 
     print(envs.observation_space)
     print(envs.action_space)
-
+    print(args.ent_coef)
     PPO_trainer = PPO(
         policy="CnnPolicy",
         env=envs,
@@ -186,14 +188,16 @@ def main():
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 256,
+                "out_channels": 256,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
                 "num_self_attention_layers": args.num_self_attention_layers,
                 "layers_dims": [4096, 2048, 2048, 2048],
                 "max_channels": 256,
                 "size": 9*10
             },
-            "optimizer_class": torch.optim.Adam,
+            "optimizer_class": torch.optim.AdamW,
             "share_features_extractor": False,
+            "activation_fn": torch.nn.GELU
         },
         _checkpoint=args.checkpoint,
         _wandb=args.wandb,
@@ -201,6 +205,7 @@ def main():
         seed=13,
         prefix_name=args.prefix_name,
     )
+    print("trainable parameters", sum(p.numel() for p in PPO_trainer.policy.parameters() if p.requires_grad))
     run_i = 0
     print(PPO_trainer.n_steps)
     milestone = 0
@@ -237,17 +242,12 @@ def main():
             num_hit=num_hit,
             win_list=win_list
         )
-
-        print("training time", time.time() - s_t)
-
-        exit()
-        
-        # if win_rate > 80.0:
-        #     milestone += 1
-        #     envs = make_env_loc(args, milestone)
-        #     PPO_trainer.set_env(envs)
-        #     PPO_trainer.set_random_seed(13)
-
+        print("training time", time.time() - s_t)    
+        if win_rate > 80.0:
+            milestone += 1
+            envs = make_env_loc(args, milestone)
+            PPO_trainer.set_env(envs)
+            PPO_trainer.set_random_seed(13)
 
 if __name__ == "__main__":
     
