@@ -140,20 +140,20 @@ def make_env_loc(args, milestones=0, step=4):
     max_level = min(len(LEVELS), args.num_envs + step*milestones)
     
     r = max_level % args.num_envs
-    
+    d = max_level // args.num_envs
     num_keeps = args.num_envs - r
     
     envs = SubprocVecEnv(
         [
-            make_env(i, args.obs_order, max_level // args.num_envs)
+            make_env(i, args.obs_order, d)
             for i in range(num_keeps)
         ]
         
         + 
         
         [
-            make_env(i, args.obs_order, max_level // args.num_envs + 1)
-            for i in range(num_keeps, args.num_envs)
+            make_env(num_keeps//(d+1) + i, args.obs_order, d + 1)
+            for i in range(r)
         ]
     )
     return envs
