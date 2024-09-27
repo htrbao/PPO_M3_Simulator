@@ -1,5 +1,6 @@
 CUDA_VISIBLE_DEVICES=1 python training.py \
     --prefix_name test \
+    --strategy sequential \
     --pi 512 512 \
     --vf 512 256 128 64 32 16 \
     --mid_channels 32 \
