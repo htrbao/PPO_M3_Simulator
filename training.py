@@ -226,9 +226,9 @@ def main():
         win_list = res.get('win_list', None)
         hit_mask = res.get('hit_mask', None)
 
-        if not os.path.isdir(f'./statistics/hit_mask/{PPO_trainer._model_name}'):
-            os.makedirs(f'./statistics/hit_mask/{PPO_trainer._model_name}')
-        with open(f'./statistics/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
+        if not os.path.isdir(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}'):
+            os.makedirs(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}')
+        with open(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
             np.save(f, hit_mask)
 
         win_rate = num_win_games / num_completed_games * 100

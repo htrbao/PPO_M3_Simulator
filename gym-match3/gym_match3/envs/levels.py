@@ -222,7 +222,7 @@ for x in range(0, 9):
                         width=2,
                         height=2,
                         hp=20,
-                        request_masked=[0, 0, 0, 0, 1],
+                        request_masked=[1 if i in random.sample(range(4), random.choice([2, 3, 4])) else 0 for i in range(4)] + [1],
                     )
                 ],
             )

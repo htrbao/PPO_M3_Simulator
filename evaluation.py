@@ -4,7 +4,7 @@ import seaborn as sns
 import matplotlib.pylab as plt
 
 train_time = 1
-data_path = f'./_saved_stat/hit_mask/new_cal_10layers_32channels_2e-05_4096_not_share_20240926/{train_time}.npy'
+data_path = f'./_saved_stat/hit_mask/sequence_time_factor_more_easy_mlp_95gamma_new_reward_new_stats19_4layers_64channels_1.5e-05_1024_not_share_20240926/{train_time}.npy'
 
 hit_map = np.load(data_path)
 hit_map[hit_map >= 999] = -1
