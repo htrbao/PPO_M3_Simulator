@@ -295,7 +295,7 @@ class Board(AbstractBoard):
         return self[point]
 
     def get_valid_shape(self, row, col):
-        return self.board.__getitem__((row, col))
+        return self.__board.__getitem__((row, col))
 
     def __validate_points(self, *args):
         for point in args:
@@ -513,12 +513,11 @@ class AbstractSearcher(ABC):
     @staticmethod
     def points_generator(board: Board):
         rows, cols = board.board_size
-        points = [Point(i, j) for i, j in product(range(rows), range(cols))]
-        for point in points:
-            if board[point] == board.immovable_shape or not need_to_match(board[point]):
-                continue
-            else:
-                yield point
+
+        for i, j in product(range(rows), range(cols)):
+            shape = board.get_valid_shape(i, j)
+            if shape != board.immovable_shape and need_to_match(shape):
+                yield Point(i, j)
 
     def axis_directions_gen(self):
         for axis_dirs in self.directions:
