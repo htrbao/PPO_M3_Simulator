@@ -293,7 +293,7 @@ class RolloutBuffer(BaseBuffer):
             _reward = (
                 reward["match_damage_on_monster"] * 1.5
                 + reward["power_damage_on_monster"] * 1.5
-                + (reward["create_pu_score"] *0.02
+                + (reward["create_pu_score"] * 0.05
                 + reward["score"] * 0.01)
                 * near_monster
                 + reward.get("game", 0)

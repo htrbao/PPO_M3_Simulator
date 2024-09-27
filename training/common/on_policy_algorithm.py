@@ -226,7 +226,6 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             # print(rewards)
 
             for idx, rew in enumerate(rewards):
-                print(rew)
                 for p in rew["mons"]:
                     if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 9:
                         print("out of table", rew["current_level"])

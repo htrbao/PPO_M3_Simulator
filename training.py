@@ -225,15 +225,14 @@ def main():
         win_list = res.get('win_list', None)
         hit_mask = res.get('hit_mask', None)
 
-        if not os.path.isdir(f'./statistics/hit_mask/{PPO_trainer._model_name}'):
-            os.makedirs(f'./statistics/hit_mask/{PPO_trainer._model_name}')
-        with open(f'./statistics/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
+        if not os.path.isdir(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}'):
+            os.makedirs(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}')
+        with open(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
             np.save(f, hit_mask)
 
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}\nmilestone: {milestone}")
         print(f"{win_list}")
-        exit()
         s_t = time.time()
         PPO_trainer.train(
             num_completed_games=num_completed_games,
@@ -245,6 +244,7 @@ def main():
         print("training time", time.time() - s_t)    
         if win_rate > 80.0:
             milestone += 1
+            envs.close()
             envs = make_env_loc(args, milestone)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)
