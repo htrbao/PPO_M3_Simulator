@@ -348,7 +348,7 @@ class Board(AbstractBoard):
         return [
             Point(i, j)
             for i, j in product(range(self.board_size[0]), range(self.board_size[1]))
-            if self.get_shape(Point(i, j)) in GameObject.monsters
+            if self.get_shape(Point(i, j)) in GameObject.set_monsters_shape
         ]
 
     def put_line(self, ind, line: np.ndarray):
@@ -1209,7 +1209,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 return False
             shape1 = board.get_shape(prev_point)
             shape2 = board.get_shape(cur_point)
-            if shape1 not in GameObject.monsters or shape2 in GameObject.monsters:
+            if shape1 not in GameObject.set_monsters_shape or shape2 in GameObject.set_monsters_shape:
                 affect_dirs = self.get_dir(prev_point, cur_point)
                 for mons in list_monsters:
                     if cur_point in mons.mons_positions:
@@ -1481,7 +1481,7 @@ class Filler(AbstractFiller):
             if (
                 shape != immovable_shape
                 and shape
-                not in np.concatenate([GameObject.monsters, GameObject.blockers])
+                not in GameObject.set_unmovable_shape
                 and num_putted < num_of_nans
             ):
                 new_line[ind] = np.nan
