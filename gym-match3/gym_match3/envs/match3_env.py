@@ -133,9 +133,12 @@ class Match3Env(gym.Env):
     def __get_action(self, ind):
         return self.__match3_actions[ind]
 
-    def step(self, action):
+    def step(self, action, p1 = None, p2 = None):
         # make action
-        m3_action = self.__get_action(action)
+        if action is not None:
+            m3_action = self.__get_action(action)
+        else:
+            m3_action = frozenset([p1, p2])
         # print(m3_action) #openlater
         ob = {}
         reward = self.__swap(*m3_action)
@@ -202,6 +205,7 @@ class Match3Env(gym.Env):
             ob["board"] = self.__get_board()
             ob["list_monster"] = self.__game.list_monsters
 
+        print(ob["board"])
         obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu", self.__episode_counter / self.rollout_len)
         # Check if non legal_action
         if 1 not in np.unique(obs["action_space"]):

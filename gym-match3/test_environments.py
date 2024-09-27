@@ -3,6 +3,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 from gym_match3.envs.match3_env import Match3Env
+from gym_match3.envs.game import Point
 
 env = Match3Env(90)
 
@@ -23,11 +24,11 @@ while not dones:
 
     # Randomly select one of those indices
     if indices_with_one:
-        selected_action = int(input("CHOOSE 1 ACTION"))
-        env.render(selected_action)
-        obs, reward, dones, infos = env.step(selected_action)
+        a = [int(x) for x in input("INPUT 4 COORD: ").split()]
+        # env.render(selected_action)
+        obs, reward, dones, infos = env.step(None, Point(a[0], a[1]), Point(a[2], a[3]))
 
-        print(obs.shape)
+        # print(obs.shape)
         print("Reward of this action:", reward)
 
         action_space = infos["action_space"]
