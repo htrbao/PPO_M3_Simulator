@@ -294,12 +294,8 @@ class Board(AbstractBoard):
     def get_shape(self, point: Point):
         return self[point]
 
-    def get_valid_shape(self, indx: Point):
-        if isinstance(indx, Point):
-            return self.board.__getitem__(indx.get_coord())
-        else:
-            raise ValueError("Only Point class supported for getting shapes")
-
+    def get_valid_shape(self, row, col):
+        return self.board.__getitem__((row, col))
 
     def __validate_points(self, *args):
         for point in args:
@@ -610,12 +606,10 @@ class MatchesSearcher(AbstractSearcher):
         early_stop = False
 
         for neighbours, length, idx in self.__generator_neighbours(
-            board, point, early_stop, (not need_all)
+            board, point, shape, early_stop, (not need_all)
         ):
-            filtered = self.__filter_cells_by_shape(shape, neighbours)
-
-            if len(filtered) == length:
-                match3_list.extend(filtered)
+            if len(neighbours) == length:
+                match3_list.extend(neighbours)
 
                 if not need_all:
                     early_stop = True
@@ -636,6 +630,7 @@ class MatchesSearcher(AbstractSearcher):
         self,
         board: Board,
         point: Point,
+        filter_shape,
         early_stop: bool = False,
         only_2_matches: bool = False,
     ):
@@ -646,23 +641,25 @@ class MatchesSearcher(AbstractSearcher):
             newCells = []
             for dir_ in axis_dirs:
                 newRow, newCol = curRow + dir_[0], curCol + dir_[1]
-                if not board.is_valid_point(newRow, newCol): break
+                if not board.is_valid_point(newRow, newCol):
+                    yield [], 0, -1
+                    break
 
-                new_p = Point(newRow, newCol)
-                cell = Cell(board.get_valid_shape(new_p), newRow, newCol)
+                shape = board.get_valid_shape(newRow, newCol)
+                if shape != filter_shape:
+                    continue
+
+                cell = Cell(shape, newRow, newCol)
                 newCells.append(cell)
             else:
                 yield newCells, len(axis_dirs), idx
 
             if early_stop:
                 break
-            yield [], 0, -1
-
 
     @staticmethod
-    def __filter_cells_by_shape(shape, *args):
-        return list(filter(lambda x: x.shape == shape, *args))
-
+    def __filter_cells_by_shape(shape, cells):
+        return [cell for cell in cells if cell.shape == shape]
 
 class AbstractMonster(ABC):
     def __init__(
