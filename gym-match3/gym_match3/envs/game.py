@@ -189,7 +189,7 @@ class Board(AbstractBoard):
             raise ValueError("Immovable shape has to be less or greater than n_shapes")
 
     def __getitem__(self, indx: Point):
-        self.__check_board()
+        # self.__check_board()
         self.__validate_points(indx)
         if isinstance(indx, Point):
             return self.board.__getitem__(indx.get_coord())
@@ -294,6 +294,13 @@ class Board(AbstractBoard):
     def get_shape(self, point: Point):
         return self[point]
 
+    def get_valid_shape(self, indx: Point):
+        if isinstance(indx, Point):
+            return self.board.__getitem__(indx.get_coord())
+        else:
+            raise ValueError("Only Point class supported for getting shapes")
+
+
     def __validate_points(self, *args):
         for point in args:
             is_valid = self.__is_valid_point(point)
@@ -302,6 +309,12 @@ class Board(AbstractBoard):
 
     def __is_valid_point(self, point: Point):
         row, col = point.get_coord()
+        board_rows, board_cols = self.board_size
+        correct_row = ((row + 1) <= board_rows) and (row >= 0)
+        correct_col = ((col + 1) <= board_cols) and (col >= 0)
+        return correct_row and correct_col
+
+    def is_valid_point(self, row, col):
         board_rows, board_cols = self.board_size
         correct_row = ((row + 1) <= board_rows) and (row >= 0)
         correct_col = ((col + 1) <= board_cols) and (col >= 0)
@@ -533,6 +546,7 @@ class MatchesSearcher(AbstractSearcher):
     def __init__(self, length, board_ndim):
         self.__3length, self.__4length, self.__5length = range(2, 5)
         self.stop_event = threading.Event()
+
         super().__init__(board_ndim)
 
     # def scan_board_for_matches(self, board: Board, need_all: bool = True, checking_point: list[Point] = []):
@@ -625,23 +639,25 @@ class MatchesSearcher(AbstractSearcher):
         early_stop: bool = False,
         only_2_matches: bool = False,
     ):
-        for idx, axis_dirs in enumerate(
-            self.normal_directions + self.plane_directions
+        curRow, curCol = point.get_coord()
+        for idx, axis_dirs in enumerate(self.normal_directions + self.plane_directions
             if only_2_matches
-            else self.directions
-        ):
-            new_points = [point + Point(*dir_) for dir_ in axis_dirs]
-            try:
-                yield [
-                    Cell(board.get_shape(new_p), *new_p.get_coord())
-                    for new_p in new_points
-                ], len(axis_dirs), idx
-            except OutOfBoardError:
-                continue
-            finally:
-                if early_stop:  # Check if flag is set to exit generator
-                    break
-                yield [], 0, -1
+            else self.directions):
+            newCells = []
+            for dir_ in axis_dirs:
+                newRow, newCol = curRow + dir_[0], curCol + dir_[1]
+                if not board.is_valid_point(newRow, newCol): break
+
+                new_p = Point(newRow, newCol)
+                cell = Cell(board.get_valid_shape(new_p), newRow, newCol)
+                newCells.append(cell)
+            else:
+                yield newCells, len(axis_dirs), idx
+
+            if early_stop:
+                break
+            yield [], 0, -1
+
 
     @staticmethod
     def __filter_cells_by_shape(shape, *args):
@@ -840,19 +856,14 @@ class DameMonster(AbstractMonster):
         damage = match_damage + pu_damage
 
         if (
-            self._relax_interval < self._progress
+            self.have_paper_box and self._relax_interval < self._progress
             and self._progress <= self._relax_interval + self._setup_interval
         ):
-            if not self.have_paper_box:
-                self._cancel -= damage
-            else:
-                if self._paper_box_hp <= 0:
-                    self._paper_box_hp = self._setup_interval
-                    self.available_mask = [1, 1, 1, 1, 0]
-                super().attacked(match_damage, pu_damage)
-
-        else:
-            super().attacked(match_damage, pu_damage)
+            if self._paper_box_hp <= 0:
+                self._paper_box_hp = self._setup_interval
+                self.available_mask = [1, 1, 1, 1, 0]
+        
+        super().attacked(match_damage, pu_damage)
 
 
 class BoxMonster(AbstractMonster):

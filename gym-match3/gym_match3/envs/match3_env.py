@@ -202,7 +202,8 @@ class Match3Env(gym.Env):
             ob["board"] = self.__get_board()
             ob["list_monster"] = self.__game.list_monsters
 
-        obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu")
+        print(ob["board"])
+        obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu", self.__episode_counter / self.rollout_len)
         # Check if non legal_action
         if 1 not in np.unique(obs["action_space"]):
             episode_over = True
@@ -225,7 +226,7 @@ class Match3Env(gym.Env):
         is_win = kwargs.get("is_win", None)
         board, list_monsters = self.levels.next(is_win)
         self.__game.start(board, list_monsters)
-        obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu")
+        obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu", 0 / self.rollout_len)
         return self.helper.obs_to_tensor(obs["obs"]), {
             "action_space": obs["action_space"],
             "current_level": self.levels.current_level + self.current_group

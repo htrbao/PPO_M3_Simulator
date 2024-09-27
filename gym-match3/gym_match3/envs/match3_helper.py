@@ -1,6 +1,5 @@
-from copy import copy
-import torch
 import numpy as np
+import torch
 
 from gym_match3.envs.constants import GameObject
 from gym_match3.envs.game import AbstractMonster, ThornyBlocker
@@ -21,12 +20,12 @@ class M3Helper:
                 "color_3",
                 "color_4",
                 "color_5",
+                "pu",
                 "disco",
                 "bomb",
                 "missile_h",
                 "missile_v",
                 "plane",
-                "pu",
                 "blocker",
                 "monster",
                 "monster_match_dmg_mask",
@@ -45,6 +44,9 @@ class M3Helper:
         else:
             self.obs_order = obs_order
 
+        self.set_pos_check = set(GameObject.powers) | set(GameObject.tiles)
+
+
     def _from_action_to_tile(self):
         a2t = {}
         max_h_action = (self.num_col - 1) * self.num_row
@@ -62,13 +64,10 @@ class M3Helper:
         return a2t
 
     def check_legal_pos_to_move(self, i: int, j: int, raw_board: np.array):
-        return (
-            0 <= i
-            and i < self.num_row
-            and 0 <= j
-            and j < self.num_col
-            and raw_board[i][j] in np.concatenate([GameObject.powers, GameObject.tiles])
-        )
+        return (0 <= i < self.num_row
+                and 0 <= j < self.num_col
+                and raw_board[i][j] in self.set_pos_check)
+
 
     def check_required_tile(
         self,
@@ -491,7 +490,7 @@ class M3Helper:
         )
 
     def _format_observation(
-        self, board: np.array, list_monsters: list[AbstractMonster], device
+        self, board: np.array, list_monsters: list[AbstractMonster], device, time_factor: float
     ):
         """
         A utility function to process observations and move them to CUDA.
@@ -547,35 +546,9 @@ class M3Helper:
             "match_T": np.zeros((self.num_row, self.num_col)),
             "match_5": np.zeros((self.num_row, self.num_col)),
             "legal_action": np.zeros((self.num_row, self.num_col)),
-            "heat_mask" : np.array(
-                [
-                    [start_value + row * increment for _ in range(self.num_col)] 
-                    for row in range(self.num_row)
-                ]
-            ),
+            "heat_mask" : np.full((self.num_row, self.num_col), time_factor),
         }
-        
 
-        for _mons in list_monsters:
-            _radius = 0
-            _mons_point_x, _mons_point_y = _mons._position.get_coord()
-            _cur_heat = 1.2
-            for i in range(2):
-                for _w in range(_radius, _mons._width - _radius, 1):
-                    for _h in range(_radius, _mons._height - _radius, 1):
-                        if _mons_point_x + _w >= 0 and _mons_point_x + _w < self.num_row:
-                            if _mons_point_y + _radius >= 0:
-                                obs["heat_mask"][_mons_point_x + _w][_mons_point_y + _radius] = _cur_heat
-                            if _mons_point_y + _mons._height - _radius < self.num_row:
-                                obs["heat_mask"][_mons_point_x + _w][_mons_point_y + _mons._height - _radius - 1] = _cur_heat
-                        if _mons_point_y + _h >= 0 and _mons_point_y + _h < self.num_col:
-                            if _mons_point_x + _radius >= 0:
-                                obs["heat_mask"][_mons_point_x + _radius][_mons_point_y + _h] = _cur_heat
-                            if _mons_point_x + _mons._width - _radius < self.num_col:
-                                obs["heat_mask"][_mons_point_x + _mons._width - _radius - 1][_mons_point_y + _h] = _cur_heat
-
-                _radius -= 1
-                _cur_heat -= 0.1 * _cur_heat
 
         for _mons in list_monsters:
             for p in _mons.mons_positions:

@@ -1,14 +1,13 @@
 CUDA_VISIBLE_DEVICES=1 python training.py \
-    --prefix_name sequence_time_factor_more_easy_mlp_95gamma_new_reward_new_stats19 \
-    --pi 512 512 256 128 \
-    --vf 512 512 512 512  \
-    --mid_channels 64 \
-    --num_first_cnn_layer 4 \
-    --n_steps 131072 \
-    --batch_size 1024 \
-    --lr 0.000015 \
-    --gamma 0.9 \
-    --num_envs 32 \
+    --prefix_name multienv_85gamma_full_input_self_attention \
+    --pi 512 \
+    --vf 1024 512 256 512 256 128 64 32 16 8 4 2 \
+    --mid_channels 32 \
+    --num_first_cnn_layer 10 \
+    --n_steps 32768 \
+    --lr 0.00002 \
+    --gamma 0.85 \
+    --num_envs 8 \
     --wandb
 
 # REMEMBER TO CHANGE LOGIC OF HELPER

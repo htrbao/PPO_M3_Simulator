@@ -19,7 +19,7 @@ for i in range(10):
                 width=2,
                 height=2,
                 hp=15+base_hp,
-                request_masked=[1 if i in random.sample(range(4), random.choice([2, 4])) else 0 for i in range(4)] + [1]
+                request_masked=[1 if i in random.sample(range(4), random.choice([2, 3])) else 0 for i in range(4)] + [1]
             )
         ])
     )

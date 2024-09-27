@@ -1,5 +1,6 @@
 CUDA_VISIBLE_DEVICES=1 python training.py \
-    --prefix_name 85gamma_rm_onlymatch_decrease_s_input_p256_180_180_161_v256_256_32 \
+    --prefix_name thuyhh \
+    --strategy sequential \
     --pi 512 512 \
     --vf 512 256 128 64 32 16 \
     --mid_channels 32 \

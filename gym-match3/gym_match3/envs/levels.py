@@ -18,8 +18,6 @@ class Match3Levels:
     def __init__(self, levels, immovable_shape=-1, h=None, w=None, n_shapes=None):
         self.__current_lv_idx = 0
         self.__levels = levels
-        self.__num_plays = [0] * len(levels)
-        self.__num_wins = [0] * len(levels)
         self.__immovable_shape = immovable_shape
         self.__h = self.__set_dim(h, [lvl.h for lvl in levels])
         self.__w = self.__set_dim(w, [lvl.w for lvl in levels])
@@ -74,9 +72,9 @@ class Match3Levels:
         #     k=1
         # )[0]
 
-        self.__current_lv_idx += 1
+        self.__current_lv_idx = (self.__current_lv_idx + 1) % len(self.levels)
 
-        level_template = self.levels[self.__current_lv_idx % len(self.levels)]
+        level_template = self.levels[self.__current_lv_idx]
         board = self.create_board(level_template)
         return board, level_template.list_monsters
 
@@ -189,7 +187,7 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=40,
+                        hp=20,
                     )
                 ],
             )
@@ -206,7 +204,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=random.randint(20, 25),
+                            hp=12,
                             request_masked=[1, 1, 1, 1, 0],
                         )
                     ],
@@ -223,7 +221,7 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=40,
+                        hp=20,
                         request_masked=[0, 0, 0, 0, 1],
                     )
                 ],
@@ -361,7 +359,7 @@ LEVELS = [
         9,
         5,
         [
-            [0, 0, -1, 0, 0, 0, 0, GameObject.monster_dame, GameObject.monster_dame],
+            [0, 0, 0, 0, 0, 0, -1, GameObject.monster_dame, GameObject.monster_dame],
             [0, 0, 0, 0, 0, 0, -1, GameObject.monster_dame, GameObject.monster_dame],
             [0, 0, 0, 0, 0, 0, -1, GameObject.monster_dame, GameObject.monster_dame],
             [0, 0, 0, 0, 0, 0, -1, GameObject.monster_dame, GameObject.monster_dame],

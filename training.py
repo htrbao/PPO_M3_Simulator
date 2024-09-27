@@ -1,7 +1,9 @@
 import os
+import os
 import argparse
 import time
 import torch
+import numpy as np
 import numpy as np
 
 from gym_match3.envs.match3_env import Match3Env
@@ -40,6 +42,7 @@ def get_args():
     parser.add_argument(
         "--obs-order",
         type=str,
+        default=[],
         nargs="+",
         help="Which features you want to use?",
     )
@@ -64,11 +67,17 @@ def get_args():
     parser.add_argument(
         "--num_self_attention_layers",
         type=int,
-        default=6,
+        default=8,
         help="Number of intermediary layers in CNN model",
     )
 
     # Rollout Data
+    parser.add_argument(
+        "--strategy",
+        type=str,
+        default="sequential",
+        help="Strategy increasing the number of levels",
+    )
     parser.add_argument(
         "--n_steps",
         type=int,
@@ -162,8 +171,19 @@ def make_env_loc(args, milestones=0, step=4):
 def main():
     
     args = get_args()
-    envs = make_env_loc(args)
-    # env = Match3Env(90, obs_order=args.obs_order)
+    max_level = len(LEVELS)
+    envs = None
+    if args.strategy == 'sequential':
+        envs = SubprocVecEnv(
+            [
+                make_env(i, args.obs_order, max_level // args.num_envs)
+                for i in range(args.num_envs)
+            ]
+        )
+    elif args.strategy == 'milestone':
+        envs = make_env_loc(args)
+    else:
+        raise ValueError(f'Invalid strategy: {args.strategy}')
 
     print(envs.observation_space)
     print(envs.action_space)
@@ -178,7 +198,7 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3LocFeatureExtractor,
+            "features_extractor_class": M3CnnLargerFeatureExtractor,
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 256,
@@ -224,9 +244,27 @@ def main():
         with open(f'./statistics/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
             np.save(f, hit_mask)
 
+                PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps,
+                num_levels = len(LEVELS)
+            )
+        )
+        # extract stat
+        num_win_games = res.get('num_win_games', None)
+        num_completed_games = res.get('num_completed_games', None)
+        num_damage = res.get('num_damage', None)
+        num_hit = res.get('num_hit', None)
+        win_list = res.get('win_list', None)
+        hit_mask = res.get('hit_mask', None)
+
+        if not os.path.isdir(f'./statistics/hit_mask/{PPO_trainer._model_name}'):
+            os.makedirs(f'./statistics/hit_mask/{PPO_trainer._model_name}')
+        with open(f'./statistics/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
+            np.save(f, hit_mask)
+
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}\nmilestone: {milestone}")
         print(f"{win_list}")
+        exit()
         s_t = time.time()
         PPO_trainer.train(
             num_completed_games=num_completed_games,
@@ -243,7 +281,6 @@ def main():
             envs = make_env_loc(args, milestone)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)
-
 
 if __name__ == "__main__":
     

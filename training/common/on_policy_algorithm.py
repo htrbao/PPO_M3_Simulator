@@ -143,7 +143,8 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         env,
         rollout_buffer: RolloutBuffer,
         n_rollout_steps: int,
-    ) -> bool:
+        **kwargs,
+    ) -> dict:
         """
         Collect experiences using the current policy and fill a ``RolloutBuffer``.
         The term rollout here refers to the model-free notion and should not
@@ -223,27 +224,27 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             # print(rewards)
-            
-            print(rewards)
-            print(infos)
 
             for idx, rew in enumerate(rewards):
+                print(rew)
                 for p in rew["mons"]:
-                    print(p)
                     if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 9:
+                        print("out of table", rew["current_level"])
                         continue
                     hit_mask[rew["current_level"], p[0], p[1]] = 999
 
                 hit_mask[rew["current_level"], rew["tile"][0], rew["tile"][1]] += 1
                 hit_mask[rew["current_level"], rew["tile"][2], rew["tile"][3]] += 1
+
+                total_dmg = rew["match_damage_on_monster"] + rew["power_damage_on_monster"]
+                __num_damage += total_dmg
+                __num_hit += 0 if total_dmg == 0 else 1
+                
                 if "game" in rew.keys():
                     if rew["game"] > 0:
                         __win_list.append(rew["current_level"])
                     __num_completed_games += 1
                     __num_win_games += 0 if rew["game"] < 0 else 1
-                    total_dmg = rew["match_damage_on_monster"] + rew["power_damage_on_monster"]
-                    __num_damage += total_dmg
-                    __num_hit += 0 if total_dmg == 0 else 1
             # action_space = infos["action_space"]
             action_space = np.stack([x["action_space"] for x in infos])
 
