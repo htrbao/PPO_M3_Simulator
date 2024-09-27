@@ -188,7 +188,6 @@ def main():
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
                 "out_channels": 256,
-                "out_channels": 256,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
                 "num_self_attention_layers": args.num_self_attention_layers,
                 "layers_dims": [4096, 2048, 2048, 2048],
@@ -234,6 +233,7 @@ def main():
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}\nmilestone: {milestone}")
         print(f"{win_list}")
+        exit()
         s_t = time.time()
         PPO_trainer.train(
             num_completed_games=num_completed_games,

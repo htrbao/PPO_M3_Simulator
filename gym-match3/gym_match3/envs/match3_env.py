@@ -202,6 +202,7 @@ class Match3Env(gym.Env):
             ob["board"] = self.__get_board()
             ob["list_monster"] = self.__game.list_monsters
 
+        print(ob["board"])
         obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu", self.__episode_counter / self.rollout_len)
         # Check if non legal_action
         if 1 not in np.unique(obs["action_space"]):
