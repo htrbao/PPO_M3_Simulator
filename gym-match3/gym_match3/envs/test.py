@@ -64,16 +64,7 @@ class M3CnnHelper:
         return a2t
 
     def check_legal_pos_to_move(self, i: int, j: int, raw_board: np.array):
-        return (
-            0 <= i
-            and i < self.num_row
-            and 0 <= j
-            and j < self.num_col
-            and (
-                raw_board[i][j] in GameObject.powers
-                or raw_board[i][j] in GameObject.tiles
-            )
-        )
+        return 0 <= i < self.num_row and 0 <= j < self.num_col and raw_board[i][j] in GameObject.set_movable_shape
 
     def check_required_tile(
         self,
@@ -554,7 +545,7 @@ class M3CnnHelper:
             for c in range(self.num_col):
                 tile = board[r][c]
 
-                if tile in GameObject.powers:
+                if tile in GameObject.set_powers_shape:
                     for i in [-1, 1]:
                         if self.check_legal_pos_to_move(r, c + i, board):
                             obs["legal_action"][r][c] = 1

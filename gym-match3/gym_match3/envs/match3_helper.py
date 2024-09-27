@@ -579,7 +579,7 @@ class M3Helper:
             for c in range(self.num_col):
                 tile = board[r][c]
 
-                if tile in GameObject.powers:
+                if tile in GameObject.set_powers_shape:
                     for i in [-1, 1]:
                         if self.check_legal_pos_to_move(r, c + i, board):
                             obs["legal_action"][r][c] = 1
