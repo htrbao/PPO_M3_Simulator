@@ -1046,8 +1046,8 @@ class PowerUpActivator(AbstractPowerUpActivator):
             elif shape1 == GameObject.power_bomb:
                 if shape2  != GameObject.power_bomb:
                     for i in range(-1,2,1):
-                        dir = Point(i,0) if shape2 == GameObject.power_missile_h else Point(0,i)
-                        brokens.extend(self.__activate_not_merge(shape2, point + dir, board, list_monsters, None))
+                        brokens.extend(self.__activate_not_merge(shape2, point + Point(i,0), board, list_monsters, None))
+                        brokens.extend(self.__activate_not_merge(shape2, point + Point(0,i), board, list_monsters, None))
                 else:
                     for i in range(-4, 5, 1):
                         for j in range(-4, 5, 1):
