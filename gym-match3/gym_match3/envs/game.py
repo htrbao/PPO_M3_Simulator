@@ -1174,7 +1174,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             pos = point.get_coord()
             prev_point = point
             #backward move
-            for i in range(pos[1] - 1, 0, -1):
+            for i in range(pos[1] - 1, -1, -1):
                 cur_point = Point(pos[0], i)
                 if not self.check_shield(prev_point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
@@ -1194,7 +1194,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             pos = point.get_coord()
             prev_point = point
             #backward move
-            for i in range(pos[0] - 1, 0, -1):
+            for i in range(pos[0] - 1, -1, -1):
                 cur_point = Point(i, pos[1])
                 if not self.check_shield(prev_point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
