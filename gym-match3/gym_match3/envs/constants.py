@@ -40,8 +40,11 @@ class GameObject:
     # Set of all type of shapes for faster check action
     set_tiles_shape = set(tiles)
     set_powers_shape = set(powers)
-    set_unmovable_shape = set(monsters) | set(blockers) | {immovable_shape}
-    set_movable_shape = set(tiles) | set(powers)
+    set_blockers_shape = set(blockers)
+    set_monsters_shape = set(monsters)
+    set_unmovable_shape = set_monsters_shape | set_blockers_shape
+    set_unmovable_shape.add(immovable_shape)
+    set_movable_shape = set_tiles_shape | set_powers_shape
 
 
 def mask_immov_mask(line, immovable_shape, can_move_blocker=False):
