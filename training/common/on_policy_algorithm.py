@@ -244,7 +244,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                         __win_list.append(rew["current_level"])
                     __num_completed_games += 1
                     __num_win_games += 0 if rew["game"] < 0 else 1
-            # action_space = infos["action_space"]
+
             action_space = np.stack([x["action_space"] for x in infos])
 
             self.num_timesteps += env.num_envs
