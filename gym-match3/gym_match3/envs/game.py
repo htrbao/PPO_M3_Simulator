@@ -1155,8 +1155,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 cur_point = point + Point(*_dir)
                 if not self.check_shield(point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
-                else:
-                    break
+
             mons_pos = board.get_monster()
             try:
                 brokens.append(mons_pos[np.random.randint(0, len(mons_pos))])
