@@ -1042,10 +1042,85 @@ class PowerUpActivator(AbstractPowerUpActivator):
                         brokens.extend(self.__activate_not_merge(shape2, point + Point(i,0), board, list_monsters, None))
                         brokens.extend(self.__activate_not_merge(shape2, point + Point(0,i), board, list_monsters, None))
                 else:
-                    for i in range(-4, 5, 1):
-                        for j in range(-4, 5, 1):
-                            # print("Point to disintegrate: ", point + Point(i, j))
-                            brokens.append(point + Point(i, j))
+                    def check_for_diagonal(i, _h, _v, point):
+                        out_lst = []
+                        prev_point = point
+                        for _ in range(1, i):
+                            cur_point = prev_point + Point(_h, 0)
+                            if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                                out_lst.append(cur_point)
+                                prev_point = cur_point
+                            else:
+                                break
+                        
+                        prev_point = point
+                        for _ in range(1, i):
+                            cur_point = prev_point + Point(0, _v)
+                            if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                                out_lst.append(cur_point)
+                                prev_point = cur_point
+                            else:
+                                break
+                            
+                        if not self.check_shield(point, point + Point(_h, _v), board, list_monsters):
+                            cur_point = point + Point(_h, _v)
+                            out_lst.append(cur_point)
+                            out_lst.extend(check_for_diagonal(i - 1, _h, _v, cur_point))
+                            
+                        return out_lst
+                    is_ne_v = is_ne_h = is_po_v = is_po_h = True
+                    for i in range(1, 5):
+                        prev_coeff = i - 1
+                        
+                        # check for vertical
+                        if is_po_v and not self.check_shield(point + Point(prev_coeff, 0), point + Point(i, 0), board, list_monsters):
+                            brokens.append(point + Point(i, 0))
+                        else:
+                            is_po_v = False
+                        if is_ne_v and not self.check_shield(point + Point(-prev_coeff, 0), point + Point(-i, 0), board, list_monsters):
+                            brokens.append(point + Point(-i, 0))
+                        else:
+                            is_ne_v = False
+                        #check for horizontal
+                        if is_po_h and not self.check_shield(point + Point(0, prev_coeff), point + Point(0, i), board, list_monsters):
+                            brokens.append(point + Point(0, i))
+                        else:
+                            is_po_h = False
+                        if is_ne_h and not self.check_shield(point + Point(0, -prev_coeff), point + Point(0, -i), board, list_monsters):
+                            brokens.append(point + Point(0, -i))
+                        else:
+                            is_ne_h = False
+
+                    # check for diagonal
+                    for i in range(-1, 2, 2):
+                        for j in range(-1, 2, 2):
+                            prev_point = point
+                            cur_point = point + Point(i, j)
+                            if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                                brokens.append(cur_point)
+                                prev_point = cur_point
+                                for _ in range(1, 5):
+                                    tmp_prev_point = prev_point
+                                    tmp_cur_point = tmp_prev_point + Point(i, 0)
+                                    if self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
+                                        brokens.append(tmp_cur_point)
+                                        tmp_prev_point = tmp_cur_point
+                                    else:
+                                        break
+                                for i in range(1, 5):
+                                    tmp_prev_point = prev_point
+                                    tmp_cur_point = tmp_prev_point + Point(0, j)
+                                    if self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
+                                        brokens.append(tmp_cur_point)
+                                        tmp_prev_point = tmp_cur_point
+                                    else:
+                                        break
+                                if self.check_shield(prev_point, prev_point + Point(i, j), board, list_monsters):
+                                    cur_point = prev_point + Point(i, j)
+                                    brokens.append(cur_point)
+                                    brokens.extend(check_for_diagonal(3, i, j, cur_point))
+                            else:
+                                continue
             # With missiles
             else:
                 brokens.extend(self.__activate_not_merge( GameObject.power_missile_h, point, board, list_monsters, None))
@@ -1228,8 +1303,8 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     is_ne_h = False
                 
             # check for diagonal
-            for i in range(-1, 1, 2):
-                for j in range(-1, 1, 2):
+            for i in range(-1, 2, 2):
+                for j in range(-1, 2, 2):
                     prev_point = point
                     cur_point = point + Point(i, j)
                     if not self.check_shield(prev_point, cur_point, board, list_monsters):

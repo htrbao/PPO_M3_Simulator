@@ -128,16 +128,22 @@ def get_args():
         default=4,
         help="Number of parallel environments to run (default: 4)",
     )
+    parser.add_argument(
+        "--render",
+        action='store_true',
+        help="initiate renderer object",
+    )
 
     return parser.parse_args()
 
 
-def make_env(rank, obs_order, num_per_group):
+def make_env(rank, obs_order, num_per_group, render):
     def _init():
         env = Match3Env(
             90,
             obs_order=obs_order,
             level_group=(rank * num_per_group, (rank + 1) * num_per_group),
+            is_render=render,
         )
         return env
 
@@ -148,7 +154,7 @@ def make_env_loc(args, milestones=0, step=4):
     
     envs = SubprocVecEnv(
         [
-            make_env(i, args.obs_order, max_level // args.num_envs)
+            make_env(i, args.obs_order, max_level // args.num_envs, args.render)
             for i in range(args.num_envs)
         ]
     )
@@ -162,7 +168,7 @@ def main():
     if args.strategy == 'sequential':
         envs = SubprocVecEnv(
             [
-                make_env(i, args.obs_order, max_level // args.num_envs)
+                make_env(i, args.obs_order, max_level // args.num_envs, args.render)
                 for i in range(args.num_envs)
             ]
         )

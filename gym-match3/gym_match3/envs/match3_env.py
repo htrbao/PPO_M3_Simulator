@@ -30,6 +30,7 @@ class Match3Env(gym.Env):
         random_state=None,
         obs_order: list[str] = [],
         level_group: tuple[int, int] = (0, 10),
+        is_render: bool = False,
     ):
         self.num_envs = 1
         self.rollout_len = rollout_len
@@ -55,7 +56,9 @@ class Match3Env(gym.Env):
             random_state=self.random_state,
         )
         self.reset()
-        self.renderer = Renderer(self.n_shapes)
+        self.renderer = None
+        if is_render:
+            self.renderer = Renderer(self.n_shapes)
 
         # setting observation space
         self.observation_space = spaces.Box(
