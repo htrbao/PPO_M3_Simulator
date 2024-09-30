@@ -4,6 +4,21 @@ from gym_match3.envs.game import Point, Board, DameMonster, BoxMonster
 
 MY_LEVEL =  [
     Level(10, 9, 5, [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, -1, 0, 0, -1, 0, 0, -1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, 0, 0, -1, 0, 0, -1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, -1, 0, 0, -1, 0, 0, -1],
+            [GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, 0, 0, 0, 0],
+            [GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, 0, 0, 0, 0],
+        ], [
+            DameMonster(position=Point(8, 0), width=2, height=2, hp=15 + base_hp),
+        ],
+    ),
+    Level(10, 9, 5, [
     [-1, -1, -1, -1, -1, -1, -1, -1, -1],
     [0,  0,  0,  0,  0,  0,  0,  0, -1],
     [0,  0,  0,  0,  0,  0,  0,  0, -1],
@@ -21,8 +36,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=30+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]), 
     Level(10, 9, 5, [
@@ -43,8 +57,7 @@ MY_LEVEL =  [
                     width=3,
                     height=3,
                     hp=25+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]),
     Level(10, 9, 5, [
@@ -66,8 +79,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=15+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]),
     Level(10, 9, 5, [
@@ -89,8 +101,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=20+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]),
     Level(10, 9, 5, [
@@ -112,8 +123,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=20+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]),
     Level(10, 9, 5, [
@@ -134,8 +144,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=20+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]),
     Level(10, 9, 5, [
@@ -156,8 +165,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=20+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]),
     Level(10, 9, 5, [
@@ -178,8 +186,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=20+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]),
         Level(10, 9, 5, [
@@ -201,8 +208,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=20+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
                     )
     ]),
         
@@ -224,8 +230,7 @@ MY_LEVEL =  [
                     width=2,
                     height=2,
                     hp=20+base_hp,
-                    dame=2,
-                    request_masked=[1,1,1,1,1]
+                    dame=2
         )
     ]),
 ]

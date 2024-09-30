@@ -1,7 +1,7 @@
 from gym_match3.envs.levels import Level, base_hp
 from gym_match3.envs.constants import GameObject
 from gym_match3.envs.game import Point, Board, DameMonster, BoxMonster
-level_6 = [
+MY_LEVEL = [
     Level(10, 9, 5, [
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
