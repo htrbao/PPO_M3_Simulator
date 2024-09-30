@@ -1,0 +1,47 @@
+[
+  {
+    "realm_id": 0,
+    "node_id": 0,
+    "level_id": "1000",
+    "max_step": 141,
+    "num_win_games": 10,
+    "num_damage": 6.666666666666667,
+    "num_hit": 10
+  },
+  {
+    "realm_id": 0,
+    "node_id": 6,
+    "level_id": "7000",
+    "max_step": 71,
+    "num_win_games": 0,
+    "num_damage": 0.0,
+    "num_hit": 0
+  },
+  {
+    "realm_id": 1,
+    "node_id": 0,
+    "level_id": "1001000",
+    "max_step": 156,
+    "num_win_games": 10,
+    "num_damage": 0.7538461538461538,
+    "num_hit": 10
+  },
+  {
+    "realm_id": 1,
+    "node_id": 1,
+    "level_id": "1002000",
+    "max_step": 156,
+    "num_win_games": 1,
+    "num_damage": 0.18461538461538463,
+    "num_hit": 1
+  },
+  {
+    "realm_id": 1,
+    "node_id": 2,
+    "level_id": "1003000",
+    "max_step": 156,
+    "num_win_games": 10,
+    "num_damage": 0.7076923076923077,
+    "num_hit": 10
+  }
+]
