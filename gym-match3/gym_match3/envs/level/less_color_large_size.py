@@ -21,7 +21,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=3,
                     height=3,
-                    hp=25  + base_hp,
+                    hp=30 + base_hp,
                     dame=2
         )
     ]),
@@ -43,7 +43,7 @@ MY_LEVEL = [
                     setup_interval=1,
                     width=3,
                     height=3,
-                    hp=15 + base_hp,
+                    hp=20 + base_hp,
                     dame=3,
                     )
     ]),
@@ -65,7 +65,7 @@ MY_LEVEL = [
                     setup_interval=1,
                     width=2,
                     height=4,
-                    hp=12 + base_hp,
+                    hp=25 + base_hp,
                     dame=2,
                     )
     ]),
@@ -86,7 +86,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=10 + base_hp,
+                    hp=20 + base_hp,
                     dame=2,
                     )
     ]),
@@ -128,7 +128,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=20+base_hp,
+                    hp=25+base_hp,
                     dame=2,
                     )
     ]),
@@ -150,7 +150,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=3,
                     height=2,
-                    hp=12+base_hp,
+                    hp=17+base_hp,
                     dame=2,
                     )
     ]),
@@ -193,7 +193,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=20+base_hp,
+                    hp=15+base_hp,
                     dame=2,
         )
     ]),
@@ -214,7 +214,7 @@ MY_LEVEL = [
                     setup_interval = 1,
                     width=2,
                     height=2,
-                    hp=20+base_hp,
+                    hp=15+base_hp,
                     dame=2,
         )
     ]),

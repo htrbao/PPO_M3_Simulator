@@ -187,7 +187,7 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=20,
+                        hp=20 + base_hp,
                     )
                 ],
             )
@@ -204,7 +204,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=12,
+                            hp=12 + base_hp,
                             request_masked=[1, 1, 1, 1, 0],
                         )
                     ],
@@ -221,7 +221,7 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=20,
+                        hp=20 + base_hp,
                         request_masked=[0, 0, 0, 0, 1],
                     )
                 ],
