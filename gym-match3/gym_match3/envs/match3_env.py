@@ -146,7 +146,8 @@ class Match3Env(gym.Env):
         reward.update({
             "tile": [*p1.get_coord(), *p2.get_coord()],
             "current_level": self.levels.current_level + self.current_group,
-            "mons": [p.get_coord() for mon in self.__game.list_monsters for p in mon.mons_positions]
+            "mons": [p.get_coord() for mon in self.__game.list_monsters for p in mon.mons_positions],
+            "hp_mons": sum([mon.get_hp() for mon in self.__game.list_monsters if mon.real_monster])
         })
         is_early_done_game = self.__game._sweep_died_monster()
 

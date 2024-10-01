@@ -40,6 +40,8 @@ def eval(model, obs_order, env, device, num_eval=5):
     __num_damage = 0
     __num_hit = 0
     __total_step = 0
+    __remain_mons_hp = 0
+    total_monster_hp =  sum([m['kwargs']['hp'] for m in env['monsters']])
     start_time = time.time()
 
     envs = SubprocVecEnv(
@@ -71,7 +73,10 @@ def eval(model, obs_order, env, device, num_eval=5):
                 __num_hit += 0 if total_dmg == 0 else 1
                 __total_step += 1
                 if "game" in reward.keys():
-                    __num_win_games += 0 if reward["game"] < 0 else 1
+                    if reward["game"] > 0:
+                        __num_win_games += 1
+                    elif reward["game"] < 0: 
+                        __remain_mons_hp += reward["hp_mons"] / total_monster_hp
             if done:
                 check_dones[id] = 1
         if all(check_dones):
@@ -79,16 +84,21 @@ def eval(model, obs_order, env, device, num_eval=5):
         current_step += 1
         action_space = np.stack([x["action_space"] for x in infos])
     envs.close()
+    
     result = {
         "realm_id": env['realm_id'],
         "node_id": env['node_id'],
         "level_id": env['level_id'],
+        "num_mons": env['monsters'],
         "max_step": max_step,
         "num_games": num_eval,
         "num_win_games": __num_win_games,
         "num_damage": __num_damage,
         "num_hit": __num_hit,
         "total_step": __total_step,
+        "hit_rate": __num_hit / __total_step,
+        "win_rate": __num_win_games / num_eval,
+        "remain_hp_monster": (__remain_mons_hp / (num_eval - __num_win_games)) if __num_win_games != num_eval else 0,
     }
     
     print("Evaluation time: {:.2f}s".format(time.time() - start_time), result)

@@ -24,7 +24,7 @@ from gym_match3.envs.constants import Level, GameObject
 
 def get_monster_max_hp(realm_id, node_id):
     try:
-        level_info = LEVEL_MATCH.loc[LEVEL_MATCH.RealmID.eq(realm_id) & LEVEL_MATCH.Node.eq(node_id)]
+        level_info = LEVEL_MATCH.loc[LEVEL_MATCH.RealmID.eq(realm_id) & LEVEL_MATCH.Node.eq(node_id)].reset_index()
         max_hp = int(math.ceil(level_info.at[0, "SumMatch"]))
     except:
         max_hp = int(LEVEL_MATCH["SumMatch"].mean())
@@ -115,10 +115,10 @@ def create_kwargs_class(width, height, monster_type, action):
         kwargs["dame"] = 0
         if monster_type == SkillDefine.ACTION_GUARD:
             direction = action.get("direction", 15)
-            kwargs["request_masked"] = [~(direction & SkillDefine.DIRECTION_LEFT), 
-                                        ~(direction & SkillDefine.DIRECTION_RIGHT), 
-                                        ~(direction & SkillDefine.DIRECTION_UP), 
-                                        ~(direction & SkillDefine.DIRECTION_DOWN), 1]
+            kwargs["request_masked"] = [not (direction & SkillDefine.DIRECTION_LEFT), 
+                                        not (direction & SkillDefine.DIRECTION_RIGHT), 
+                                        not (direction & SkillDefine.DIRECTION_UP), 
+                                        not (direction & SkillDefine.DIRECTION_DOWN), 1]
         elif monster_type == SkillDefine.ACTION_ADD_SHIELD:
             kwargs["have_paper_box"] = True
             kwargs["relax_interval"] = 2
@@ -178,7 +178,8 @@ def get_map_infos(realm_info: dict, hit_rate: float = 0.5):
             "node_id": realm_node,
             "level_id": realm_level,
             "level": processed_map,
-            "max_step": max_step
+            "max_step": max_step,
+            "monsters": monsters
         }
     except Exception as e:
         print("\t\tWARNING: ",e)
