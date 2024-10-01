@@ -73,8 +73,8 @@ def process_map(map_str, monsters, monster_max_hp, num_tiles):
 
         processed_map[monster_id_start[0]: monster_id_end[0]+1, monster_id_start[1]:monster_id_end[1]+1] = monster_create['object']
         kwargs["position"] = Point(
-            monster_id[0] + MONSTER_DIRECTION[1][0] * monster_height, 
-            monster_id[1] + MONSTER_DIRECTION[1][1] * monster_width)
+            monster_id_start[0], 
+            monster_id_start[1])
         kwargs["hp"] = monster_max_hp
         monster_list.append(
             monster_create["class"](**kwargs)
