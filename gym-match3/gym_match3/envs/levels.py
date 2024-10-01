@@ -170,63 +170,63 @@ class Match3Levels:
 
 
 easy_levels = []
-# for x in range(0, 9):
-#     for y in range(0, 8):
-#         easy_board = [[0 for _ in range(9)] for _ in range(10)]
-#         for _x in range(x, x + 2):
-#             for _y in range(y, y + 2):
-#                 easy_board[_x][_y] = GameObject.monster_dame
-#         easy_levels.append(
-#             Level(
-#                 10,
-#                 9,
-#                 5,
-#                 copy.deepcopy(easy_board),
-#                 [
-#                     DameMonster(
-#                         position=Point(x, y),
-#                         width=2,
-#                         height=2,
-#                         hp=20,
-#                     )
-#                 ],
-#             )
-#         )
-#         if random.random() < 0.7:
-#             easy_levels.append(
-#                 Level(
-#                     10,
-#                     9,
-#                     5,
-#                     copy.deepcopy(easy_board),
-#                     [
-#                         DameMonster(
-#                             position=Point(x, y),
-#                             width=2,
-#                             height=2,
-#                             hp=12,
-#                             request_masked=[1, 1, 1, 1, 0],
-#                         )
-#                     ],
-#                 )
-#             )
-#         easy_levels.append(
-#             Level(
-#                 10,
-#                 9,
-#                 5,
-#                 copy.deepcopy(easy_board),
-#                 [
-#                     DameMonster(
-#                         position=Point(x, y),
-#                         width=2,
-#                         height=2,
-#                         hp=20,
-#                         request_masked=[0, 0, 0, 0, 1],
-#                     )
-#                 ],
-#             )
-#         )
+for x in range(0, 9):
+    for y in range(0, 8):
+        easy_board = [[0 for _ in range(9)] for _ in range(10)]
+        for _x in range(x, x + 2):
+            for _y in range(y, y + 2):
+                easy_board[_x][_y] = GameObject.monster_dame
+        easy_levels.append(
+            Level(
+                10,
+                9,
+                5,
+                copy.deepcopy(easy_board),
+                [
+                    DameMonster(
+                        position=Point(x, y),
+                        width=2,
+                        height=2,
+                        hp=20 + base_hp,
+                    )
+                ],
+            )
+        )
+        if random.random() < 0.7:
+            easy_levels.append(
+                Level(
+                    10,
+                    9,
+                    5,
+                    copy.deepcopy(easy_board),
+                    [
+                        DameMonster(
+                            position=Point(x, y),
+                            width=2,
+                            height=2,
+                            hp=12 + base_hp,
+                            request_masked=[1, 1, 1, 1, 0],
+                        )
+                    ],
+                )
+            )
+        easy_levels.append(
+            Level(
+                10,
+                9,
+                5,
+                copy.deepcopy(easy_board),
+                [
+                    DameMonster(
+                        position=Point(x, y),
+                        width=2,
+                        height=2,
+                        hp=20 + base_hp,
+                        request_masked=[0, 0, 0, 0, 1],
+                    )
+                ],
+            )
+        )
 
 LEVELS = [
     *easy_levels,

@@ -1,9 +1,13 @@
+from dataclasses import dataclass
+
 import numpy as np
 from collections import namedtuple
 
 Level = namedtuple("Level", ["h", "w", "n_shapes", "board", "list_monsters"])
-base_hp = 0
+base_hp = 5
 
+
+@dataclass(frozen=True)
 class GameObject:
     immovable_shape = -1
     # Tile
@@ -33,6 +37,12 @@ class GameObject:
     monster_box_both = 18
     monsters = np.arange(monster_dame, monster_box_both + 1, 1)
 
+    # Set of all type of shapes for faster check action
+    set_tiles_shape = set(tiles)
+    set_powers_shape = set(powers)
+    set_unmovable_shape = set(monsters) | set(blockers) | {immovable_shape}
+    set_movable_shape = set(tiles) | set(powers)
+
 
 def mask_immov_mask(line, immovable_shape, can_move_blocker=False):
     immov_mask = line == immovable_shape
@@ -44,5 +54,6 @@ def mask_immov_mask(line, immovable_shape, can_move_blocker=False):
 
     return immov_mask
 
+
 def need_to_match(shape):
-    return shape in np.concatenate([GameObject.tiles, GameObject.powers])
+    return shape in GameObject.set_movable_shape

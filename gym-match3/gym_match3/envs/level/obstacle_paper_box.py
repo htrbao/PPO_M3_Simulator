@@ -1,7 +1,7 @@
 from gym_match3.envs.levels import Level, base_hp
 from gym_match3.envs.constants import GameObject
 from gym_match3.envs.game import Point, Board, DameMonster, BoxMonster
-level_6 = [
+MY_LEVEL = [
     Level(10, 9, 5, [
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -130,7 +130,7 @@ level_6 = [
                 setup_interval=2,
                 width=2,
                 height=2,
-                hp=25+base_hp,
+                hp=20+base_hp,
                 dame=3,
                 have_paper_box=True
                 ),
@@ -220,7 +220,7 @@ level_6 = [
                 setup_interval=1,
                 width=2,
                 height=2,
-                hp=22+base_hp,
+                hp=18+base_hp,
                 dame=3,
                 have_paper_box=True
                 )

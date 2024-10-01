@@ -128,16 +128,22 @@ def get_args():
         default=4,
         help="Number of parallel environments to run (default: 4)",
     )
+    parser.add_argument(
+        "--render",
+        action='store_true',
+        help="initiate renderer object",
+    )
 
     return parser.parse_args()
 
 
-def make_env(rank, obs_order, num_per_group):
+def make_env(rank, obs_order, num_per_group, render):
     def _init():
         env = Match3Env(
             90,
             obs_order=obs_order,
             level_group=(rank * num_per_group, (rank + 1) * num_per_group),
+            is_render=render,
         )
         return env
 
@@ -148,7 +154,7 @@ def make_env_loc(args, milestones=0, step=4):
     
     envs = SubprocVecEnv(
         [
-            make_env(i, args.obs_order, max_level // args.num_envs)
+            make_env(i, args.obs_order, max_level // args.num_envs, args.render)
             for i in range(args.num_envs)
         ]
     )
@@ -162,7 +168,7 @@ def main():
     if args.strategy == 'sequential':
         envs = SubprocVecEnv(
             [
-                make_env(i, args.obs_order, max_level // args.num_envs)
+                make_env(i, args.obs_order, max_level // args.num_envs, args.render)
                 for i in range(args.num_envs)
             ]
         )
@@ -187,7 +193,6 @@ def main():
             "features_extractor_class": M3LocFeatureExtractor,
             "features_extractor_kwargs": {
                 "mid_channels": args.mid_channels,
-                "out_channels": 256,
                 "out_channels": 256,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
                 "num_self_attention_layers": args.num_self_attention_layers,
@@ -226,9 +231,9 @@ def main():
         win_list = res.get('win_list', None)
         hit_mask = res.get('hit_mask', None)
 
-        if not os.path.isdir(f'./statistics/hit_mask/{PPO_trainer._model_name}'):
-            os.makedirs(f'./statistics/hit_mask/{PPO_trainer._model_name}')
-        with open(f'./statistics/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
+        if not os.path.isdir(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}'):
+            os.makedirs(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}')
+        with open(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
             np.save(f, hit_mask)
 
         win_rate = num_win_games / num_completed_games * 100
@@ -245,6 +250,7 @@ def main():
         print("training time", time.time() - s_t)    
         if win_rate > 80.0:
             milestone += 1
+            envs.close()
             envs = make_env_loc(args, milestone)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)

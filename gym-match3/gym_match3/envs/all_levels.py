@@ -18,6 +18,7 @@ ALL_LEVELS=[
     *dict_levels['5_color_tanky'],
     *dict_levels['corners'],
     *dict_levels['with_obstacle'],
+    *dict_levels['multiple_mons_no_dame_direction']
     *dict_levels['multiple_mons'],
     *dict_levels['no_dame_direction_yes_pu'],
     *dict_levels['no_matches'],

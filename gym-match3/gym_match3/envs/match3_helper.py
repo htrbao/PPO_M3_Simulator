@@ -1,6 +1,5 @@
-from copy import copy
-import torch
 import numpy as np
+import torch
 
 from gym_match3.envs.constants import GameObject
 from gym_match3.envs.game import AbstractMonster, ThornyBlocker
@@ -45,6 +44,9 @@ class M3Helper:
         else:
             self.obs_order = obs_order
 
+        self.set_pos_check = set(GameObject.powers) | set(GameObject.tiles)
+
+
     def _from_action_to_tile(self):
         a2t = {}
         max_h_action = (self.num_col - 1) * self.num_row
@@ -62,13 +64,10 @@ class M3Helper:
         return a2t
 
     def check_legal_pos_to_move(self, i: int, j: int, raw_board: np.array):
-        return (
-            0 <= i
-            and i < self.num_row
-            and 0 <= j
-            and j < self.num_col
-            and raw_board[i][j] in np.concatenate([GameObject.powers, GameObject.tiles])
-        )
+        return (0 <= i < self.num_row
+                and 0 <= j < self.num_col
+                and raw_board[i][j] in self.set_pos_check)
+
 
     def check_required_tile(
         self,
@@ -549,7 +548,7 @@ class M3Helper:
             "legal_action": np.zeros((self.num_row, self.num_col)),
             "heat_mask" : np.full((self.num_row, self.num_col), time_factor),
         }
-        
+
 
         for _mons in list_monsters:
             for p in _mons.mons_positions:
@@ -575,12 +574,12 @@ class M3Helper:
                     obs["monster_match_dmg_mask"][p.get_coord()] = 1
                 except IndexError:
                     continue
-        
+
         for r in range(self.num_row):
             for c in range(self.num_col):
                 tile = board[r][c]
 
-                if tile in GameObject.powers:
+                if tile in GameObject.set_powers_shape:
                     for i in [-1, 1]:
                         if self.check_legal_pos_to_move(r, c + i, board):
                             obs["legal_action"][r][c] = 1
