@@ -221,15 +221,12 @@ class Board(AbstractBoard):
 
     @property
     def board_size(self):
-        if self.__is_board_exist():
-            rows, cols = self.board.shape
-        else:
-            rows, cols = self.__rows, self.__columns
-        return rows, cols
+        return self.__rows, self.__columns
 
     def set_board(self, board: np.ndarray):
         self.__validate_board(board)
         self.__board = board.astype(float)
+        self.__rows, self.__columns = board.shape
 
     def shuffle(self, random_state=None):
         moveable_mask = self.board != self.immovable_shape
@@ -322,9 +319,7 @@ class Board(AbstractBoard):
             if shape == GameObject.immovable_shape:
                 raise ImmovableShapeError
 
-    def delete(self, points: set, allow_delete_monsters: bool = False):
-        points = [p for p in points if self.get_shape(p) != GameObject.immovable_shape]
-        self._check_availability(*points)
+    def delete(self, points: set[Point], allow_delete_monsters: bool = False):
         if allow_delete_monsters:
             coordinates = tuple(np.array([i.get_coord() for i in points]).T.tolist())
         else:
@@ -333,7 +328,7 @@ class Board(AbstractBoard):
                     [
                         i.get_coord()
                         for i in points
-                        if self.get_shape(i) not in GameObject.set_unmovable_shape
+                        if self.get_valid_shape(*i.get_coord()) not in GameObject.set_unmovable_shape
                     ]
                 ).T.tolist()
             )
@@ -549,14 +544,14 @@ class MatchesSearcher(AbstractSearcher):
     #     lst = []
     #     s_t = time.time()
     #     with concurrent.futures.ThreadPoolExecutor(max_workers=90) as executor:
-            
+
     #             # if not need_all:
     #             #     assert checking_point is not None, "checking_point must have if need_all is False"
     #             #     if point not in checking_point:
     #             #         continue
     #             futures = [executor.submit(self.__get_match3_for_point, board, point, need_all=need_all) for point in self.points_generator(board) if (need_all or (not need_all and point in checking_point))]
     #             done, not_done = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
-                
+
     #             for future in concurrent.futures.as_completed(futures):
     #                 to_del, to_add = future.result()
     #                 if to_del:
@@ -565,20 +560,19 @@ class MatchesSearcher(AbstractSearcher):
     #                         print("set stop event")
     #                         self.stop_event.set()
     #                         break
-        
+
     #     e_t = time.time()
     #     print("scan board", e_t - s_t)
     #     for i in range(len(lst)):
     #         matches.update(lst[i][0])
     #         new_power_ups.update(lst[i][1])
-        
+
 
     #     return matches, new_power_ups
 
     def scan_board_for_matches(self, board: Board, need_all: bool = True, checking_point: list[Point] = []):
         matches = set()
         new_power_ups = dict()
-        total_time = 0
         for point in self.points_generator(board):
             if not need_all:
                 assert checking_point is not None, "checking_point must have if need_all is False"
@@ -713,7 +707,7 @@ class AbstractMonster(ABC):
     @property
     def inside_dmg_mask(self):
         return self.__inside_dmg_mask if self.available_mask[4] else []
-    
+
     @property
     def mons_positions(self):
         return self.__inside_dmg_mask
@@ -788,7 +782,7 @@ class AbstractMonster(ABC):
         return: match_damage, pu_damage
         """
         __matches = [ele.point for ele in matches]
-        mons_inside_dmg = 0 
+        mons_inside_dmg = 0
         for coor in brokens:
             if coor in set(self.inside_dmg_mask):
                 mons_inside_dmg += 1
@@ -855,7 +849,7 @@ class DameMonster(AbstractMonster):
             if self._paper_box_hp <= 0:
                 self._paper_box_hp = self._setup_interval
                 self.available_mask = [1, 1, 1, 1, 0]
-        
+
         super().attacked(match_damage, pu_damage)
 
 
@@ -990,13 +984,13 @@ class PowerUpActivator(AbstractPowerUpActivator):
         point2 = point + directions
         shape1 = board.get_shape(point)
         shape2 = board.get_shape(point2)
-    
+
         if shape1 in GameObject.set_powers_shape and shape2 in GameObject.set_powers_shape:
-            
+
             #adding both points to return_brokens
             return_brokens.add(point)
             return_brokens.add(point2)
-            
+
             # Merge power_up
             if shape1 <= shape2:
                 shape1, shape2 = shape2, shape1
@@ -1018,7 +1012,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 else:
                     brokens = [Point(i, j) for i, j in product(range(board.board_size[0]), range(board.board_size[1]))]
                     disco_brokens = set(brokens)
-                    
+
             # With plane
             elif shape1 == GameObject.power_plane:
                 for _dir in self.__plane_affect:
@@ -1034,7 +1028,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 except:
                     # print("No Monster on Board")
                     print(board)
-                    
+
             # With bomb
             elif shape1 == GameObject.power_bomb:
                 if shape2  != GameObject.power_bomb:
@@ -1059,7 +1053,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 )
             else:
                 brokens = self.__activate_not_merge(shape1, point, board, list_monsters, shape2)
-                
+
         elif shape2 in GameObject.set_powers_shape:
             return_brokens.add(point2)
             if shape2 == GameObject.power_disco:
@@ -1068,7 +1062,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 )
             else:
                 brokens = self.__activate_not_merge(shape2, point2, board, list_monsters, shape1)
-                
+
         inside_brokens = copy.copy(brokens)
         brokens = list(set(brokens))
         while brokens:
@@ -1097,7 +1091,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                         brokens = list(set(brokens))
             except OutOfBoardError:
                 continue
-        
+
         return return_brokens, disco_brokens, inside_brokens
 
     # def __activate_merge(
@@ -1143,7 +1137,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                 return True
             return False
         except OutOfBoardError:
-            return True    
+            return True
 
     def __activate_not_merge(
         self, power_up_type: int, point: Point, board: Board, list_monsters, _color: int = None
@@ -1207,7 +1201,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             is_ne_v = is_ne_h = is_po_v = is_po_h = True
             for i in range(1, 3):
                 prev_coeff = i - 1
-                
+
                 # check for vertical
                 if is_po_v and not self.check_shield(point + Point(prev_coeff, 0), point + Point(i, 0), board, list_monsters):
                     brokens.append(point + Point(i, 0))
@@ -1226,7 +1220,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     brokens.append(point + Point(0, -i))
                 else:
                     is_ne_h = False
-                
+
             # check for diagonal
             for i in range(-1, 1, 2):
                 for j in range(-1, 1, 2):
@@ -1245,7 +1239,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     else:
                         continue
 
-                    
+
         elif power_up_type == GameObject.power_disco:
             assert _color is not None, "Disco Power Up need color to be cleared"
             for i in range(board.board_size[0]):
@@ -1332,6 +1326,7 @@ class MovesSearcher(AbstractMovesSearcher, MatchesSearcher):
                     possible_moves.update(possible_moves_for_point)
                     if len(possible_moves_for_point) > 0 and not all_moves:
                         break
+
         return possible_moves
 
     def __search_moves_for_point(self, board: Board, point: Point, need_all=True):
