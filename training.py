@@ -156,7 +156,7 @@ def make_env(rank, obs_order, num_per_group, render):
 
     return _init
 
-def make_env_loc(args, milestones=0, step=4):
+def make_env_loc(args, milestones=0, step=4, render=False):
     max_level = min(len(LEVELS), args.num_envs + step*milestones)
     
     r = max_level % args.num_envs
@@ -165,14 +165,14 @@ def make_env_loc(args, milestones=0, step=4):
     
     envs = SubprocVecEnv(
         [
-            make_env(i, args.obs_order, d)
+            make_env(i, args.obs_order, d, render)
             for i in range(num_keeps)
         ]
         
         + 
         
         [
-            make_env(num_keeps//(d+1) + i, args.obs_order, d + 1)
+            make_env(num_keeps//(d+1) + i, args.obs_order, d + 1, render)
             for i in range(r)
         ]
     )
@@ -191,7 +191,7 @@ def main():
             ]
         )
     elif args.strategy == 'milestone':
-        envs = make_env_loc(args)
+        envs = make_env_loc(args, render=args.render)
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
 
@@ -271,7 +271,7 @@ def main():
         if win_rate > 80.0:
             milestone += 1
             envs.close()
-            envs = make_env_loc(args, milestone, step=max(30 // milestone, 4))
+            envs = make_env_loc(args, milestone, step=max(30 // milestone, 4), render=args.render)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)
 
