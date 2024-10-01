@@ -15,10 +15,18 @@ from training.common.policies import (
 from training.common.utils import obs_as_tensor
 from training.common.vec_env import SubprocVecEnv
 
-from copy import deepcopy
+def make_env(levels, max_step, obs_order):
+    def _init():
+        env = Match3Env(
+            max_step,
+            obs_order=obs_order,
+            levels=Match3Levels([levels]),
+            
+        )
+        return env
 
-
-def eval(model, obs_order, env, device, num_eval=2):
+    return _init
+def eval(model, obs_order, env, device, num_eval=5):
     level = env['level']
     max_step = env['max_step']
 
@@ -27,42 +35,49 @@ def eval(model, obs_order, env, device, num_eval=2):
     __num_hit = 0
     __total_step = 0
     start_time = time.time()
-    m3_env = SubprocVecEnv([Match3Env(max_step, obs_order=obs_order, levels=[level]) for i in range(num_eval)])
+
+    envs = SubprocVecEnv(
+            [
+                make_env(level, max_step, obs_order)
+                for _ in range(num_eval)
+            ]
+        )
 
     current_step = 0
-    obs, infos = m3_env.reset()
-    action_space = np.stack([infos["action_space"]])
+    obs = envs.reset()
+    action_space = np.stack([x["action_space"] for x in envs.reset_infos])
     
-    # action_space = np.array([x["action_space"] for x in m3_env.reset_infos])
-    print(obs.shape)
-    print(action_space.shape)
+
     while(current_step < max_step):
         obs_tensor = obs_as_tensor(obs, device)
         action_space = obs_as_tensor(action_space, device)
 
         actions, values, log_probs = model(obs_tensor, action_space)
-        obs, rewards, dones, infos = m3_env.step(actions)
+        obs, rewards, dones, infos = envs.step(actions)
         __total_step += 1
-        # for reward in rewards:
-        if "game" in rewards.keys():
-            print(rewards)
-            __num_win_games += 0 if rewards["game"] < 0 else 1
-            total_dmg = rewards["match_damage_on_monster"] + rewards["power_damage_on_monster"]
-            __num_damage += total_dmg
-            __num_hit += 0 if total_dmg == 0 else 1
-        if dones:
+        for done, reward in zip(dones, rewards):
+            if "game" in reward.keys():
+                print(dones, rewards)
+                if done:
+                    __num_win_games += 0 if reward["game"] < 0 else 1
+                total_dmg = reward["match_damage_on_monster"] + reward["power_damage_on_monster"]
+                __num_damage += total_dmg
+                __num_hit += 0 if total_dmg == 0 else 1
+        if all(dones):
             break
-        action_space = np.stack([infos["action_space"]])
+        action_space = np.stack([x["action_space"] for x in infos])
     print("Evaluation time: {:.2f}s".format(time.time() - start_time))
+    envs.close()
     return {
         "realm_id": env['realm_id'],
         "node_id": env['node_id'],
         "level_id": env['level_id'],
         "max_step": max_step,
+        "num_games": num_eval,
         "num_win_games": __num_win_games,
         "num_damage": __num_damage,
         "num_hit": __num_hit,
-        "total_step": __total_step,
+        "avg_step": __total_step,
     }
         
 
@@ -103,12 +118,11 @@ def main():
     num_processes = args.num_processes
     model = ActorCriticCnnPolicy.load(args.checkpoint)
     model = model.to(device)
-
-    model.share_memory()
-    REAL_LEVELS = get_real_levels()[:5]
-    results = {}
+    # model.share_memory()
+    REAL_LEVELS = get_real_levels(True)[:5]
+    results = []
     for level in REAL_LEVELS:
-        results.update(eval(model, args.obs_order, level, device))
+        results.append(eval(model, args.obs_order, level, device))
 
     
     with open('results.json', 'w') as f:
