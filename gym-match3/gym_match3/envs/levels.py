@@ -170,6 +170,7 @@ class Match3Levels:
 
 
 easy_levels = []
+shield_one_mon_level = []
 for x in range(0, 9):
     for y in range(0, 8):
         easy_board = [[0 for _ in range(9)] for _ in range(10)]
@@ -187,13 +188,13 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=20 + base_hp,
+                        hp=35 + base_hp,
                     )
                 ],
             )
         )
         if random.random() < 0.7:
-            easy_levels.append(
+            shield_one_mon_level.append(
                 Level(
                     10,
                     9,
@@ -204,13 +205,13 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=12 + base_hp,
+                            hp=2 + base_hp,
                             request_masked=[1, 1, 1, 1, 0],
                         )
                     ],
                 )
             )
-        easy_levels.append(
+        shield_one_mon_level.append(
             Level(
                 10,
                 9,
@@ -221,7 +222,7 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=20 + base_hp,
+                        hp=4 + base_hp,
                         request_masked=[0, 0, 0, 0, 1],
                     )
                 ],
@@ -230,6 +231,7 @@ for x in range(0, 9):
 
 LEVELS = [
     *easy_levels,
+    *shield_one_mon_level,
     Level(
         10,
         9,
