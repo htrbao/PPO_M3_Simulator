@@ -39,7 +39,7 @@ def get_player_hp(realm_id, monsters):
         try:
             monster_time = MONSTER_ATK.loc[MONSTER_ATK.CreepID.eq(monster_creep)].reset_index().at[0, "Time"]
         except:
-            print(monster_creep, "set default 180")
+            # print(monster_creep, "set default 180")
             monster_time = DEFAULT_TIME
         if monster_time > 0:
             time_atk += 1.0/float(monster_time)
@@ -55,7 +55,7 @@ def process_map(map_str, monsters, monster_max_hp, num_tiles):
     height = len(map_str)
     width = len(map_str[0])
     monster_list = []
-    print(map_str)
+    # print(map_str)
     processed_map = np.array([list(row) for row in map_str])
     monster_max_hp = monster_max_hp / len(monsters)
     
@@ -95,7 +95,7 @@ def get_skill_monster(stateInfos):
         for skill_id in skill_ids:
             skill_id = str(skill_id)
             *_, commands = MONSTER_PASSIVE_CONFIG[skill_id].values()
-            print(MONSTER_PASSIVE_CONFIG[skill_id])
+            # print(MONSTER_PASSIVE_CONFIG[skill_id])
             for command in commands:
                 if command.get("action", None) is not None and command["action"].get("type", -1) in AVAILABLE_SKILL: 
                     return command["action"]["type"], command["action"]
