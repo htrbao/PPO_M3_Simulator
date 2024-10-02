@@ -303,7 +303,7 @@ class RolloutBuffer(BaseBuffer):
             if total_dmg <= 0:
                 _reward -= 0.2
             else:
-                _reward += 0.2
+                _reward += 0.3
 
             if reward["create_pu_score"] <= 0:
                 _reward -= 0.2
