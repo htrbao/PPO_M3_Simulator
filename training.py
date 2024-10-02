@@ -11,6 +11,7 @@ from training.ppo import PPO
 from training.m3_model.m3_cnn import (
     M3CnnFeatureExtractor,
     M3CnnLargerFeatureExtractor,
+    M3CnnWiderFeatureExtractor,
     M3SelfAttentionFeatureExtractor,
     M3ExplainationFeatureExtractor,
     M3MlpFeatureExtractor,
@@ -49,6 +50,12 @@ def get_args():
         type=str,
         default="m3_with_cnn",
         help="prefix name of the model",
+    )
+    parser.add_argument(
+        "--kernel_size",
+        type=int,
+        default=3,
+        help="Number of kernel size in CNN model",
     )
     parser.add_argument(
         "--mid_channels",
@@ -149,13 +156,24 @@ def make_env(rank, obs_order, num_per_group, render):
 
     return _init
 
-def make_env_loc(args, milestones=0, step=4):
+def make_env_loc(args, milestones=0, step=4, render=False):
     max_level = min(len(LEVELS), args.num_envs + step*milestones)
+    
+    r = max_level % args.num_envs
+    d = max_level // args.num_envs
+    num_keeps = args.num_envs - r
     
     envs = SubprocVecEnv(
         [
-            make_env(i, args.obs_order, max_level // args.num_envs, args.render)
-            for i in range(args.num_envs)
+            make_env(i, args.obs_order, d, render)
+            for i in range(num_keeps)
+        ]
+        
+        + 
+        
+        [
+            make_env(num_keeps//(d+1) + i, args.obs_order, d + 1, render)
+            for i in range(r)
         ]
     )
     return envs
@@ -173,7 +191,7 @@ def main():
             ]
         )
     elif args.strategy == 'milestone':
-        envs = make_env_loc(args)
+        envs = make_env_loc(args, render=args.render)
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
 
@@ -190,8 +208,10 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3LocFeatureExtractor,
+            "features_extractor_class": M3CnnWiderFeatureExtractor,
             "features_extractor_kwargs": {
+                "kernel_size": args.kernel_size,
+                "start_channel": 32,
                 "mid_channels": args.mid_channels,
                 "out_channels": 256,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
@@ -214,7 +234,7 @@ def main():
     run_i = 0
     print(PPO_trainer.n_steps)
     milestone = 0
-    while run_i < 300:
+    while run_i < 700:
         run_i += 1
         s_t = time.time()
         res = (
@@ -251,7 +271,7 @@ def main():
         if win_rate > 80.0:
             milestone += 1
             envs.close()
-            envs = make_env_loc(args, milestone)
+            envs = make_env_loc(args, milestone, step=max(30 // milestone, 4), render=args.render)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)
 
