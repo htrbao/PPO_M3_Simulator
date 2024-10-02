@@ -51,7 +51,7 @@ class Point(AbstractPoint):
 
     def get_coord(self):
         return self.__row, self.__col
-    
+
     def euclidean_distance(self, another):
         return np.linalg.norm(np.array(self.get_coord()) - np.array(another.get_coord()))
 
@@ -512,10 +512,16 @@ class AbstractSearcher(ABC):
         return self.__plane_directions
 
     @staticmethod
-    def generate_movable_points(board: Board):
+    def generate_movable_points(board: Board, focus_range=None):
         rows, cols = board.board_size
 
-        for i, j in product(range(rows), range(cols)):
+        if not focus_range:
+            loop_range = product(range(rows), range(cols))
+        else:
+            max_row, start_col, end_col = focus_range
+            loop_range = product(range(0, min(max_row + 1, rows)), range(max(start_col, 0), min(end_col + 1, cols)))
+
+        for i, j in loop_range:
             shape = board.get_valid_shape(i, j)
             if shape != board.immovable_shape and need_to_match(shape):
                 yield Point(i, j)
@@ -579,28 +585,30 @@ class MatchesSearcher(AbstractSearcher):
 
     #     return matches, new_power_ups
 
-    def scan_board_for_matches(self, board: Board, need_all: bool = True, checking_point: list[Point] = []):
+    def scan_board_for_matches(self, board: Board, need_all: bool = True,
+                               checking_point: list[Point] = [], focus_range=None):
         matches = set()
         new_power_ups = dict()
-
 
         if not need_all:
             assert checking_point is not None, "checking_point must have if need_all is False"
             lst_points = checking_point
         else:
-            lst_points = self.generate_movable_points(board)
+            lst_points = self.generate_movable_points(board, focus_range)
 
         for point in lst_points:
             to_del, to_add = self.__get_match3_for_point(
                 board, point, need_all=need_all
             )
-            # print(_)
             if to_del:
                 matches.update(to_del)
                 new_power_ups.update(to_add)
                 if not need_all:
                     break
         return matches, new_power_ups
+
+    def scan_board_for_matches_improve(self, board, need_all: bool = True, checking_point: list[Point] = []):
+        ...
 
     def __get_match3_for_point(self, board: Board, point: Point, need_all: bool = True):
         shape = board.get_valid_shape(*point.get_coord())
@@ -638,9 +646,9 @@ class MatchesSearcher(AbstractSearcher):
         only_2_matches: bool = False,
     ):
         curRow, curCol = point.get_coord()
+
         for idx, axis_dirs in enumerate(self.normal_directions + self.plane_directions
-            if only_2_matches
-            else self.directions):
+                                        if only_2_matches else self.directions):
             newCells = []
             for dir_ in axis_dirs:
                 newRow, newCol = curRow + dir_[0], curCol + dir_[1]
@@ -1529,7 +1537,7 @@ class Game(AbstractGame):
         self.list_monsters = copy.deepcopy(list_monsters)
         self.num_mons = len(self.list_monsters)
         self.__player_hp = self.__max_player_hp
-    
+
         return self
 
     def __start_random(self):
@@ -1542,7 +1550,7 @@ class Game(AbstractGame):
         direction = point2 - point
         try:
             score = self.__move(point, direction)
-            
+
             return score
         except Exception as e:
             print(traceback.format_exc())
@@ -1606,7 +1614,7 @@ class Game(AbstractGame):
                 self.board.delete(brokens)
             if len(disco_brokens) > 0:
                 self.board.delete(disco_brokens)
-            
+
             ### Handle add power up
             for _point, _shape in new_power_ups.items():
                 self.board.put_shape(_point, _shape)
@@ -1641,7 +1649,27 @@ class Game(AbstractGame):
         if return_brokens:
             tmp_board.delete(return_brokens)
             self.__filler.move_and_fill(tmp_board)
-        matches, new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board)
+
+        focus_range = self.__find_focus_range({
+            point.get_coord(),
+            (point + direction).get_coord(),
+            *[p.get_coord() for p in return_brokens]
+        })
+
+        matches, new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board, focus_range=focus_range)
+
+        # Test block to check focus range is valid
+        # matches, new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board)
+        # test_matches, test_new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board,
+        #                                                                                focus_range=focus_range)
+        # print(test_new_power_ups)
+        # if matches != test_matches or new_power_ups != test_new_power_ups:
+        #     print(f"__find_focus_range: ", focus_range)
+        #     print(f"old_matches: {matches}")
+        #     print(f"focus_range: {test_matches}")
+        #     print("------------------------------------------------------------------------")
+
+
         return matches, new_power_ups, return_brokens, disco_brokens, inside_brokens
 
     def _sweep_died_monster(self):
@@ -1687,8 +1715,8 @@ class Game(AbstractGame):
         self.__shuffle_until_possible()
         return 0
 
-    def __get_matches(self):
-        return self.__mtch_searcher.scan_board_for_matches(self.board)
+    def __get_matches(self, focus_range=None):
+        return self.__mtch_searcher.scan_board_for_matches(self.board, focus_range=focus_range)
 
     def __activate_power_up(self, power_up_type: int, point: Point):
         return self.__pu_activator.activate_power_up(power_up_type, point, self.board)
@@ -1699,18 +1727,49 @@ class Game(AbstractGame):
     def __scan_del_mvnans_fill_until(self):
         score = 0
         matches, new_power_ups = self.__get_matches()
+
+        old_matches = matches
+
         score += len(matches)
         while len(matches) > 0:
             self.board.delete(matches)
             for _point, _shape in new_power_ups.items():
                 self.board.put_shape(_point, _shape)
             self.__filler.move_and_fill(self.board)
-            matches, new_power_ups = self.__get_matches()
+
+            focus_range = self.__find_focus_range([p.get_coord() for p in old_matches])
+            matches, new_power_ups = self.__get_matches(focus_range)
+
+            # Test block to check focus range is valid
+            # matches, new_power_ups = self.__get_matches()
+            # test_matches, test_new_power_ups = self.__get_matches(focus_range)
+            #
+            # if matches != test_matches or new_power_ups != test_new_power_ups:
+            #     print(f"__find_focus_range: ", focus_range)
+            #     print(f"old_matches: {old_matches} -> {matches}")
+            #     print(f"old_matches: {old_matches} -> {test_matches}")
+            #     print("------------------------------------------------------------------------")
+
+            old_matches = matches
+
             score += len(matches)
 
         self.board.determine_power_points()
 
         return score
+
+    @staticmethod
+    def __find_focus_range(matches):
+        max_row = -1
+        start_col = 100
+        end_col = -1
+
+        for p in matches:
+            max_row = max(max_row, p[0])
+            start_col = min(start_col, p[1])
+            end_col = max(end_col, p[1])
+
+        return max_row + 2, start_col - 2, end_col + 2
 
     def __shuffle_until_possible(self):
         possible_moves = self.__get_possible_moves()
