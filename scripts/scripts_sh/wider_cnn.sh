@@ -1,5 +1,5 @@
 CUDA_VISIBLE_DEVICES=1 python training.py \
-    --prefix_name milestone_985gamma_wider_cnn \
+    --prefix_name milestone_wider_cnn_penalty_not_create_pu \
     --strategy milestone \
     --pi 256 128 128 128 128 128 128 128 128 128 \
     --vf 4096 256 256 256 256 256 256 256 256 256 \

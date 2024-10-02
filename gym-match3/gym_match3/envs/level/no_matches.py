@@ -9,7 +9,7 @@ MY_LEVEL = []
 # coordinates = [(i,j) for i in range(1,7) for j in range(2,6)]
 mons_5 = [(6, 3), (1, 3), (3, 3), (4, 2), (3, 5), (2, 2), (2, 5), (6, 5), (4, 4), (1, 4)]
 for i in range(10):
-    mons_coor  = mons_5[i]
+    mons_coor = mons_5[i]
     board = np.zeros((10, 9))
     mons_w, mons_h = random.choice([(2, 2), (2, 3), (3, 2), (3,3)])
     board[mons_coor[0]:mons_coor[0]+mons_h, mons_coor[1]:mons_coor[1]+mons_w] = GameObject.monster_dame
@@ -19,7 +19,7 @@ for i in range(10):
                 position=Point(mons_coor[0], mons_coor[1]),
                 width=mons_w,
                 height = mons_h,
-                hp=10 + base_hp,
+                hp=20 + base_hp,
                 request_masked=[0,0,0,0,1]
             )
         ])
