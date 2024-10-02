@@ -31,11 +31,13 @@ def make_env(levels, max_step, obs_order):
 
     return _init
 
-def eval(model, obs_order, env, device, num_eval=5):
+def eval(model, obs_order, env, device, store_dir, num_eval=5):
     model = model.to(device)
     level = env['level']
     max_step = env['max_step']
-
+    for i in range(len(env['monsters'])):
+        env['monsters'][i].pop('monster_create')
+        env['monsters'][i]['kwargs']['position'] = str(env['monsters'][i]['kwargs']['position'])
     __num_win_games = 0
     __num_damage = 0
     __num_hit = 0
@@ -93,24 +95,43 @@ def eval(model, obs_order, env, device, num_eval=5):
         "max_step": max_step,
         "num_games": num_eval,
         "num_win_games": __num_win_games,
-        "num_damage": __num_damage,
         "num_hit": __num_hit,
+        "total_damage": __num_damage,
         "total_step": __total_step,
+        "avg_damage_per_hit": __num_damage / __num_hit,
         "hit_rate": __num_hit / __total_step,
         "win_rate": __num_win_games / num_eval,
         "remain_hp_monster": (__remain_mons_hp / (num_eval - __num_win_games)) if __num_win_games != num_eval else 0,
     }
     
     print("Evaluation time: {:.2f}s".format(time.time() - start_time), result)
+    with open(os.path.join(store_dir, f"realm_{env['realm_id']:02d}__node_{env['node_id']:02d}.json"), "w") as f:
+        json.dump(result, f, indent = 2)
     return result
+
+
+def normal_eval(model, obs_order, device, num_eval, REAL_LEVELS, store_dir):
+    results = []
+    for level in REAL_LEVELS:
+        results.append(eval(model, obs_order, level, device, store_dir, num_eval))
+    return results
+    
+def wrapper_eval(queue, model, device, rank, len_group, obs_order, num_eval, REAL_LEVELS, store_dir):
+    model = model.to(device)
+    results = []
+    for level in REAL_LEVELS[rank*len_group:(rank+1)*len_group]:
+        results.append(eval(model, obs_order, level, device, store_dir, num_eval))
+    queue.extend(results)
     
     
-def wrapper_eval(queue, model, device, rank, len_group, obs_order, num_eval, REAL_LEVELS):
-        model = model.to(device)
-        results = []
-        for level in REAL_LEVELS[rank*len_group:(rank+1)*len_group]:
-            results.append(eval(model, obs_order, level, device, num_eval))
-        queue.extend(results)
+def write_csv(results, store_dir, sep=','):
+    header = f"{sep}".join(results[0].keys())
+    with open(os.path.join(store_dir, 'final_result.csv'), 'w') as f:
+        f.write(header + "\n")
+        for result in results:
+            result["num_mons"] = len(result["num_mons"])
+            line = f"{sep}".join(str(v) for v in result.values())
+            f.write(line + "\n")
 
 def get_arguments():
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -119,8 +140,8 @@ def get_arguments():
                         help='random seed (default: 1)')
     parser.add_argument('--num-eval', type=int, default=2, metavar='N',
                         help='how many eval to use (default: 2)')
-    parser.add_argument('--num-processes', type=int, default=2, metavar='N',
-                        help='how many processes to use (default: 2)')
+    parser.add_argument('--num-processes', type=int, default=0, metavar='N',
+                        help='how many processes to use (default: 0)')
     parser.add_argument('--cuda', action='store_true', default=False,
                         help='enables CUDA training')
     parser.add_argument('--mps', action='store_true', default=False,
@@ -139,7 +160,7 @@ def get_arguments():
     
 def main():
     args = get_arguments()
-
+    start_time = time.time()
     use_cuda = args.cuda and torch.cuda.is_available()
     use_mps = args.mps and torch.backends.mps.is_available()
     if use_cuda:
@@ -152,31 +173,42 @@ def main():
     num_eval = args.num_eval
     num_processes = args.num_processes
     obs_order = args.obs_order
+    store_dir = os.path.join("_saved_test", os.path.basename(args.checkpoint).split(".")[0])
+    if not os.path.exists(store_dir):
+        os.makedirs(store_dir)
     manager = mp.Manager()
     
-    queue = manager.list()
     
     model = ActorCriticCnnPolicy.load(args.checkpoint)
     # model = model.to(device)
     model.share_memory()
-    REAL_LEVELS = get_real_levels(True)
-
-    processes = []
-    for rank in range(num_processes):
-        len_group = len(REAL_LEVELS) // num_processes
-        p = mp.Process(target=wrapper_eval, args=(queue, model, device, rank, len_group, obs_order, num_eval, REAL_LEVELS))
-        p.start()
-        processes.append(p)
-        
-    for p in processes:
-        p.join()
-        
     results = []
-    for item in queue:
-        results.append(item)
+    REAL_LEVELS = get_real_levels(True)
+    if num_processes > 0:
+        queue = manager.list()
+        processes = []
+        for rank in range(num_processes):
+            len_group = len(REAL_LEVELS) // num_processes
+            p = mp.Process(target=wrapper_eval, args=(queue, model, device, rank, len_group, obs_order, num_eval, REAL_LEVELS, store_dir))
+            p.start()
+            processes.append(p)
+            
+        for p in processes:
+            p.join()
+        
+        results = []
+        for item in queue:
+            results.append(item)
+    else:
+        results = normal_eval(model, obs_order, device, num_eval, REAL_LEVELS, store_dir)
     
-    with open(os.path.join("_saved_test", os.path.basename(args.checkpoint).split(".")[0] +'.json'), 'w') as f:
+    
+    with open(os.path.join(store_dir, 'final_result.json'), 'w') as f:
         json.dump(results, f, indent=2)
+        
+    write_csv(results, store_dir)
+
+    print("Total evaluation time: {:.2f}s".format(time.time() - start_time))
     
 if __name__ == '__main__':
     main()

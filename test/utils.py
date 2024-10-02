@@ -51,6 +51,29 @@ def get_player_hp(realm_id, monsters):
     return player_hp
 
 
+def order_monster_ids(monster_ids_start, monsters, height, width):
+    monster_ids_choose = [False] * monster_ids_start.shape[0]
+    monster_orders = []
+    
+    monsters = sorted(monsters, key=lambda x: (x['kwargs']['height'] * x['kwargs']['width']), reverse=True)
+
+    for monster in monsters:
+        kwargs = monster['kwargs']
+        monster_height = kwargs["height"] - 1
+        monster_width = kwargs["width"] - 1
+        for id, point in enumerate(monster_ids_start):
+            if monster_ids_choose[id]:
+                continue
+            
+            monster_start = point + [MONSTER_DIRECTION[0][0] * monster_height, MONSTER_DIRECTION[0][1] * monster_width]
+            monster_end = monster_start + [MONSTER_DIRECTION[1][0] * monster_height, MONSTER_DIRECTION[1][1] * monster_width]
+            if not(monster_end[0] < 0 or monster_end[0] >= height or monster_end[1] < 0 or monster_end[1] >= width):
+                monster_ids_choose[id] = True
+                monster_orders.append(point)
+
+    return monsters, np.asarray(monster_orders)
+                
+
 def process_map(map_str, monsters, monster_max_hp, num_tiles):
     height = len(map_str)
     width = len(map_str[0])
@@ -61,8 +84,11 @@ def process_map(map_str, monsters, monster_max_hp, num_tiles):
     
     monster_ids_start = np.transpose(np.nonzero(processed_map == MONSTER_ID))
     processed_map = np.where(processed_map == NONTILE, -1, 0)
+    
+    monsters, monster_ids_start = order_monster_ids(monster_ids_start, monsters, height, width)
+    if monster_ids_start.shape[0]!= len(monsters):
+        raise Exception("Cannot find suitable starting points for monsters")
 
-    monster_ids_start = monster_ids_start
     for monster_id, monster_info in zip(monster_ids_start, monsters):
         monster_create = monster_info['monster_create']
         kwargs = monster_info['kwargs']
