@@ -15,7 +15,6 @@ import threading
 
 from gym_match3.envs.constants import GameObject, mask_immov_mask, need_to_match
 
-
 class OutOfBoardError(IndexError):
     pass
 
@@ -52,7 +51,7 @@ class Point(AbstractPoint):
 
     def get_coord(self):
         return self.__row, self.__col
-    
+
     def euclidean_distance(self, another):
         return np.linalg.norm(np.array(self.get_coord()) - np.array(another.get_coord()))
 
@@ -184,6 +183,7 @@ class Board(AbstractBoard):
         self.__n_shapes = n_shapes
         self.__immovable_shape = immovable_shape
         self.__board = None  # np.ndarray
+        self.power_points = set()
 
         if 0 <= immovable_shape < n_shapes:
             raise ValueError("Immovable shape has to be less or greater than n_shapes")
@@ -221,15 +221,12 @@ class Board(AbstractBoard):
 
     @property
     def board_size(self):
-        if self.__is_board_exist():
-            rows, cols = self.board.shape
-        else:
-            rows, cols = self.__rows, self.__columns
-        return rows, cols
+        return self.__rows, self.__columns
 
     def set_board(self, board: np.ndarray):
         self.__validate_board(board)
         self.__board = board.astype(float)
+        self.__rows, self.__columns = board.shape
 
     def shuffle(self, random_state=None):
         moveable_mask = self.board != self.immovable_shape
@@ -255,6 +252,15 @@ class Board(AbstractBoard):
 
     def put_shape(self, shape, point: Point):
         self[point] = shape
+
+        # self.change_shape(shape, point)
+
+    def determine_power_points(self):
+        self.power_points.clear()
+        for i, j in product(range(self.__rows), range(self.__columns)):
+            shape = self.get_valid_shape(i, j)
+            if shape in GameObject.set_powers_shape:
+                self.power_points.add((i, j))
 
     def move(self, point: Point, direction: Point):
         self._check_availability(point)
@@ -294,12 +300,8 @@ class Board(AbstractBoard):
     def get_shape(self, point: Point):
         return self[point]
 
-    def get_valid_shape(self, indx: Point):
-        if isinstance(indx, Point):
-            return self.board.__getitem__(indx.get_coord())
-        else:
-            raise ValueError("Only Point class supported for getting shapes")
-
+    def get_valid_shape(self, row, col):
+        return self.__board.__getitem__((row, col))
 
     def __validate_points(self, *args):
         for point in args:
@@ -326,9 +328,7 @@ class Board(AbstractBoard):
             if shape == GameObject.immovable_shape:
                 raise ImmovableShapeError
 
-    def delete(self, points: set, allow_delete_monsters: bool = False):
-        points = [p for p in points if self.get_shape(p) != GameObject.immovable_shape]
-        self._check_availability(*points)
+    def delete(self, points: set[Point], allow_delete_monsters: bool = False):
         if allow_delete_monsters:
             coordinates = tuple(np.array([i.get_coord() for i in points]).T.tolist())
         else:
@@ -337,10 +337,7 @@ class Board(AbstractBoard):
                     [
                         i.get_coord()
                         for i in points
-                        if self.get_shape(i)
-                        not in np.concatenate(
-                            [GameObject.monsters, GameObject.blockers]
-                        )
+                        if self.get_valid_shape(*i.get_coord()) not in GameObject.set_unmovable_shape
                     ]
                 ).T.tolist()
             )
@@ -355,7 +352,7 @@ class Board(AbstractBoard):
         return [
             Point(i, j)
             for i, j in product(range(self.board_size[0]), range(self.board_size[1]))
-            if self.get_shape(Point(i, j)) in GameObject.monsters
+            if self.get_shape(Point(i, j)) in GameObject.set_monsters_shape
         ]
 
     def put_line(self, ind, line: np.ndarray):
@@ -515,14 +512,19 @@ class AbstractSearcher(ABC):
         return self.__plane_directions
 
     @staticmethod
-    def points_generator(board: Board):
+    def generate_movable_points(board: Board, focus_range=None):
         rows, cols = board.board_size
-        points = [Point(i, j) for i, j in product(range(rows), range(cols))]
-        for point in points:
-            if board[point] == board.immovable_shape or not need_to_match(board[point]):
-                continue
-            else:
-                yield point
+
+        if not focus_range:
+            loop_range = product(range(rows), range(cols))
+        else:
+            max_row, start_col, end_col = focus_range
+            loop_range = product(range(0, min(max_row + 1, rows)), range(max(start_col, 0), min(end_col + 1, cols)))
+
+        for i, j in loop_range:
+            shape = board.get_valid_shape(i, j)
+            if shape != board.immovable_shape and need_to_match(shape):
+                yield Point(i, j)
 
     def axis_directions_gen(self):
         for axis_dirs in self.directions:
@@ -557,14 +559,14 @@ class MatchesSearcher(AbstractSearcher):
     #     lst = []
     #     s_t = time.time()
     #     with concurrent.futures.ThreadPoolExecutor(max_workers=90) as executor:
-            
+
     #             # if not need_all:
     #             #     assert checking_point is not None, "checking_point must have if need_all is False"
     #             #     if point not in checking_point:
     #             #         continue
     #             futures = [executor.submit(self.__get_match3_for_point, board, point, need_all=need_all) for point in self.points_generator(board) if (need_all or (not need_all and point in checking_point))]
     #             done, not_done = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
-                
+
     #             for future in concurrent.futures.as_completed(futures):
     #                 to_del, to_add = future.result()
     #                 if to_del:
@@ -573,29 +575,31 @@ class MatchesSearcher(AbstractSearcher):
     #                         print("set stop event")
     #                         self.stop_event.set()
     #                         break
-        
+
     #     e_t = time.time()
     #     print("scan board", e_t - s_t)
     #     for i in range(len(lst)):
     #         matches.update(lst[i][0])
     #         new_power_ups.update(lst[i][1])
-        
+
 
     #     return matches, new_power_ups
 
-    def scan_board_for_matches(self, board: Board, need_all: bool = True, checking_point: list[Point] = []):
+    def scan_board_for_matches(self, board: Board, need_all: bool = True,
+                               checking_point: list[Point] = [], focus_range=None):
         matches = set()
         new_power_ups = dict()
-        total_time = 0
-        for point in self.points_generator(board):
-            if not need_all:
-                assert checking_point is not None, "checking_point must have if need_all is False"
-                if point not in checking_point:
-                    continue
+
+        if not need_all:
+            assert checking_point is not None, "checking_point must have if need_all is False"
+            lst_points = checking_point
+        else:
+            lst_points = self.generate_movable_points(board, focus_range)
+
+        for point in lst_points:
             to_del, to_add = self.__get_match3_for_point(
                 board, point, need_all=need_all
             )
-            # print(_)
             if to_del:
                 matches.update(to_del)
                 new_power_ups.update(to_add)
@@ -603,19 +607,20 @@ class MatchesSearcher(AbstractSearcher):
                     break
         return matches, new_power_ups
 
+    def scan_board_for_matches_improve(self, board, need_all: bool = True, checking_point: list[Point] = []):
+        ...
+
     def __get_match3_for_point(self, board: Board, point: Point, need_all: bool = True):
-        shape = board.get_shape(point)
+        shape = board.get_valid_shape(*point.get_coord())
         match3_list = []
         power_up_list: dict[Point, int] = {}
         early_stop = False
 
         for neighbours, length, idx in self.__generator_neighbours(
-            board, point, early_stop, (not need_all)
+            board, point, shape, early_stop, (not need_all)
         ):
-            filtered = self.__filter_cells_by_shape(shape, neighbours)
-
-            if len(filtered) == length:
-                match3_list.extend(filtered)
+            if len(neighbours) == length:
+                match3_list.extend(neighbours)
 
                 if not need_all:
                     early_stop = True
@@ -636,33 +641,36 @@ class MatchesSearcher(AbstractSearcher):
         self,
         board: Board,
         point: Point,
+        filter_shape,
         early_stop: bool = False,
         only_2_matches: bool = False,
     ):
         curRow, curCol = point.get_coord()
+
         for idx, axis_dirs in enumerate(self.normal_directions + self.plane_directions
-            if only_2_matches
-            else self.directions):
+                                        if only_2_matches else self.directions):
             newCells = []
             for dir_ in axis_dirs:
                 newRow, newCol = curRow + dir_[0], curCol + dir_[1]
-                if not board.is_valid_point(newRow, newCol): break
+                if not board.is_valid_point(newRow, newCol):
+                    yield [], 0, -1
+                    break
 
-                new_p = Point(newRow, newCol)
-                cell = Cell(board.get_valid_shape(new_p), newRow, newCol)
+                shape = board.get_valid_shape(newRow, newCol)
+                if shape != filter_shape:
+                    continue
+
+                cell = Cell(shape, newRow, newCol)
                 newCells.append(cell)
             else:
                 yield newCells, len(axis_dirs), idx
 
             if early_stop:
                 break
-            yield [], 0, -1
-
 
     @staticmethod
-    def __filter_cells_by_shape(shape, *args):
-        return list(filter(lambda x: x.shape == shape, *args))
-
+    def __filter_cells_by_shape(shape, cells):
+        return [cell for cell in cells if cell.shape == shape]
 
 class AbstractMonster(ABC):
     def __init__(
@@ -720,7 +728,7 @@ class AbstractMonster(ABC):
     @property
     def inside_dmg_mask(self):
         return self.__inside_dmg_mask if self.available_mask[4] else []
-    
+
     @property
     def mons_positions(self):
         return self.__inside_dmg_mask
@@ -795,7 +803,7 @@ class AbstractMonster(ABC):
         return: match_damage, pu_damage
         """
         __matches = [ele.point for ele in matches]
-        mons_inside_dmg = 0 
+        mons_inside_dmg = 0
         for coor in brokens:
             if coor in set(self.inside_dmg_mask):
                 mons_inside_dmg += 1
@@ -862,7 +870,7 @@ class DameMonster(AbstractMonster):
             if self._paper_box_hp <= 0:
                 self._paper_box_hp = self._setup_interval
                 self.available_mask = [1, 1, 1, 1, 0]
-        
+
         super().attacked(match_damage, pu_damage)
 
 
@@ -997,13 +1005,13 @@ class PowerUpActivator(AbstractPowerUpActivator):
         point2 = point + directions
         shape1 = board.get_shape(point)
         shape2 = board.get_shape(point2)
-    
-        if shape1 in GameObject.powers and shape2 in GameObject.powers:
-            
+
+        if shape1 in GameObject.set_powers_shape and shape2 in GameObject.set_powers_shape:
+
             #adding both points to return_brokens
             return_brokens.add(point)
             return_brokens.add(point2)
-            
+
             # Merge power_up
             if shape1 <= shape2:
                 shape1, shape2 = shape2, shape1
@@ -1025,7 +1033,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 else:
                     brokens = [Point(i, j) for i, j in product(range(board.board_size[0]), range(board.board_size[1]))]
                     disco_brokens = set(brokens)
-                    
+
             # With plane
             elif shape1 == GameObject.power_plane:
                 for _dir in self.__plane_affect:
@@ -1041,24 +1049,99 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 except:
                     # print("No Monster on Board")
                     print(board)
-                    
+
             # With bomb
             elif shape1 == GameObject.power_bomb:
                 if shape2  != GameObject.power_bomb:
                     for i in range(-1,2,1):
-                        dir = Point(i,0) if shape2 == GameObject.power_missile_h else Point(0,i)
-                        brokens.extend(self.__activate_not_merge(shape2, point + dir, board, list_monsters, None))
+                        brokens.extend(self.__activate_not_merge(shape2, point + Point(i,0), board, list_monsters, None))
+                        brokens.extend(self.__activate_not_merge(shape2, point + Point(0,i), board, list_monsters, None))
                 else:
-                    for i in range(-4, 5, 1):
-                        for j in range(-4, 5, 1):
-                            # print("Point to disintegrate: ", point + Point(i, j))
-                            brokens.append(point + Point(i, j))
+                    def check_for_diagonal(i, _h, _v, point):
+                        out_lst = []
+                        prev_point = point
+                        for _ in range(1, i):
+                            cur_point = prev_point + Point(_h, 0)
+                            if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                                out_lst.append(cur_point)
+                                prev_point = cur_point
+                            else:
+                                break
+                        
+                        prev_point = point
+                        for _ in range(1, i):
+                            cur_point = prev_point + Point(0, _v)
+                            if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                                out_lst.append(cur_point)
+                                prev_point = cur_point
+                            else:
+                                break
+                            
+                        if not self.check_shield(point, point + Point(_h, _v), board, list_monsters):
+                            cur_point = point + Point(_h, _v)
+                            out_lst.append(cur_point)
+                            out_lst.extend(check_for_diagonal(i - 1, _h, _v, cur_point))
+                            
+                        return out_lst
+                    is_ne_v = is_ne_h = is_po_v = is_po_h = True
+                    for i in range(1, 5):
+                        prev_coeff = i - 1
+                        
+                        # check for vertical
+                        if is_po_v and not self.check_shield(point + Point(prev_coeff, 0), point + Point(i, 0), board, list_monsters):
+                            brokens.append(point + Point(i, 0))
+                        else:
+                            is_po_v = False
+                        if is_ne_v and not self.check_shield(point + Point(-prev_coeff, 0), point + Point(-i, 0), board, list_monsters):
+                            brokens.append(point + Point(-i, 0))
+                        else:
+                            is_ne_v = False
+                        #check for horizontal
+                        if is_po_h and not self.check_shield(point + Point(0, prev_coeff), point + Point(0, i), board, list_monsters):
+                            brokens.append(point + Point(0, i))
+                        else:
+                            is_po_h = False
+                        if is_ne_h and not self.check_shield(point + Point(0, -prev_coeff), point + Point(0, -i), board, list_monsters):
+                            brokens.append(point + Point(0, -i))
+                        else:
+                            is_ne_h = False
+
+                    # check for diagonal
+                    for i in range(-1, 2, 2):
+                        for j in range(-1, 2, 2):
+                            prev_point = point
+                            cur_point = point + Point(i, j)
+                            if not self.check_shield(prev_point, cur_point, board, list_monsters):
+                                brokens.append(cur_point)
+                                prev_point = cur_point
+                                for _ in range(1, 5):
+                                    tmp_prev_point = prev_point
+                                    tmp_cur_point = tmp_prev_point + Point(i, 0)
+                                    if self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
+                                        brokens.append(tmp_cur_point)
+                                        tmp_prev_point = tmp_cur_point
+                                    else:
+                                        break
+                                for i in range(1, 5):
+                                    tmp_prev_point = prev_point
+                                    tmp_cur_point = tmp_prev_point + Point(0, j)
+                                    if self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
+                                        brokens.append(tmp_cur_point)
+                                        tmp_prev_point = tmp_cur_point
+                                    else:
+                                        break
+                                if self.check_shield(prev_point, prev_point + Point(i, j), board, list_monsters):
+                                    cur_point = prev_point + Point(i, j)
+                                    brokens.append(cur_point)
+                                    brokens.extend(check_for_diagonal(3, i, j, cur_point))
+                            else:
+                                continue
             # With missiles
             else:
                 brokens.extend(self.__activate_not_merge( GameObject.power_missile_h, point, board, list_monsters, None))
                 brokens.extend(self.__activate_not_merge( GameObject.power_missile_v, point, board, list_monsters, None))
 
-        elif shape1 in GameObject.powers:
+        elif shape1 in GameObject.set_powers_shape:
             return_brokens.add(point)
             if shape1 == GameObject.power_disco:
                 disco_brokens |= set(
@@ -1066,8 +1149,8 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 )
             else:
                 brokens = self.__activate_not_merge(shape1, point, board, list_monsters, shape2)
-                
-        elif shape2 in GameObject.powers:
+
+        elif shape2 in GameObject.set_powers_shape:
             return_brokens.add(point2)
             if shape2 == GameObject.power_disco:
                 disco_brokens |= set(
@@ -1075,7 +1158,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 )
             else:
                 brokens = self.__activate_not_merge(shape2, point2, board, list_monsters, shape1)
-                
+
         inside_brokens = copy.copy(brokens)
         brokens = list(set(brokens))
         while brokens:
@@ -1088,7 +1171,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 if shape_c == board.immovable_shape:
                     continue
                 return_brokens.add(consider_point)
-                if shape_c in GameObject.powers:
+                if shape_c in GameObject.set_powers_shape:
                     if shape_c == GameObject.power_disco:
                         disco_brokens |= set(
                             self.__activate_not_merge(
@@ -1104,7 +1187,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                         brokens = list(set(brokens))
             except OutOfBoardError:
                 continue
-        
+
         return return_brokens, disco_brokens, inside_brokens
 
     # def __activate_merge(
@@ -1141,7 +1224,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 return False
             shape1 = board.get_shape(prev_point)
             shape2 = board.get_shape(cur_point)
-            if shape1 not in GameObject.monsters or shape2 in GameObject.monsters:
+            if shape1 not in GameObject.set_monsters_shape or shape2 in GameObject.set_monsters_shape:
                 affect_dirs = self.get_dir(prev_point, cur_point)
                 for mons in list_monsters:
                     if cur_point in mons.mons_positions:
@@ -1150,7 +1233,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                 return True
             return False
         except OutOfBoardError:
-            return True    
+            return True
 
     def __activate_not_merge(
         self, power_up_type: int, point: Point, board: Board, list_monsters, _color: int = None
@@ -1162,8 +1245,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                 cur_point = point + Point(*_dir)
                 if not self.check_shield(point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
-                else:
-                    break
+
             mons_pos = board.get_monster()
             try:
                 brokens.append(mons_pos[np.random.randint(0, len(mons_pos))])
@@ -1175,7 +1257,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             pos = point.get_coord()
             prev_point = point
             #backward move
-            for i in range(pos[1] - 1, 0, -1):
+            for i in range(pos[1] - 1, -1, -1):
                 cur_point = Point(pos[0], i)
                 if not self.check_shield(prev_point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
@@ -1195,7 +1277,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             pos = point.get_coord()
             prev_point = point
             #backward move
-            for i in range(pos[0] - 1, 0, -1):
+            for i in range(pos[0] - 1, -1, -1):
                 cur_point = Point(i, pos[1])
                 if not self.check_shield(prev_point, cur_point, board, list_monsters):
                     brokens.append(cur_point)
@@ -1215,7 +1297,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             is_ne_v = is_ne_h = is_po_v = is_po_h = True
             for i in range(1, 3):
                 prev_coeff = i - 1
-                
+
                 # check for vertical
                 if is_po_v and not self.check_shield(point + Point(prev_coeff, 0), point + Point(i, 0), board, list_monsters):
                     brokens.append(point + Point(i, 0))
@@ -1234,10 +1316,10 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     brokens.append(point + Point(0, -i))
                 else:
                     is_ne_h = False
-                
+
             # check for diagonal
-            for i in range(-1, 1, 2):
-                for j in range(-1, 1, 2):
+            for i in range(-1, 2, 2):
+                for j in range(-1, 2, 2):
                     prev_point = point
                     cur_point = point + Point(i, j)
                     if not self.check_shield(prev_point, cur_point, board, list_monsters):
@@ -1253,7 +1335,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                     else:
                         continue
 
-                    
+
         elif power_up_type == GameObject.power_disco:
             assert _color is not None, "Disco Power Up need color to be cleared"
             for i in range(board.board_size[0]):
@@ -1293,65 +1375,82 @@ class AbstractMovesSearcher(ABC):
 
 
 class MovesSearcher(AbstractMovesSearcher, MatchesSearcher):
-
     def search_moves(self, board: Board, all_moves=False):
         possible_moves = set()
         not_have_pu = True
 
         # check for powerup activation
-        for point in self.points_generator(board):
-            if board.get_shape(point) in GameObject.powers:
+        for cur_row, cur_col in board.power_points:
+            # This point was valid in points generator -> get shape instantly
+            if board.get_valid_shape(cur_row, cur_col) in GameObject.set_powers_shape:
                 for direction in self.directions_gen():
-                    try:
-                        if board.get_shape(point + Point(*direction)) in np.concatenate([GameObject.monsters, GameObject.blockers, [GameObject.immovable_shape]]):
-                            continue
-                        # board.move(point, Point(*direction))
-                        # # inverse move
-                        # board.move(point, Point(*direction))
-                        elif board.get_shape(point + Point(*direction)) in np.concatenate([GameObject.tiles, GameObject.powers]):
-                            not_have_pu = False
-                            possible_moves.add((point, tuple(direction)))
-                            if not all_moves:
-                                break
-
-                    except (OutOfBoardError, ImmovableShapeError):
+                    new_row, new_col = cur_row + direction[0], cur_col + direction[1]
+                    if not board.is_valid_point(new_row, new_col):
                         continue
+
+                    new_shape = board.get_valid_shape(new_row, new_col)
+
+                    if new_shape in GameObject.set_unmovable_shape:
+                        continue
+
+                    # board.move(point, Point(*direction))
+                    # # inverse move
+                    # board.move(point, Point(*direction))
+                    elif new_shape in GameObject.set_movable_shape:
+                        not_have_pu = False
+                        possible_moves.add((Point(cur_row, cur_col), tuple(direction)))
+                        if not all_moves:
+                            break
+
                 if not all_moves and not not_have_pu:
                     break
 
-        if all_moves == True or (all_moves == False and not_have_pu):
-            for point in self.points_generator(board):
-                if board.get_shape(point) in GameObject.tiles:
+        if all_moves is True or (all_moves is False and not_have_pu):
+            for point in self.generate_movable_points(board):
+                # This point was valid in points generator -> get shape instantly
+                cur_row, cur_col = point.get_coord()
+
+                if board.get_valid_shape(cur_row, cur_col) in GameObject.set_tiles_shape:
                     possible_moves_for_point = self.__search_moves_for_point(
                         board, point, need_all=all_moves
                     )
+
                     possible_moves.update(possible_moves_for_point)
                     if len(possible_moves_for_point) > 0 and not all_moves:
                         break
+
         return possible_moves
 
     def __search_moves_for_point(self, board: Board, point: Point, need_all=True):
         # contain tuples of point and direction
+
         possible_moves = set()
-        if board.get_shape(point) in np.concatenate([GameObject.monsters, GameObject.blockers]):
-            return possible_moves
-        
+
+        cur_row, cur_col = point.get_coord()
         for direction in self.directions_gen():
-            try:
-                if board.get_shape(point + Point(*direction)) in np.concatenate([GameObject.monsters, GameObject.blockers]):
-                    continue
-                board.move(point, Point(*direction))
-                if need_all == False:
-                    checking_point = [point, point + Point(*direction)]
-                matches, _ = self.scan_board_for_matches(board, need_all=need_all, checking_point=checking_point)
-                # inverse move
-                board.move(point, Point(*direction))
-            except (OutOfBoardError, ImmovableShapeError):
+            new_row, new_col = cur_row + direction[0], cur_col + direction[1]
+
+            if not board.is_valid_point(new_row, new_col):
                 continue
+
+            new_shape = board.get_valid_shape(new_row, new_col)
+            if new_shape in GameObject.set_unmovable_shape:
+                continue
+
+            direction_point = Point(*direction)
+            board.move(point, direction_point)
+            if need_all is False:
+                checking_point = [point, Point(new_row, new_col)]
+            matches, _ = self.scan_board_for_matches(board, need_all=need_all, checking_point=checking_point)
+
+            # inverse move
+            board.move(point, direction_point)
+
             if len(matches) > 0:
                 possible_moves.add((point, tuple(direction)))
                 if not need_all:
                     break
+
         return possible_moves
 
 
@@ -1394,7 +1493,7 @@ class Filler(AbstractFiller):
             if (
                 shape != immovable_shape
                 and shape
-                not in np.concatenate([GameObject.monsters, GameObject.blockers])
+                not in GameObject.set_unmovable_shape
                 and num_putted < num_of_nans
             ):
                 new_line[ind] = np.nan
@@ -1513,7 +1612,7 @@ class Game(AbstractGame):
         self.list_monsters = copy.deepcopy(list_monsters)
         self.num_mons = len(self.list_monsters)
         self.__player_hp = self.__max_player_hp
-    
+
         return self
 
     def __start_random(self):
@@ -1526,7 +1625,7 @@ class Game(AbstractGame):
         direction = point2 - point
         try:
             score = self.__move(point, direction)
-            
+
             return score
         except Exception as e:
             print(traceback.format_exc())
@@ -1554,6 +1653,7 @@ class Game(AbstractGame):
 
         matches, new_power_ups, brokens, disco_brokens , inside_brokens = self.__check_matches(point, direction)
 
+        # Calculate scores
         score += len(brokens) + len(disco_brokens)
 
         for i in range(len(self.list_monsters)):
@@ -1565,25 +1665,6 @@ class Game(AbstractGame):
 
             self.list_monsters[i].attacked(match_damage, pu_damage)
             monster_result = self.list_monsters[i].act()
-            if "box" in monster_result.keys():
-                coor_x, coor_y = np.random.randint(0, [*self.board.board_size])
-                while self.board.get_shape(Point(coor_x, coor_y)) in np.concatenate(
-                    [
-                        GameObject.monsters,
-                        GameObject.blockers,
-                        [GameObject.immovable_shape],
-                    ]
-                ):
-                    coor_x, coor_y = np.random.randint(0, [*self.board.board_size])
-
-                mons_pos = Point(coor_x, coor_y)
-                self.board.put_shape(mons_pos, monster_result["box"])
-                self.list_monsters.append(
-                    BlockerFactory.create_blocker(monster_result["box"], mons_pos)
-                )
-            if "damage" in monster_result.keys():
-                self_dmg += monster_result["damage"]
-                cancel_score += monster_result.get("cancel_score", 0)
 
         self.__player_hp -= self_dmg
         if len(matches) > 0 or len(brokens) > 0 or len(disco_brokens) > 0:
@@ -1595,11 +1676,13 @@ class Game(AbstractGame):
                 self.board.delete(brokens)
             if len(disco_brokens) > 0:
                 self.board.delete(disco_brokens)
-            
+
             ### Handle add power up
             for _point, _shape in new_power_ups.items():
                 self.board.put_shape(_point, _shape)
-                if _shape == GameObject.power_missile_h or _shape == GameObject.power_missile_v:
+                if _shape == GameObject.power_missile_h:
+                    create_pu_score += 0.9
+                if _shape == GameObject.power_missile_v:
                     create_pu_score += 1
                 elif _shape == GameObject.power_plane:
                     create_pu_score += 1.5
@@ -1607,7 +1690,22 @@ class Game(AbstractGame):
                     create_pu_score += 2.5
                 elif _shape == GameObject.power_disco:
                     create_pu_score += 4.5
-            ###
+            
+            ### Handle add power up and attack user
+            if "box" in monster_result.keys():
+                coor_x, coor_y = np.random.randint(0, [*self.board.board_size])
+                while self.board.get_shape(Point(coor_x, coor_y)) in GameObject.set_unmovable_shape:
+                    coor_x, coor_y = np.random.randint(0, [*self.board.board_size])
+
+                mons_pos = Point(coor_x, coor_y)
+                self.board.put_shape(mons_pos, monster_result["box"])
+                self.list_monsters.append(
+                    BlockerFactory.create_blocker(monster_result["box"], mons_pos)
+                )
+            if "damage" in monster_result.keys():
+                self_dmg += monster_result["damage"]
+                cancel_score += monster_result.get("cancel_score", 0)
+
             self.__filler.move_and_fill(self.board)
             self.__operate_until_possible_moves()
         reward = {
@@ -1624,13 +1722,37 @@ class Game(AbstractGame):
     def __check_matches(self, point: Point, direction: Point):
         tmp_board = self.__get_copy_of_board()
         tmp_board.move(point, direction)
-        return_brokens, disco_brokens, inside_brokens= self.__pu_activator.activate_power_up(
+        return_brokens, disco_brokens, inside_brokens = self.__pu_activator.activate_power_up(
             point, direction, tmp_board, self.list_monsters
         )
-        if return_brokens:
-            tmp_board.delete(return_brokens)
+
+        # if not disco_brokens.issubset(return_brokens):
+        #     print(f"return_brokens: {return_brokens}, disco_brokens: {disco_brokens}, inside_brokens: {inside_brokens}")
+
+        delete_points = return_brokens | disco_brokens
+        if delete_points:
+            tmp_board.delete(delete_points)
             self.__filler.move_and_fill(tmp_board)
-        matches, new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board)
+
+        focus_range = self.__find_focus_range({
+            point.get_coord(),
+            (point + direction).get_coord(),
+            *[p.get_coord() for p in delete_points]
+        })
+
+        matches, new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board, focus_range=focus_range)
+
+        # # Test block to check focus range is valid
+        # matches, new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board)
+        # test_matches, test_new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board,
+        #                                                                                focus_range=focus_range)
+        # if matches != test_matches or new_power_ups != test_new_power_ups:
+        #     print(f"__find_focus_range: ", focus_range)
+        #     print(f"old_matches: {matches}")
+        #     print(f"focus_range: {test_matches}")
+        #     print("------------------------------------------------------------------------")
+
+
         return matches, new_power_ups, return_brokens, disco_brokens, inside_brokens
 
     def _sweep_died_monster(self):
@@ -1676,8 +1798,8 @@ class Game(AbstractGame):
         self.__shuffle_until_possible()
         return 0
 
-    def __get_matches(self):
-        return self.__mtch_searcher.scan_board_for_matches(self.board)
+    def __get_matches(self, focus_range=None):
+        return self.__mtch_searcher.scan_board_for_matches(self.board, focus_range=focus_range)
 
     def __activate_power_up(self, power_up_type: int, point: Point):
         return self.__pu_activator.activate_power_up(power_up_type, point, self.board)
@@ -1688,15 +1810,49 @@ class Game(AbstractGame):
     def __scan_del_mvnans_fill_until(self):
         score = 0
         matches, new_power_ups = self.__get_matches()
+
+        old_matches = matches
+
         score += len(matches)
         while len(matches) > 0:
             self.board.delete(matches)
             for _point, _shape in new_power_ups.items():
                 self.board.put_shape(_point, _shape)
             self.__filler.move_and_fill(self.board)
-            matches, new_power_ups = self.__get_matches()
+
+            focus_range = self.__find_focus_range([p.get_coord() for p in old_matches])
+            matches, new_power_ups = self.__get_matches(focus_range)
+
+            # Test block to check focus range is valid
+            # matches, new_power_ups = self.__get_matches()
+            # test_matches, test_new_power_ups = self.__get_matches(focus_range)
+            #
+            # if matches != test_matches or new_power_ups != test_new_power_ups:
+            #     print(f"__find_focus_range: ", focus_range)
+            #     print(f"old_matches: {old_matches} -> {matches}")
+            #     print(f"old_matches: {old_matches} -> {test_matches}")
+            #     print("------------------------------------------------------------------------")
+
+            old_matches = matches
+
             score += len(matches)
+
+        self.board.determine_power_points()
+
         return score
+
+    @staticmethod
+    def __find_focus_range(matches):
+        max_row = -1
+        start_col = 100
+        end_col = -1
+
+        for p in matches:
+            max_row = max(max_row, p[0])
+            start_col = min(start_col, p[1])
+            end_col = max(end_col, p[1])
+
+        return max_row + 2, start_col - 2, end_col + 2
 
     def __shuffle_until_possible(self):
         possible_moves = self.__get_possible_moves()

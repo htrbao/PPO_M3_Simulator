@@ -281,6 +281,7 @@ class RolloutBuffer(BaseBuffer):
         "power_damage_on_monster": total_power_dmg,
         "damage_on_user": self_dmg,
         """
+
         new_rewards = []
         for reward in rewards:
             total_dmg = (

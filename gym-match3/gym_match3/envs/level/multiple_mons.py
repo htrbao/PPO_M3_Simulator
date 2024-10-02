@@ -41,7 +41,7 @@ MY_LEVEL = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(0, 0), width=2, height=2, hp=15 + base_hp),
+            DameMonster(position=Point(0, 0), width=2, height=2, hp=10 + base_hp),
             DameMonster(position=Point(7, 6), width=2, height=2, hp=30 + base_hp),
         ],
     ),
@@ -89,7 +89,7 @@ MY_LEVEL = [
                 height=2,
                 hp=15 + base_hp,
             ),
-            DameMonster(position=Point(7, 0), width=2, height=2, hp=30 + base_hp),
+            DameMonster(position=Point(7, 0), width=2, height=2, hp=20 + base_hp),
         ],
     ),
     Level(
@@ -109,8 +109,8 @@ MY_LEVEL = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(0, 5), width=2, height=2, hp=18 + base_hp),
-            DameMonster(position=Point(5, 0), width=2, height=2, hp=30 + base_hp),
+            DameMonster(position=Point(0, 5), width=2, height=2, hp=15 + base_hp),
+            DameMonster(position=Point(5, 0), width=2, height=2, hp=20 + base_hp),
         ],
     ),
     Level(
@@ -234,8 +234,8 @@ MY_LEVEL = [
             [-1, -1, 0, 0, 0, 0, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(3, 2), width=2, height=2, hp=10 + base_hp),
-            DameMonster(position=Point(6, 5), width=2, height=2, hp=10 + base_hp),
+            DameMonster(position=Point(3, 2), width=2, height=2, hp=15 + base_hp),
+            DameMonster(position=Point(6, 5), width=2, height=2, hp=15 + base_hp),
         ],
     ),
     Level(
@@ -255,8 +255,8 @@ MY_LEVEL = [
             [0, 0, 0, 0, -1, 0, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(3, 2), width=2, height=2, hp=10 + base_hp),
-            DameMonster(position=Point(5, 4), width=2, height=2, hp=10 + base_hp),
+            DameMonster(position=Point(3, 2), width=2, height=2, hp=15 + base_hp),
+            DameMonster(position=Point(5, 4), width=2, height=2, hp=15 + base_hp),
         ],
     ),
 ]

@@ -170,6 +170,7 @@ class Match3Levels:
 
 
 easy_levels = []
+shield_one_mon_level = []
 for x in range(0, 9):
     for y in range(0, 8):
         easy_board = [[0 for _ in range(9)] for _ in range(10)]
@@ -187,30 +188,12 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=20,
+                        hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 45) + base_hp,
                     )
                 ],
             )
         )
-        if random.random() < 0.7:
-            easy_levels.append(
-                Level(
-                    10,
-                    9,
-                    5,
-                    copy.deepcopy(easy_board),
-                    [
-                        DameMonster(
-                            position=Point(x, y),
-                            width=2,
-                            height=2,
-                            hp=12,
-                            request_masked=[1, 1, 1, 1, 0],
-                        )
-                    ],
-                )
-            )
-        easy_levels.append(
+        shield_one_mon_level.append(
             Level(
                 10,
                 9,
@@ -221,7 +204,24 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=20,
+                        hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
+                        request_masked=[1, 1, 1, 1, 0],
+                    )
+                ],
+            )
+        )
+        shield_one_mon_level.append(
+            Level(
+                10,
+                9,
+                5,
+                copy.deepcopy(easy_board),
+                [
+                    DameMonster(
+                        position=Point(x, y),
+                        width=2,
+                        height=2,
+                        hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
                         request_masked=[0, 0, 0, 0, 1],
                     )
                 ],
@@ -230,6 +230,7 @@ for x in range(0, 9):
 random.shuffle(easy_levels)
 LEVELS = [
     *easy_levels,
+    *shield_one_mon_level,
     Level(
         10,
         9,
@@ -316,7 +317,7 @@ LEVELS = [
         ],
         [
             DameMonster(
-                position=Point(0, 0),
+                position=Point(0, 8),
                 relax_interval=2,
                 setup_interval=1,
                 width=9,

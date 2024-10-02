@@ -30,6 +30,7 @@ class Match3Env(gym.Env):
         random_state=None,
         obs_order: list[str] = [],
         level_group: tuple[int, int] = (0, 10),
+        is_render: bool = False,
     ):
         self.num_envs = 1
         self.rollout_len = rollout_len
@@ -55,7 +56,9 @@ class Match3Env(gym.Env):
             random_state=self.random_state,
         )
         self.reset()
-        self.renderer = Renderer(self.n_shapes)
+        self.renderer = None
+        if is_render:
+            self.renderer = Renderer(self.n_shapes)
 
         # setting observation space
         self.observation_space = spaces.Box(
@@ -202,7 +205,6 @@ class Match3Env(gym.Env):
             ob["board"] = self.__get_board()
             ob["list_monster"] = self.__game.list_monsters
 
-        print(ob["board"])
         obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu", self.__episode_counter / self.rollout_len)
         # Check if non legal_action
         if 1 not in np.unique(obs["action_space"]):

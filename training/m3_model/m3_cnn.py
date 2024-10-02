@@ -153,7 +153,7 @@ class M3CnnLargerFeatureExtractor(nn.Module):
         layers = []
         layers.append(
             nn.Conv2d(
-                in_channels.shape[0], kwargs["mid_channels"], 3, stride=1, padding=1
+                in_channels.shape[0], kwargs["mid_channels"], kwargs["kernel_size"], stride=1, padding=1
             )
         )  # (batch, mid_channels, (size))
         layers.append(nn.ReLU())
@@ -179,6 +179,56 @@ class M3CnnLargerFeatureExtractor(nn.Module):
 
         self.net = nn.Sequential(*layers)
         self.features_dim = kwargs["out_channels"] * target_pooling_shape[0] * (target_pooling_shape[1] if len(target_pooling_shape) == 2 else 1)
+        # self.linear = nn.Sequential(nn.Linear(self.features_dim, self.features_dim), nn.ReLU())
+
+    def forward(self, input: torch.Tensor):
+        if len(input.shape) == 3:
+            input = torch.unsqueeze(input, 0)
+        x = self.net(input)
+        return x
+
+
+class M3CnnWiderFeatureExtractor(nn.Module):
+    """
+    Model architecture with CNN base.
+
+    `Input`:
+    - in_chanels: size of input channels
+    - kwargs["mid_channels"]: size of mid channels
+
+    `Output`:
+    - `Tensor`: [batch, action_space_size]
+    """
+
+    def __init__(self, in_channels: int, **kwargs) -> None:
+        # mid_channels: int, out_channels: int = 160, num_first_cnn_layer: int = 10, **kwargs
+        super(M3CnnWiderFeatureExtractor, self).__init__()
+        start_channel = kwargs["start_channel"]
+        layers = []
+        layers.append(
+            nn.Conv2d(
+                in_channels.shape[0], start_channel, kwargs["kernel_size"], stride=1, padding=1
+            )
+        )  # (batch, mid_channels, (size))
+        layers.append(nn.GELU())
+        for _ in range(kwargs["num_first_cnn_layer"] - 1):
+            next_channel = start_channel * 2
+            layers.append(
+                nn.Conv2d(
+                    start_channel,
+                    next_channel,
+                    kwargs["kernel_size"],
+                    stride=1,
+                    padding=1,
+                )
+            )  # (batch, start_channel * 2, (size))
+            start_channel = next_channel
+            layers.append(nn.GELU())
+        layers.append(nn.GELU())
+        layers.append(nn.Flatten(1, -1))
+
+        self.net = nn.Sequential(*layers)
+        self.features_dim = start_channel * in_channels.shape[1] * in_channels.shape[2]
         # self.linear = nn.Sequential(nn.Linear(self.features_dim, self.features_dim), nn.ReLU())
 
     def forward(self, input: torch.Tensor):

@@ -13,6 +13,7 @@ from training.ppo import PPO
 from training.m3_model.m3_cnn import (
     M3CnnFeatureExtractor,
     M3CnnLargerFeatureExtractor,
+    M3CnnWiderFeatureExtractor,
     M3SelfAttentionFeatureExtractor,
     M3ExplainationFeatureExtractor,
     M3MlpFeatureExtractor,
@@ -51,6 +52,12 @@ def get_args():
         type=str,
         default="m3_with_cnn",
         help="prefix name of the model",
+    )
+    parser.add_argument(
+        "--kernel_size",
+        type=int,
+        default=3,
+        help="Number of kernel size in CNN model",
     )
     parser.add_argument(
         "--mid_channels",
@@ -130,38 +137,45 @@ def get_args():
         default=4,
         help="Number of parallel environments to run (default: 4)",
     )
+    parser.add_argument(
+        "--render",
+        action='store_true',
+        help="initiate renderer object",
+    )
 
     return parser.parse_args()
 
 
-def make_env(rank, obs_order, num_per_group):
+def make_env(obs_order, level_group, render):
     def _init():
+        print(level_group)
         env = Match3Env(
             120,
             obs_order=obs_order,
-            level_group=(rank * num_per_group, (rank + 1) * num_per_group),
+            level_group=level_group,
+            is_render=render,
         )
         return env
 
     return _init
 
-def make_env_loc(args, milestones=0, step=4):
+def make_env_loc(args, milestones=0, step=4, render=False):
     max_level = min(len(LEVELS), args.num_envs + step*milestones)
     
     r = max_level % args.num_envs
     d = max_level // args.num_envs
     num_keeps = args.num_envs - r
-    
+
     envs = SubprocVecEnv(
         [
-            make_env(i, args.obs_order, d)
+            make_env(args.obs_order, (i * d, (i + 1) * d), render)
             for i in range(num_keeps)
         ]
         
         + 
         
         [
-            make_env(num_keeps//(d+1) + i, args.obs_order, d + 1)
+            make_env(args.obs_order, (num_keeps * d + i * (d + 1), num_keeps * d + (i + 1) * (d + 1)), render)
             for i in range(r)
         ]
     )
@@ -173,15 +187,16 @@ def main():
     args = get_args()
     max_level = len(LEVELS)
     envs = None
+    milestone = 31
     if args.strategy == 'sequential':
         envs = SubprocVecEnv(
             [
-                make_env(i, args.obs_order, max_level // args.num_envs)
+                make_env(i, args.obs_order, max_level // args.num_envs, args.render)
                 for i in range(args.num_envs)
             ]
         )
     elif args.strategy == 'milestone':
-        envs = make_env_loc(args)
+        envs = make_env_loc(args, milestones=milestone, render=args.render)
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
 
@@ -198,8 +213,10 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3CnnLargerFeatureExtractor,
+            "features_extractor_class": M3CnnWiderFeatureExtractor,
             "features_extractor_kwargs": {
+                "kernel_size": args.kernel_size,
+                "start_channel": 32,
                 "mid_channels": args.mid_channels,
                 "out_channels": 256,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
@@ -221,8 +238,7 @@ def main():
     print("trainable parameters", sum(p.numel() for p in PPO_trainer.policy.parameters() if p.requires_grad))
     run_i = 0
     print(PPO_trainer.n_steps)
-    milestone = 0
-    while run_i < 300:
+    while run_i < 700:
         run_i += 1
         s_t = time.time()
         res = (
@@ -239,15 +255,11 @@ def main():
         win_list = res.get('win_list', None)
         hit_mask = res.get('hit_mask', None)
 
-        if not os.path.isdir(f'./statistics/hit_mask/{PPO_trainer._model_name}'):
-            os.makedirs(f'./statistics/hit_mask/{PPO_trainer._model_name}')
-        with open(f'./statistics/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
+        if not os.path.isdir(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}'):
+            os.makedirs(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}')
+        with open(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
             np.save(f, hit_mask)
 
-                PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps,
-                num_levels = len(LEVELS)
-            )
-        )
         # extract stat
         num_win_games = res.get('num_win_games', None)
         num_completed_games = res.get('num_completed_games', None)
@@ -256,15 +268,14 @@ def main():
         win_list = res.get('win_list', None)
         hit_mask = res.get('hit_mask', None)
 
-        if not os.path.isdir(f'./statistics/hit_mask/{PPO_trainer._model_name}'):
-            os.makedirs(f'./statistics/hit_mask/{PPO_trainer._model_name}')
-        with open(f'./statistics/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
+        if not os.path.isdir(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}'):
+            os.makedirs(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}')
+        with open(f'./_saved_stat/hit_mask/{PPO_trainer._model_name}/{run_i}.npy', 'wb') as f:
             np.save(f, hit_mask)
 
         win_rate = num_win_games / num_completed_games * 100
         print(f"collect data: {time.time() - s_t}\nwin rate: {win_rate}\nmilestone: {milestone}")
         print(f"{win_list}")
-        exit()
         s_t = time.time()
         PPO_trainer.train(
             num_completed_games=num_completed_games,
@@ -273,12 +284,11 @@ def main():
             num_hit=num_hit,
             win_list=win_list
         )
-
         print("training time", time.time() - s_t)
-        
-        if win_rate > 60.0:
+        if args.strategy == 'milestone' and win_rate > 80.0:
             milestone += 1
-            envs = make_env_loc(args, milestone)
+            envs.close()
+            envs = make_env_loc(args, milestone, step=10, render=args.render)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)
 

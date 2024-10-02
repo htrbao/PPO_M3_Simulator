@@ -156,7 +156,7 @@ class TestSearcher(unittest.TestCase):
         self.searcher = AbstractSearcher(2)
 
     def test_points_generator(self):
-        answer = {i for i in self.searcher.points_generator(self.board)}
+        answer = {i for i in self.searcher.generate_movable_points(self.board)}
         true = {
             Point(0, 0),
             Point(0, 1),
@@ -412,7 +412,7 @@ class TestSearcherImmove(TestSearcher):
         self.searcher = MatchesSearcher(3, 2)
 
     def test_points_generator(self):
-        answer = {i for i in self.searcher.points_generator(self.board)}
+        answer = {i for i in self.searcher.generate_movable_points(self.board)}
         true = {
             Point(1, 1),
             Point(2, 2)
