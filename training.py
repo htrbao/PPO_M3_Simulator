@@ -144,12 +144,13 @@ def get_args():
     return parser.parse_args()
 
 
-def make_env(rank, obs_order, num_per_group, render):
+def make_env(obs_order, level_group, render):
     def _init():
+        print(level_group)
         env = Match3Env(
             90,
             obs_order=obs_order,
-            level_group=(rank * num_per_group, (rank + 1) * num_per_group),
+            level_group=level_group,
             is_render=render,
         )
         return env
@@ -162,17 +163,17 @@ def make_env_loc(args, milestones=0, step=4, render=False):
     r = max_level % args.num_envs
     d = max_level // args.num_envs
     num_keeps = args.num_envs - r
-    
+
     envs = SubprocVecEnv(
         [
-            make_env(i, args.obs_order, d, render)
+            make_env(args.obs_order, (i * d, (i + 1) * d), render)
             for i in range(num_keeps)
         ]
         
         + 
         
         [
-            make_env(num_keeps//(d+1) + i, args.obs_order, d + 1, render)
+            make_env(args.obs_order, (num_keeps * d + i * (d + 1), num_keeps * d + (i + 1) * (d + 1)), render)
             for i in range(r)
         ]
     )
@@ -183,6 +184,7 @@ def main():
     args = get_args()
     max_level = len(LEVELS)
     envs = None
+    milestone = 31
     if args.strategy == 'sequential':
         envs = SubprocVecEnv(
             [
@@ -191,7 +193,7 @@ def main():
             ]
         )
     elif args.strategy == 'milestone':
-        envs = make_env_loc(args, render=args.render)
+        envs = make_env_loc(args, milestones=milestone, render=args.render)
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
 
@@ -233,7 +235,6 @@ def main():
     print("trainable parameters", sum(p.numel() for p in PPO_trainer.policy.parameters() if p.requires_grad))
     run_i = 0
     print(PPO_trainer.n_steps)
-    milestone = 0
     while run_i < 700:
         run_i += 1
         s_t = time.time()
@@ -267,11 +268,11 @@ def main():
             num_hit=num_hit,
             win_list=win_list
         )
-        print("training time", time.time() - s_t)    
-        if win_rate > 80.0:
+        print("training time", time.time() - s_t)
+        if args.strategy == 'milestone' and win_rate > 80.0:
             milestone += 1
             envs.close()
-            envs = make_env_loc(args, milestone, step=max(30 // milestone, 4), render=args.render)
+            envs = make_env_loc(args, milestone, step=10, render=args.render)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)
 
