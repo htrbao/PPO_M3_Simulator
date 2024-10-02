@@ -1680,7 +1680,9 @@ class Game(AbstractGame):
             ### Handle add power up
             for _point, _shape in new_power_ups.items():
                 self.board.put_shape(_point, _shape)
-                if _shape == GameObject.power_missile_h or _shape == GameObject.power_missile_v:
+                if _shape == GameObject.power_missile_h:
+                    create_pu_score += 0.9
+                if _shape == GameObject.power_missile_v:
                     create_pu_score += 1
                 elif _shape == GameObject.power_plane:
                     create_pu_score += 1.5
