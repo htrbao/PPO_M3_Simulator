@@ -1665,19 +1665,6 @@ class Game(AbstractGame):
 
             self.list_monsters[i].attacked(match_damage, pu_damage)
             monster_result = self.list_monsters[i].act()
-            if "box" in monster_result.keys():
-                coor_x, coor_y = np.random.randint(0, [*self.board.board_size])
-                while self.board.get_shape(Point(coor_x, coor_y)) in GameObject.set_unmovable_shape:
-                    coor_x, coor_y = np.random.randint(0, [*self.board.board_size])
-
-                mons_pos = Point(coor_x, coor_y)
-                self.board.put_shape(mons_pos, monster_result["box"])
-                self.list_monsters.append(
-                    BlockerFactory.create_blocker(monster_result["box"], mons_pos)
-                )
-            if "damage" in monster_result.keys():
-                self_dmg += monster_result["damage"]
-                cancel_score += monster_result.get("cancel_score", 0)
 
         self.__player_hp -= self_dmg
         if len(matches) > 0 or len(brokens) > 0 or len(disco_brokens) > 0:
@@ -1703,7 +1690,22 @@ class Game(AbstractGame):
                     create_pu_score += 2.5
                 elif _shape == GameObject.power_disco:
                     create_pu_score += 4.5
-            ###
+            
+            ### Handle add power up and attack user
+            if "box" in monster_result.keys():
+                coor_x, coor_y = np.random.randint(0, [*self.board.board_size])
+                while self.board.get_shape(Point(coor_x, coor_y)) in GameObject.set_unmovable_shape:
+                    coor_x, coor_y = np.random.randint(0, [*self.board.board_size])
+
+                mons_pos = Point(coor_x, coor_y)
+                self.board.put_shape(mons_pos, monster_result["box"])
+                self.list_monsters.append(
+                    BlockerFactory.create_blocker(monster_result["box"], mons_pos)
+                )
+            if "damage" in monster_result.keys():
+                self_dmg += monster_result["damage"]
+                cancel_score += monster_result.get("cancel_score", 0)
+
             self.__filler.move_and_fill(self.board)
             self.__operate_until_possible_moves()
         reward = {
