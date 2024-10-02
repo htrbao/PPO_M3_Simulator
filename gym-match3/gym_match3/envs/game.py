@@ -1643,26 +1643,30 @@ class Game(AbstractGame):
     def __check_matches(self, point: Point, direction: Point):
         tmp_board = self.__get_copy_of_board()
         tmp_board.move(point, direction)
-        return_brokens, disco_brokens, inside_brokens= self.__pu_activator.activate_power_up(
+        return_brokens, disco_brokens, inside_brokens = self.__pu_activator.activate_power_up(
             point, direction, tmp_board, self.list_monsters
         )
-        if return_brokens:
-            tmp_board.delete(return_brokens)
+
+        # if not disco_brokens.issubset(return_brokens):
+        #     print(f"return_brokens: {return_brokens}, disco_brokens: {disco_brokens}, inside_brokens: {inside_brokens}")
+
+        delete_points = return_brokens | disco_brokens
+        if delete_points:
+            tmp_board.delete(delete_points)
             self.__filler.move_and_fill(tmp_board)
 
         focus_range = self.__find_focus_range({
             point.get_coord(),
             (point + direction).get_coord(),
-            *[p.get_coord() for p in return_brokens]
+            *[p.get_coord() for p in delete_points]
         })
 
         matches, new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board, focus_range=focus_range)
 
-        # Test block to check focus range is valid
+        # # Test block to check focus range is valid
         # matches, new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board)
         # test_matches, test_new_power_ups = self.__mtch_searcher.scan_board_for_matches(tmp_board,
         #                                                                                focus_range=focus_range)
-        # print(test_new_power_ups)
         # if matches != test_matches or new_power_ups != test_new_power_ups:
         #     print(f"__find_focus_range: ", focus_range)
         #     print(f"old_matches: {matches}")
