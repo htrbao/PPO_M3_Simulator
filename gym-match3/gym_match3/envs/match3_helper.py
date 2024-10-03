@@ -44,9 +44,6 @@ class M3Helper:
         else:
             self.obs_order = obs_order
 
-        self.set_pos_check = set(GameObject.powers) | set(GameObject.tiles)
-
-
     def _from_action_to_tile(self):
         a2t = {}
         max_h_action = (self.num_col - 1) * self.num_row
@@ -64,10 +61,7 @@ class M3Helper:
         return a2t
 
     def check_legal_pos_to_move(self, i: int, j: int, raw_board: np.array):
-        return (0 <= i < self.num_row
-                and 0 <= j < self.num_col
-                and raw_board[i][j] in self.set_pos_check)
-
+        return 0 <= i < self.num_row and 0 <= j < self.num_col and raw_board[i][j] in GameObject.set_movable_shape
 
     def check_required_tile(
         self,

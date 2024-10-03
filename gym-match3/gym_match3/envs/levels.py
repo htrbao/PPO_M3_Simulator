@@ -188,29 +188,11 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=35 + base_hp,
+                        hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 45) + base_hp,
                     )
                 ],
             )
         )
-        if random.random() < 0.7:
-            shield_one_mon_level.append(
-                Level(
-                    10,
-                    9,
-                    5,
-                    copy.deepcopy(easy_board),
-                    [
-                        DameMonster(
-                            position=Point(x, y),
-                            width=2,
-                            height=2,
-                            hp=2 + base_hp,
-                            request_masked=[1, 1, 1, 1, 0],
-                        )
-                    ],
-                )
-            )
         shield_one_mon_level.append(
             Level(
                 10,
@@ -222,7 +204,24 @@ for x in range(0, 9):
                         position=Point(x, y),
                         width=2,
                         height=2,
-                        hp=4 + base_hp,
+                        hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
+                        request_masked=[1, 1, 1, 1, 0],
+                    )
+                ],
+            )
+        )
+        shield_one_mon_level.append(
+            Level(
+                10,
+                9,
+                5,
+                copy.deepcopy(easy_board),
+                [
+                    DameMonster(
+                        position=Point(x, y),
+                        width=2,
+                        height=2,
+                        hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
                         request_masked=[0, 0, 0, 0, 1],
                     )
                 ],
@@ -318,7 +317,7 @@ LEVELS = [
         ],
         [
             DameMonster(
-                position=Point(0, 0),
+                position=Point(0, 8),
                 relax_interval=2,
                 setup_interval=1,
                 width=9,

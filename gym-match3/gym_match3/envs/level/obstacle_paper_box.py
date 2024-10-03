@@ -9,13 +9,13 @@ MY_LEVEL = [
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0],
-        [0, 0, 0, 0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0],
+        [0, 0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0],
+        [0, 0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ], [
         DameMonster(position=Point(6, 6),
-                    relax_interval = 2,
+                    relax_interval = 4,
                     setup_interval = 1,
                     width=2,
                     height=2,
@@ -26,8 +26,8 @@ MY_LEVEL = [
     ]),
 
     Level(10, 9, 5, [
-        [GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, 0, 0, 0, 0],
-        [GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, 0, 0, 0, 0],
+        [0, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, 0, 0, 0],
+        [0, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, -1],
         [0, 0, 0, 0, 0, 0, 0, -1, -1],
@@ -60,7 +60,7 @@ MY_LEVEL = [
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ], [
         DameMonster(position=Point(6, 6),
-                    relax_interval = 2,
+                    relax_interval = 4,
                     setup_interval = 1,
                     width=2,
                     height=2,
@@ -82,7 +82,7 @@ MY_LEVEL = [
         [0, 0, 0, 0, 0, 0, 0, -1, -1],
     ], [
         DameMonster(position=Point(4, 4),
-                    relax_interval = 2,
+                    relax_interval = 4,
                     setup_interval = 1,
                     width=2,
                     height=2,
