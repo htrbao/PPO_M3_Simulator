@@ -148,6 +148,8 @@ def get_arguments():
                         help='enables macOS GPU training')
     parser.add_argument('--checkpoint', type=str)
     
+    parser.add_argument('--model-type', type=str, default='cnn')
+    
     parser.add_argument(
         "--obs-order",
         type=str,
@@ -179,7 +181,7 @@ def main():
     manager = mp.Manager()
     
     
-    model = ActorCriticCnnPolicy.load(args.checkpoint)
+    model = ActorCriticCnnPolicy.load(args.checkpoint) if args.model_type == 'cnn' else ActorCriticPolicy.load(args.checkpoint)
     # model = model.to(device)
     model.share_memory()
     results = []

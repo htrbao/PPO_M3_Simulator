@@ -1,3 +1,4 @@
+        
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.patches import Patch
@@ -6,6 +7,7 @@ import numpy as np
 import pandas as pd
 import json
 import streamlit as st
+import json
 
 from test.level_generate import get_real_levels
 matplotlib.use('Agg')
@@ -81,8 +83,8 @@ def heatmap(data, row_labels, col_labels, ax=None,
     # Turn spines off and create white grid.
     ax.spines[:].set_visible(False)
 
-    ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
-    ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
+    ax.set_xticks(np.arange(data.shape[1])-.5, minor=True)
+    ax.set_yticks(np.arange(data.shape[0])-.5, minor=True)
     ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
     ax.tick_params(which="minor", bottom=False, left=False)
 
@@ -154,7 +156,7 @@ def draw_heatmap(data_map, num_level, type, legend=None, **kwargs):
 
     fig, ax = plt.subplots()
 
-    im, cbar = heatmap(np_map, np.arange(height)+1, np.arange(width)+1, ax=ax,
+    im, cbar = heatmap(np_map, np.arange(height), np.arange(width), ax=ax,
                      vmin=0, **kwargs)
     if type != 'map':
         texts = annotate_heatmap(im, valfmt='{x}')
@@ -166,64 +168,34 @@ def draw_heatmap(data_map, num_level, type, legend=None, **kwargs):
         ax.set_title(f"{type} rate ({num_level} levels)", fontweight="bold")
     return fig 
 
+st.subheader("Show map")
 with st.container():
-    st.header("Monster Statistic", divider=True)
-    realms = []
-    monster_data = {v: [] for v in ID2MONS.values()}
-    avg_monster_per_realm = []
-    for realm, data in statistic_data.items():
-        realms.append(f"realm {realm}")
-        total_monster = sum(data["monsters"].values())
-        avg_monster_per_realm.append(total_monster / data["num_levels"])
-        for k, v in data["monsters"].items():
-            monster_data[ID2MONS[k]].append(v*100/total_monster)
+    with st.form('show_map'):
+        col1, col2 = st.columns(2)
+        with col1:
+            realm_id = st.number_input("Realm ID", min_value=0, max_value=5)
+        with col2:
+            node_id = st.number_input("Node ID", min_value=0, max_value=100)
             
-    width = 0.5
-    fig, ax = plt.subplots(figsize=(5, 4))
-    ax2 = ax.twinx()
-    bottom = np.zeros(len(realms))
-    
-    for monster_type, monster_num in monster_data.items():
-        p = ax.bar(realms, monster_num, width, label=monster_type, bottom=bottom)
-        bottom += monster_num
-
-    ax.set_ylabel('Weight of Monsters')
-    ax.set_title('Weight of Monsters per Realm')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
-          fancybox=True, shadow=True, ncol=2)
-    ax.set_ylim(0, 100)
-    ax.yaxis.set_major_formatter(ticker.PercentFormatter())
-
-    ax2.set_ylim(1, 2.5)
-    ax2.set_ylabel('AVG Monster per Level')
-    
-    ax2.plot(ax.get_xticks(), avg_monster_per_realm, color="black")
-    with st.columns([1,4,1])[1]:
-        st.pyplot(fig, use_container_width=False)
-
-with st.container():
-
-    st.header(f"Map Statistic", divider=True) 
-
-    for id, (realm, data) in enumerate(statistic_data.items()):
-        if id % 2 == 0:
-            col = st.columns(2)
-        with col[id % 2]:
-            st.subheader("Realm: " + realm, divider="rainbow")
-            col1, col2 = st.columns(2)
-            with col1:
-                if f"realm_{realm}_wall" not in st.session_state:
-                    fig = draw_heatmap(data["wall_map"], data["num_levels"], "wall", cmap="BuGn")
-                    st.session_state[f'realm_{realm}_wall'] = fig
-                else:
-                    fig = st.session_state[f'realm_{realm}_wall']
-                st.pyplot(fig)
-            with col2:
-                if f"realm_{realm}_monster" not in st.session_state:
-                    fig = draw_heatmap(data["monster_map"], data["num_levels"], "monster", cmap="BuGn")
-                    st.session_state[f'realm_{realm}_monster'] = fig
-                else:
-                    fig = st.session_state[f'realm_{realm}_monster']
-                st.pyplot(fig)
-                
-    
+        submitted = st.form_submit_button("Submit")
+        if submitted:
+            df = st.session_state['level']
+            map = df[(df['realm_id'] == realm_id) & (df['node_id'] == node_id)]
+            map = map.reset_index()
+            level = map.at[0, 'level']
+            max_step = map.at[0,'max_step']
+            colors = [(0.7, 0.7, 0.7), (0, 0, 0), (1, 0, 0), (1, 0, 0)]  # White, Black, Red
+            values = [0, 1/15, 14/15, 1]  # Mapping values (0 for white, 1 for black, 15 or more for red)
+            custom_cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom_cmap', list(zip(values, colors)))
+            legend_elements = [
+                Patch(facecolor=colors[0], edgecolor='black', label='Tile'),
+                Patch(facecolor=colors[1], edgecolor='black', label='Wall'),
+                Patch(facecolor=colors[2], edgecolor='black', label='Monster')
+            ]
+            fig = draw_heatmap(level.board,  f"realm {realm_id}, node {node_id}", "map", legend=legend_elements, cmap=custom_cmap)
+            with st.columns([1, 3, 1])[1]:
+                st.pyplot(fig, use_container_width=False)
+            st.subheader(f"Max step: {max_step}")
+            st.subheader(f"Num tile: {level.n_shapes}")
+            st.subheader(f"Monsters:")
+            st.write("\n".join([f"{id+1}. " + str(mons) for id, mons in enumerate(level.list_monsters)]))

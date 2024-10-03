@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import ticker
 from test.level_generate import get_real_levels
 matplotlib.use('Agg')
+st.set_page_config(page_title="M3 Testing Metrics", layout="wide", initial_sidebar_state='collapsed')
 
 if 'level' not in st.session_state:
     st.session_state['level'] = pd.DataFrame(get_real_levels(full_info=True))
@@ -16,12 +17,11 @@ if 'old' not in st.session_state:
         "num_level": 0,
         "avg_win_rate": 0,
         "avg_hit_rate": 0,
-        "avg_damege_per_hit": 0,
+        "avg_damage_per_hit": 0,
         "remain_hp_monster": 0,
     }
     st.session_state['old'] = old
 
-st.set_page_config(page_title="M3 Testing Metrics", layout="wide")
 store_dir = "_saved_test"
 
 # Function to load all CSVs from a given folder
@@ -47,15 +47,23 @@ def draw_line(x_axis, y_axis, color, label):
     return fig
 
 def draw_bar(df, realm):
-    fig, ax = plt.subplots(figsize=(16, 8))
+    fig, ax = plt.subplots(figsize=(20, 7))
     sub_df = df[df['realm_id'] == realm]
     sub_df.loc[:, "win_rate"] = sub_df["win_rate"] * 100
     sub_df.loc[:, "hit_rate"] = sub_df["hit_rate"] * 100
+    sub_df.loc[:, "remain_hp_monster"] = sub_df["remain_hp_monster"] * 100
     # sub_df.plot.bar(x='node_id', y='win_rate', figsize=(10, 5), title=f"Realm {realm} Win Rate", ax=ax, rot=60)
-    axes = sub_df.plot.bar(x='node_id', y=['win_rate', 'hit_rate'], subplots=True, ax=ax, rot=65, title=f"Realm {realm}", sharex=True)
+    axes = sub_df.plot.bar(x='node_id', y=['win_rate', 'hit_rate', 'remain_hp_monster'], subplots=True, ax=ax, rot=65, title=f"Realm {realm}", sharex=True)
     for axs in axes:
         axs.yaxis.set_major_formatter(ticker.PercentFormatter())
         axs.set_ylim([0, 100])
+        for bar in axs.patches:
+            if bar.get_height() < 100 and bar.get_height() > 0:
+                axs.annotate(str(format(bar.get_height(), '.0f')) + '%', 
+                            (bar.get_x() + bar.get_width() / 2, 
+                                bar.get_height()), ha='center', va='center',
+                            xytext=(0, 8),
+                            textcoords='offset points')
     return fig
     
 def draw_plot(df):
@@ -79,29 +87,37 @@ def draw_plot(df):
             st.pyplot(fig)
     st.header("Realm Win Rate")
     for realm in realms:
-        if realm % 2 == 0:
-            col = st.columns(2)
-        with col[realm%2]:
-            fig = draw_bar(df, realm)
-            st.pyplot(fig)
+        with st.columns([1,8, 1])[1]:
+            if f'realm_{realm}' not in st.session_state:
+                fig = draw_bar(df, realm)
+                st.session_state[f'realm_{realm}'] = fig
+            else:
+                fig = st.session_state[f'realm_{realm}']
+            st.pyplot(fig, use_container_width=False)
 
 
 def draw_common_stat(df):
+    
+    level = len(df)
+    num_games = df['num_games'].max()
+    
     avg_win_rate = df['win_rate'].mean()
     avg_hit_rate = df['hit_rate'].mean()
-    avg_damege_per_hit = df['avg_damage_per_hit'].mean()
+    avg_damage_per_hit = df['avg_damage_per_hit'].mean()
     remain_hp_monster = df[df['remain_hp_monster'] > 0]["remain_hp_monster"].mean()
+    st.subheader(f"Test on {num_games} games per levels ({level} levels)")
     
     col2, col3, col4, col5 = st.columns(4)
+    
     
     col2.metric("Average Win Rate", f"{avg_win_rate*100:.2f}%", delta=f"{(avg_win_rate - st.session_state['old']['avg_win_rate'])*100:.2f}%")
     col3.metric("Average Hit Rate", f"{avg_hit_rate*100:.2f}%", delta=f"{(avg_hit_rate - st.session_state['old']['avg_hit_rate'])*100:.2f}%")
     col4.metric("Average Remaining HP of Monster (Lose Only)", f"{remain_hp_monster*100:.2f}%", delta=f"{(remain_hp_monster - st.session_state['old']['remain_hp_monster'])*100:.2f}%", delta_color ="inverse")
-    col5.metric("Average Damage per Hit", f"{avg_damege_per_hit*100:.2f}%", delta=f"{(avg_damege_per_hit - st.session_state['old']['avg_damege_per_hit'])*100:.2f}%")
+    col5.metric("Average Damage per Hit", f"{avg_damage_per_hit*100:.2f}%", delta=f"{(avg_damage_per_hit - st.session_state['old']['avg_damage_per_hit'])*100:.2f}%")
 
     st.session_state['old']["avg_win_rate"] = avg_win_rate
     st.session_state['old']["avg_hit_rate"] = avg_hit_rate
-    st.session_state['old']["avg_damege_per_hit"] = avg_damege_per_hit
+    st.session_state['old']["avg_damage_per_hit"] = avg_damage_per_hit
     st.session_state['old']["remain_hp_monster"] = remain_hp_monster
 
 
@@ -122,5 +138,3 @@ if folder_path:
     draw_common_stat(df)
     draw_plot(df)
     st.dataframe(df, use_container_width=True)
-        
-

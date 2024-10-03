@@ -816,7 +816,6 @@ class AbstractMonster(ABC):
         return len(set(self.dmg_mask) & set(__matches)), \
             mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens))
 
-
 class DameMonster(AbstractMonster):
     def __init__(
         self,
@@ -837,6 +836,10 @@ class DameMonster(AbstractMonster):
 
         self._cancel = cancel_dame
         self._cancel_dame = cancel_dame
+        
+
+    def __str__(self):
+        return f"DameMonster(position={self._position}, hp={self._hp}, request_masked={self.available_mask}, relax_interval={self._relax_interval}, setup_interval={self._setup_interval}, width={self._width}, height={self._height}, have_paper_box={self.have_paper_box})"
 
     def act(self):
         super().act()
@@ -888,6 +891,9 @@ class BoxMonster(AbstractMonster):
     ):
         super().__init__(relax_interval, 0, position, hp, width, height, have_paper_box)
         self.__box_monster_type = box_mons_type
+        
+    def __str__(self):
+        return f"BoxMonster(position={self._position}, hp={self._hp}, request_masked={self.available_mask}, relax_interval={self._relax_interval}, setup_interval={self._setup_interval}, have_paper_box={self.have_paper_box})"
 
     def act(self):
         super().act()
