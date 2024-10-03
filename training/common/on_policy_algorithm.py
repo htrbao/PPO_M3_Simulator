@@ -227,7 +227,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
             for idx, rew in enumerate(rewards):
                 for p in rew["mons"]:
-                    if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 9:
+                    if p[0] < 0 or p[0] > 9 or p[1] < 0 or p[1] > 8:
                         print("out of table", rew["current_level"])
                         continue
                     hit_mask[rew["current_level"], p[0], p[1]] = 999

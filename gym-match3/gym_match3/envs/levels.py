@@ -177,56 +177,58 @@ for x in range(0, 9):
         for _x in range(x, x + 2):
             for _y in range(y, y + 2):
                 easy_board[_x][_y] = GameObject.monster_dame
-        easy_levels.append(
-            Level(
-                10,
-                9,
-                5,
-                copy.deepcopy(easy_board),
-                [
-                    DameMonster(
-                        position=Point(x, y),
-                        width=2,
-                        height=2,
-                        hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 45) + base_hp,
-                    )
-                ],
+        if x == 0 or y == 0 or x == 8 or y == 7 or x % 3 == 0 or y % 3 == 0:
+            easy_levels.append(
+                Level(
+                    10,
+                    9,
+                    5,
+                    copy.deepcopy(easy_board),
+                    [
+                        DameMonster(
+                            position=Point(x, y),
+                            width=2,
+                            height=2,
+                            hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 55) + base_hp,
+                        )
+                    ],
+                )
             )
-        )
-        shield_one_mon_level.append(
-            Level(
-                10,
-                9,
-                5,
-                copy.deepcopy(easy_board),
-                [
-                    DameMonster(
-                        position=Point(x, y),
-                        width=2,
-                        height=2,
-                        hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
-                        request_masked=[1, 1, 1, 1, 0],
-                    )
-                ],
+        if x == 0 or y == 0 or x == 8 or y == 7 or x % 2 == 0 or y % 2 == 0:
+            shield_one_mon_level.append(
+                Level(
+                    10,
+                    9,
+                    5,
+                    copy.deepcopy(easy_board),
+                    [
+                        DameMonster(
+                            position=Point(x, y),
+                            width=2,
+                            height=2,
+                            hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
+                            request_masked=[1, 1, 1, 1, 0],
+                        )
+                    ],
+                )
             )
-        )
-        shield_one_mon_level.append(
-            Level(
-                10,
-                9,
-                5,
-                copy.deepcopy(easy_board),
-                [
-                    DameMonster(
-                        position=Point(x, y),
-                        width=2,
-                        height=2,
-                        hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
-                        request_masked=[0, 0, 0, 0, 1],
-                    )
-                ],
+            shield_one_mon_level.append(
+                Level(
+                    10,
+                    9,
+                    5,
+                    copy.deepcopy(easy_board),
+                    [
+                        DameMonster(
+                            position=Point(x, y),
+                            width=2,
+                            height=2,
+                            hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
+                            request_masked=[0, 0, 0, 0, 1],
+                        )
+                    ],
+                )
             )
-        )
 
 LEVELS = [
     *easy_levels,
@@ -317,7 +319,7 @@ LEVELS = [
         ],
         [
             DameMonster(
-                position=Point(0, 8),
+                position=Point(8, 0),
                 relax_interval=2,
                 setup_interval=1,
                 width=9,

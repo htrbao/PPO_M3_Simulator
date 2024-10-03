@@ -306,7 +306,7 @@ class RolloutBuffer(BaseBuffer):
                 _reward += 0.3
 
             if reward["create_pu_score"] <= 0:
-                _reward -= 0.2
+                _reward -= 0.05
                 
             _reward = np.clip(_reward, -5, 5)
 

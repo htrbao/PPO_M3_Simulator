@@ -328,7 +328,10 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
         super().__init__()
         num_heads = kwargs.get('num_heads', 2)
         n_channels = in_channels.shape[0]
-        self.multihead_attn = nn.MultiheadAttention(n_channels, num_heads)
+        self.multihead_attn = nn.MultiheadAttention(n_channels, num_heads, batch_first=True)
+
+        self.positional_encoding = nn.Parameter(torch.zeros(1, 90, n_channels))
+
         self.activator = nn.ReLU()
 
         self.features_dim = n_channels * in_channels.shape[1] * in_channels.shape[2]
@@ -336,8 +339,17 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
     def forward(self, x: torch.Tensor):
         x = x.view(*x.shape[:2], -1)
         x = x.transpose(1, 2)
+
+        # Add positional embeddings
+        x = x + self.positional_encoding  # [batch_size, 90, n_channels]
+
+        # Apply multi-head attention (batch_first=True, so no need for transposing)
         attn_output, _ = self.multihead_attn(x, x, x, need_weights=False)
+
+        # Flatten the attention output
         attn_output = attn_output.flatten(start_dim=1)
+        
+        # Apply ReLU activation
         x = self.activator(attn_output)
         return x
 

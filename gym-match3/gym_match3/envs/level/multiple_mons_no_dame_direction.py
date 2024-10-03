@@ -57,8 +57,8 @@ MY_LEVEL = [
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
-            [0, 0, 0, GameObject.monster_dame, 0, 0, 0, -1],
-            [0, 0, 0, GameObject.monster_dame, 0, 0, 0, -1],
+            [0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, -1],
+            [0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, -1],
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
         ],
         [
@@ -166,7 +166,7 @@ MY_LEVEL = [
             [0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(7, 3), width=3, height=3, hp=25 + base_hp, have_paper_box=True),
+            DameMonster(position=Point(7, 3), width=3, height=3, hp=40 + base_hp, request_masked=[1, 1, 0, 0, 1]),
         ],
     ),
 ]
