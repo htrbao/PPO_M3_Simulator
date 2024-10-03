@@ -146,7 +146,6 @@ def get_args():
 
 def make_env(obs_order, level_group, render):
     def _init():
-        print(level_group)
         env = Match3Env(
             90,
             obs_order=obs_order,
@@ -184,7 +183,7 @@ def main():
     args = get_args()
     max_level = len(LEVELS)
     envs = None
-    milestone = 31
+    milestone = 0
     if args.strategy == 'sequential':
         envs = SubprocVecEnv(
             [
@@ -197,9 +196,9 @@ def main():
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
 
-    print(envs.observation_space)
-    print(envs.action_space)
-    print(args.ent_coef)
+    print(f"Agent will be train on {len(LEVELS)} levels")
+    print("Observation Space:", envs.observation_space)
+    print("Action Space", envs.action_space)
     PPO_trainer = PPO(
         policy="CnnPolicy",
         env=envs,
