@@ -1,19 +1,17 @@
 import copy
-import time
 from typing import Union
 from itertools import product
 from functools import wraps
 from abc import ABC, abstractmethod
 import numpy as np
 import random
-from collections import Counter
 
 import traceback
-
-import concurrent.futures
 import threading
 
 from gym_match3.envs.constants import GameObject, mask_immov_mask, need_to_match
+from gym_match3.envs.functions import is_valid_point
+
 
 class OutOfBoardError(IndexError):
     pass
@@ -46,6 +44,10 @@ class Point(AbstractPoint):
     """pointer to coordinates on the board"""
 
     def __init__(self, row, col):
+        self.__row = row
+        self.__col = col
+
+    def set_coord(self, row, col):
         self.__row = row
         self.__col = col
 
@@ -91,13 +93,17 @@ class Cell(Point):
         self.__shape = shape
         super().__init__(row, col)
 
+    def set_cell(self, shape, row, col):
+        self.__shape = shape
+        self.set_coord(row, col)
+
     @property
     def shape(self):
         return self.__shape
 
     @property
     def point(self):
-        return Point(*self.get_coord())
+        return self
 
     def __eq__(self, other):
         if isinstance(other, Point):
@@ -258,8 +264,7 @@ class Board(AbstractBoard):
     def determine_power_points(self):
         self.power_points.clear()
         for i, j in product(range(self.__rows), range(self.__columns)):
-            shape = self.get_valid_shape(i, j)
-            if shape in GameObject.set_powers_shape:
+            if self.__board.__getitem__((i, j)) in GameObject.set_powers_shape:
                 self.power_points.add((i, j))
 
     def move(self, point: Point, direction: Point):
@@ -304,8 +309,11 @@ class Board(AbstractBoard):
         return self.__board.__getitem__((row, col))
 
     def __validate_points(self, *args):
+        board_rows, board_cols = self.board_size
+
         for point in args:
-            is_valid = self.__is_valid_point(point)
+            row, col = point.get_coord()
+            is_valid = is_valid_point(row, col, board_rows, board_cols)
             if not is_valid:
                 raise OutOfBoardError(f"Invalid point: {point.get_coord()}")
 
@@ -521,10 +529,24 @@ class AbstractSearcher(ABC):
             max_row, start_col, end_col = focus_range
             loop_range = product(range(0, min(max_row + 1, rows)), range(max(start_col, 0), min(end_col + 1, cols)))
 
+        board_contain_shapes = board.board
+
         for i, j in loop_range:
-            shape = board.get_valid_shape(i, j)
+            shape = board_contain_shapes.__getitem__((i, j))
             if shape != board.immovable_shape and need_to_match(shape):
                 yield Point(i, j)
+
+    @staticmethod
+    def generate_movable_point(rows, cols, board_contain_shapes, focus_range=None):
+        if not focus_range:
+            loop_range = product(range(rows), range(cols))
+        else:
+            max_row, start_col, end_col = focus_range
+            loop_range = product(range(0, min(max_row + 1, rows)), range(max(start_col, 0), min(end_col + 1, cols)))
+
+        return [Point(i, j) for i, j in loop_range
+                if board_contain_shapes.__getitem__((i, j)) != GameObject.immovable_shape and
+                need_to_match(board_contain_shapes.__getitem__((i, j)))]
 
     def axis_directions_gen(self):
         for axis_dirs in self.directions:
@@ -590,15 +612,18 @@ class MatchesSearcher(AbstractSearcher):
         matches = set()
         new_power_ups = dict()
 
+        board_rows, board_cols = board.board_size
+        board_contain_shapes = board.board
+
         if not need_all:
             assert checking_point is not None, "checking_point must have if need_all is False"
             lst_points = checking_point
         else:
-            lst_points = self.generate_movable_points(board, focus_range)
+            lst_points = self.generate_movable_point(board_rows, board_cols, board_contain_shapes, focus_range)
 
         for point in lst_points:
             to_del, to_add = self.__get_match3_for_point(
-                board, point, need_all=need_all
+                board_rows, board_cols, board_contain_shapes, point, need_all=need_all
             )
             if to_del:
                 matches.update(to_del)
@@ -607,17 +632,15 @@ class MatchesSearcher(AbstractSearcher):
                     break
         return matches, new_power_ups
 
-    def scan_board_for_matches_improve(self, board, need_all: bool = True, checking_point: list[Point] = []):
-        ...
-
-    def __get_match3_for_point(self, board: Board, point: Point, need_all: bool = True):
-        shape = board.get_valid_shape(*point.get_coord())
+    def __get_match3_for_point(self, board_rows, board_cols, board_contain_shapes, point: Point, need_all: bool = True):
+        shape = board_contain_shapes.__getitem__(point.get_coord())
         match3_list = []
         power_up_list: dict[Point, int] = {}
         early_stop = False
 
         for neighbours, length, idx in self.__generator_neighbours(
-            board, point, shape, early_stop, (not need_all)
+            board_rows, board_cols, board_contain_shapes,
+            point, shape, early_stop, (not need_all)
         ):
             if len(neighbours) == length:
                 match3_list.extend(neighbours)
@@ -639,7 +662,8 @@ class MatchesSearcher(AbstractSearcher):
 
     def __generator_neighbours(
         self,
-        board: Board,
+        board_rows, board_cols,
+        board_contain_shapes,
         point: Point,
         filter_shape,
         early_stop: bool = False,
@@ -647,26 +671,31 @@ class MatchesSearcher(AbstractSearcher):
     ):
         curRow, curCol = point.get_coord()
 
+        lst_cells = []
+
         for idx, axis_dirs in enumerate(self.normal_directions + self.plane_directions
                                         if only_2_matches else self.directions):
             newCells = []
             for dir_ in axis_dirs:
                 newRow, newCol = curRow + dir_[0], curCol + dir_[1]
-                if not board.is_valid_point(newRow, newCol):
-                    yield [], 0, -1
+                if not is_valid_point(newRow, newCol, board_rows, board_cols):
+                    lst_cells.append(([], 0, -1))
                     break
 
-                shape = board.get_valid_shape(newRow, newCol)
+                # Get shape from board
+                shape = board_contain_shapes.__getitem__((newRow, newCol))
                 if shape != filter_shape:
                     continue
 
                 cell = Cell(shape, newRow, newCol)
                 newCells.append(cell)
             else:
-                yield newCells, len(axis_dirs), idx
+                lst_cells.append((newCells, len(axis_dirs), idx))
 
             if early_stop:
                 break
+
+        return lst_cells
 
     @staticmethod
     def __filter_cells_by_shape(shape, cells):
@@ -1304,16 +1333,19 @@ class MovesSearcher(AbstractMovesSearcher, MatchesSearcher):
         possible_moves = set()
         not_have_pu = True
 
+        board_rows, board_cols = board.board_size
+        board_contain_shapes = board.board
+
         # check for powerup activation
         for cur_row, cur_col in board.power_points:
             # This point was valid in points generator -> get shape instantly
-            if board.get_valid_shape(cur_row, cur_col) in GameObject.set_powers_shape:
+            if board_contain_shapes.__getitem__((cur_row, cur_col)) in GameObject.set_powers_shape:
                 for direction in self.directions_gen():
                     new_row, new_col = cur_row + direction[0], cur_col + direction[1]
-                    if not board.is_valid_point(new_row, new_col):
+                    if not is_valid_point(new_row, new_col, board_rows, board_cols):
                         continue
 
-                    new_shape = board.get_valid_shape(new_row, new_col)
+                    new_shape = board_contain_shapes.__getitem__((new_row, new_col))
 
                     if new_shape in GameObject.set_unmovable_shape:
                         continue
@@ -1331,11 +1363,11 @@ class MovesSearcher(AbstractMovesSearcher, MatchesSearcher):
                     break
 
         if all_moves is True or (all_moves is False and not_have_pu):
-            for point in self.generate_movable_points(board):
+            for point in self.generate_movable_point(board_rows, board_cols, board_contain_shapes):
                 # This point was valid in points generator -> get shape instantly
                 cur_row, cur_col = point.get_coord()
 
-                if board.get_valid_shape(cur_row, cur_col) in GameObject.set_tiles_shape:
+                if board_contain_shapes.__getitem__((cur_row, cur_col)) in GameObject.set_tiles_shape:
                     possible_moves_for_point = self.__search_moves_for_point(
                         board, point, need_all=all_moves
                     )
@@ -1351,25 +1383,30 @@ class MovesSearcher(AbstractMovesSearcher, MatchesSearcher):
 
         possible_moves = set()
 
+        board_rows, board_cols = board.board_size
+        board_contain_shapes = board.board
+
         cur_row, cur_col = point.get_coord()
         for direction in self.directions_gen():
             new_row, new_col = cur_row + direction[0], cur_col + direction[1]
 
-            if not board.is_valid_point(new_row, new_col):
+            if not is_valid_point(new_row, new_col, board_rows, board_cols):
                 continue
 
-            new_shape = board.get_valid_shape(new_row, new_col)
+            new_shape = board_contain_shapes.__getitem__((new_row, new_col))
             if new_shape in GameObject.set_unmovable_shape:
                 continue
 
-            direction_point = Point(*direction)
-            board.move(point, direction_point)
+            board_contain_shapes[(cur_row, cur_col)], board_contain_shapes[(new_row, new_col)] \
+                = board_contain_shapes[(new_row, new_col)], board_contain_shapes[(cur_row, cur_col)]
+
             if need_all is False:
                 checking_point = [point, Point(new_row, new_col)]
             matches, _ = self.scan_board_for_matches(board, need_all=need_all, checking_point=checking_point)
 
             # inverse move
-            board.move(point, direction_point)
+            board_contain_shapes[(cur_row, cur_col)], board_contain_shapes[(new_row, new_col)] \
+                = board_contain_shapes[(new_row, new_col)], board_contain_shapes[(cur_row, cur_col)]
 
             if len(matches) > 0:
                 possible_moves.add((point, tuple(direction)))
