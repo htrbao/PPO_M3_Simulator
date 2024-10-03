@@ -146,9 +146,10 @@ def create_kwargs_class(width, height, monster_type, action):
                                         not (direction & SkillDefine.DIRECTION_UP), 
                                         not (direction & SkillDefine.DIRECTION_DOWN), 1]
         elif monster_type == SkillDefine.ACTION_ADD_SHIELD:
+            ratio = action.get("ratio", 0.5)
             kwargs["have_paper_box"] = True
-            kwargs["relax_interval"] = 2
-            kwargs["setup_interval"] = 1
+            kwargs["relax_interval"] = max(min(2 + min(int(math.ceil(2 / ratio)), 10) + np.random.randint(-1, 1), 15), 2)
+            kwargs["setup_interval"] = max(min(1 + min(int(math.ceil(1 / ratio)), 5) + np.random.randint(-1, 1), 8), 1)
         
     return kwargs
 
@@ -172,7 +173,8 @@ def create_monster(monster_infos, realm_level):
             })
             STATIC_MONSTERS[monster_type] += 1
         except Exception as e:
-            print(f"\t\t\tWARNING: realm level {realm_level} connot load monster")
+            # print(f"\t\t\tWARNING: realm level {realm_level} connot load monster")
+            continue
     return monsters
 
 
