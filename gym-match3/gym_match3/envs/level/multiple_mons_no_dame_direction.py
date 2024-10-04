@@ -20,8 +20,8 @@ MY_LEVEL = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(3, 5), width=2, height=2, hp=18 + base_hp, request_masked=[0, 1, 0, 0, 1]),
-            DameMonster(position=Point(6, 2), width=2, height=2, hp=18 + base_hp, request_masked=[1, 0, 0, 0, 1]),
+            DameMonster(position=Point(3, 5), width=2, height=2, hp=35 + base_hp, request_masked=[0, 1, 0, 0, 1]),
+            DameMonster(position=Point(6, 2), width=2, height=2, hp=35 + base_hp, request_masked=[1, 0, 0, 0, 1]),
         ],
     ),
     Level(
@@ -41,14 +41,14 @@ MY_LEVEL = [
             [0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, -1],
         ],
         [
-            DameMonster(position=Point(3, 3), width=2, height=2, hp=18 + base_hp, request_masked=[1, 0, 0, 0, 1]),
-            DameMonster(position=Point(8, 3), width=2, height=2, hp=18 + base_hp, request_masked=[1, 1, 0, 0, 1]),
+            DameMonster(position=Point(3, 3), width=2, height=2, hp=40 + base_hp, request_masked=[1, 0, 0, 0, 1]),
+            DameMonster(position=Point(8, 3), width=2, height=2, hp=30 + base_hp, request_masked=[1, 1, 0, 0, 1]),
         ],
     ),
     Level(
         10,
         9,
-        5,
+        4,
         [
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
@@ -62,13 +62,13 @@ MY_LEVEL = [
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
         ],
         [
-            DameMonster(position=Point(7, 3), width=2, height=2, hp=20 + base_hp, request_masked=[0, 1, 0, 0, 1]),
+            DameMonster(position=Point(7, 3), width=2, height=2, hp=45 + base_hp, request_masked=[0, 1, 0, 0, 1]),
         ],
     ),
     Level(
         10,
         9,
-        5,
+        4,
         [
             [-1, -1, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, 0, 0],
             [-1, -1, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, 0, 0],
@@ -82,14 +82,14 @@ MY_LEVEL = [
             [0, 0, 0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, -1, -1],
         ],
         [
-            DameMonster(position=Point(0, 2), width=2, height=2, hp=17 + base_hp),
-            DameMonster(position=Point(8, 5), width=2, height=2, hp=20 + base_hp),
+            DameMonster(position=Point(0, 2), width=2, height=2, hp=30 + base_hp),
+            DameMonster(position=Point(8, 5), width=2, height=2, hp=30 + base_hp),
         ],
     ),
     Level(
         10,
         9,
-        5,
+        4,
         [
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
             [0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0, -1],
@@ -103,14 +103,14 @@ MY_LEVEL = [
             [0, 0, 0, -1, -1, 0, 0, 0, -1],
         ],
         [
-            DameMonster(position=Point(1, 3), width=2, height=2, hp=10 + base_hp, request_masked=[1, 0, 1, 0, 1]),
-            DameMonster(position=Point(7, 3), width=2, height=2, hp=10 + base_hp, request_masked=[0, 1, 0, 1, 1]),
+            DameMonster(position=Point(1, 3), width=2, height=2, hp=25 + base_hp, request_masked=[1, 0, 1, 0, 1]),
+            DameMonster(position=Point(7, 3), width=2, height=2, hp=35 + base_hp, request_masked=[0, 1, 0, 1, 1]),
         ],
     ),
     Level(
         10,
         9,
-        5,
+        4,
         [
             [-1, -1, -1, -1, -1, -1, -1, -1, -1],
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -124,14 +124,14 @@ MY_LEVEL = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(3, 2), width=2, height=2, hp=15 + base_hp, request_masked=[1, 1, 0, 1, 1]),
-            DameMonster(position=Point(6, 5), width=2, height=2, hp=15 + base_hp, request_masked=[1, 1, 1, 0, 1]),
+            DameMonster(position=Point(3, 2), width=2, height=2, hp=25 + base_hp, request_masked=[1, 1, 0, 1, 1]),
+            DameMonster(position=Point(6, 5), width=2, height=2, hp=35 + base_hp, request_masked=[1, 1, 1, 0, 1]),
         ],
     ),
     Level(
         10,
         9,
-        5,
+        4,
         [
             [0, 0, 0, 0, 0, 0, 0, 0, -1],
             [0, 0, 0, 0, 0, 0, 0, 0, -1],
@@ -145,14 +145,14 @@ MY_LEVEL = [
             [-1, 0, 0, 0, 0, 0, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(3, 3), width=2, height=2, hp=10 + base_hp, request_masked=[1, 1, 1, 0, 1]),
-            DameMonster(position=Point(5, 4), width=2, height=2, hp=10 + base_hp, request_masked=[1, 1, 0, 1, 1]),
+            DameMonster(position=Point(3, 3), width=2, height=2, hp=30 + base_hp, request_masked=[1, 1, 1, 0, 1]),
+            DameMonster(position=Point(5, 4), width=2, height=2, hp=25 + base_hp, request_masked=[1, 1, 0, 1, 1]),
         ],
     ),
     Level(
         10,
         9,
-        5,
+        4,
         [
             [0, 0, 0, 0, -1, 0, 0, 0, 0],
             [0, 0, 0, 0, -1, 0, 0, 0, 0],
@@ -166,7 +166,7 @@ MY_LEVEL = [
             [0, 0, 0, GameObject.monster_dame, GameObject.monster_dame, GameObject.monster_dame, 0, 0, 0],
         ],
         [
-            DameMonster(position=Point(7, 3), width=3, height=3, hp=40 + base_hp, request_masked=[1, 1, 0, 0, 1]),
+            DameMonster(position=Point(7, 3), width=3, height=3, hp=55 + base_hp, request_masked=[1, 1, 0, 0, 1]),
         ],
     ),
 ]
