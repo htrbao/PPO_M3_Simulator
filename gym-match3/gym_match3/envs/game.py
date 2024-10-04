@@ -1683,6 +1683,8 @@ class Game(AbstractGame):
         near_monster = 100
         cancel_score = 0
         create_pu_score = 0
+        rate_match_dmg = 0
+        rate_power_dmg = 0
         total_match_dmg = 0
         total_power_dmg = 0
         dmg = 0
@@ -1696,8 +1698,8 @@ class Game(AbstractGame):
         for i in range(len(self.list_monsters)):
             near_monster = min(near_monster, point.euclidean_distance(self.list_monsters[i]._position))
             match_damage, pu_damage = self.list_monsters[i].get_dame(matches, inside_brokens, disco_brokens)
-            # total_match_dmg += match_damage / self.list_monsters[i]._origin_hp
-            # total_power_dmg += pu_damage / self.list_monsters[i]._origin_hp
+            rate_match_dmg += match_damage / self.list_monsters[i]._origin_hp
+            rate_power_dmg += pu_damage / self.list_monsters[i]._origin_hp
             total_match_dmg += match_damage
             total_power_dmg += pu_damage
             score -= pu_damage
@@ -1752,6 +1754,8 @@ class Game(AbstractGame):
             "cancel_score": cancel_score,
             "near_monster": near_monster,
             "create_pu_score": create_pu_score,
+            "rate_match_damage_on_monster": rate_match_dmg,
+            "rate_power_damage_on_monster": rate_power_dmg,
             "match_damage_on_monster": total_match_dmg,
             "power_damage_on_monster": total_power_dmg,
             "damage_on_user": self_dmg,
