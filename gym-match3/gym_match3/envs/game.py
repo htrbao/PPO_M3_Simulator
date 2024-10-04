@@ -103,7 +103,7 @@ class Cell(Point):
 
     @property
     def point(self):
-        return self
+        return Point(*self.get_coord())
 
     def __eq__(self, other):
         if isinstance(other, Point):
