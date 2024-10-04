@@ -53,22 +53,22 @@ def draw_line(df, X, Y, title, ax):
 def draw_plot(df):
     realms = list(df.values())[0]['realm_id'].unique().tolist()
     with st.container():
-        ratio = (14,4)
-        fig, axes  = plt.subplots(1, 4, figsize=ratio, sharey=True, )
+        ratio = (14,8)
+        fig, axes  = plt.subplots(2, 2, figsize=ratio, sharey=True, )
         
-        draw_line(df, X=realms, Y='win_rate', title="Win rate", ax = axes[0])
+        draw_line(df, X=realms, Y='win_rate', title="Win rate", ax = axes[0, 0])
 
-        draw_line(df, X=realms, Y='hit_rate', title="Hit rate", ax = axes[1])
-        fig.subplots_adjust(hspace=0.1, wspace =0.1)
+        draw_line(df, X=realms, Y='hit_rate', title="Hit rate", ax = axes[0, 1])
+        fig.subplots_adjust(hspace=0.2, wspace =0.01)
         fig.legend(list(df.keys()), loc='upper center', bbox_to_anchor=(0.5, 0.01),
             fancybox=True, shadow=True, ncol=1)
         # fig.set_dpi(300)
         # st.pyplot(fig, use_container_width=False)
         
         # fig, axes  = plt.subplots(1, 2, figsize=ratio, sharey=True)
-        draw_line(df, X=realms, Y='remain_hp_monster', title="Remaining HP of Monster", ax = axes[2])
+        draw_line(df, X=realms, Y='remain_hp_monster', title="Remaining HP of Monster", ax = axes[1, 0])
 
-        draw_line(df, X=realms, Y='avg_damage_per_hit', title="AVG Damage per Hit", ax = axes[3])
+        draw_line(df, X=realms, Y='avg_damage_per_hit', title="AVG Damage per Hit", ax = axes[1, 1])
         # fig.subplots_adjust(hspace=0.1, wspace =0.1)
         # fig.legend(list(df.keys()), loc='upper center', bbox_to_anchor=(0.5, 0.01),
         #     fancybox=True, shadow=True, ncol=1)

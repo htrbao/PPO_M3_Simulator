@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import numpy as np
 from matplotlib import ticker
 from test.level_generate import get_real_levels
@@ -47,13 +48,13 @@ def draw_line(x_axis, y_axis, color, label):
     return fig
 
 def draw_bar(df, realm):
-    fig, ax = plt.subplots(figsize=(20, 7))
+    fig, ax = plt.subplots(4, 1, figsize=(20, 9), sharex=True)
     sub_df = df[df['realm_id'] == realm]
     sub_df.loc[:, "win_rate"] = sub_df["win_rate"] * 100
     sub_df.loc[:, "hit_rate"] = sub_df["hit_rate"] * 100
     sub_df.loc[:, "remain_hp_monster"] = sub_df["remain_hp_monster"] * 100
     # sub_df.plot.bar(x='node_id', y='win_rate', figsize=(10, 5), title=f"Realm {realm} Win Rate", ax=ax, rot=60)
-    axes = sub_df.plot.bar(x='node_id', y=['win_rate', 'hit_rate', 'remain_hp_monster'], subplots=True, ax=ax, rot=65, title=f"Realm {realm}", sharex=True)
+    axes = sub_df.plot.bar(x='node_id', y=['win_rate', 'hit_rate', 'remain_hp_monster'], subplots=True, ax=ax[0: 3], rot=65, title=f"Realm {realm}")
     for axs in axes:
         axs.yaxis.set_major_formatter(ticker.PercentFormatter())
         axs.set_ylim([0, 100])
@@ -64,10 +65,48 @@ def draw_bar(df, realm):
                                 bar.get_height()), ha='center', va='center',
                             xytext=(0, 8),
                             textcoords='offset points')
+    draw_bar_monster(sub_df, realm, ax[3])
     return fig
+
+
+def draw_bar_monster(df, realm, ax):
+    
+    colors = ['g' if m >= 0 else 'r' for m in df['max_step_&_monster_hp'].tolist()]
+    ax = df.plot.bar(x='node_id', y='max_step_&_monster_hp', ax=ax, rot=65, title=f"Difference between Max Step and Monster HP", color=colors)
+    pa1 = Patch(facecolor='red')
+    pa2 = Patch(facecolor='green')
+    ax.legend(handles=[pa1, pa2], labels=["", "difference_max_step_&_monster_hp"],loc='best', ncol=2, handletextpad=0.5, handlelength=1.0, columnspacing=-0.5,)
+
+    for bar in ax.patches:
+        if bar.get_height() < 0:
+            ax.annotate(str(format(bar.get_height(), '.0f')), 
+                        (bar.get_x() + bar.get_width() / 2, 
+                            bar.get_height()), ha='center', va='center',
+                        xytext=(0, -8),
+                        textcoords='offset points')
+        else:
+            ax.annotate(str(format(bar.get_height(), '.0f')), 
+                        (bar.get_x() + bar.get_width() / 2, 
+                            bar.get_height()), ha='center', va='center',
+                        xytext=(0, 8),
+                        textcoords='offset points')
+    ax.annotate("Higher is easier to win the level.",
+            xy = (0.5, -0.4),
+            xycoords='axes fraction',
+            ha='center',
+            va="center",
+            fontsize=13)
+
+
+
+# with st.container():
+    # realms = df['realm_id'].unique().tolist()
+    # st.header("", divider=True)
+
     
 def draw_plot(df):
     realms = df['realm_id'].unique().tolist()
+
     with st.container():
         col1, col2, col3, col4 = st.columns(4)
         fig = draw_line(x_axis=np.arange(len(realms)), y_axis=(df.groupby(by=['realm_id'])['win_rate'].mean() * 100).round(1).tolist(), color="blue", label="Win rate")
@@ -86,6 +125,10 @@ def draw_plot(df):
         with col4:
             st.pyplot(fig)
     st.header("Realm Win Rate")
+    
+    level_df = st.session_state['level']
+    level_df['max_step_&_monster_hp'] = level_df.apply(lambda row: row['max_step'] - sum([mon['kwargs']['hp'] for mon in row['monsters']]), axis=1)
+    df = pd.merge(df, level_df, on=['realm_id', 'node_id'], how="inner")
     for realm in realms:
         with st.columns([1,8, 1])[1]:
             if f'realm_{realm}' not in st.session_state:

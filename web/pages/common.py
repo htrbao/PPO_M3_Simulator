@@ -170,14 +170,23 @@ with st.container():
     st.header("Monster Statistic", divider=True)
     realms = []
     monster_data = {v: [] for v in ID2MONS.values()}
+    monster_data_total = {v: 0 for v in ID2MONS.values()}
+    total_monsters = 0
     avg_monster_per_realm = []
     for realm, data in statistic_data.items():
         realms.append(f"realm {realm}")
         total_monster = sum(data["monsters"].values())
+        total_monsters += total_monster
         avg_monster_per_realm.append(total_monster / data["num_levels"])
         for k, v in data["monsters"].items():
             monster_data[ID2MONS[k]].append(v*100/total_monster)
-            
+            monster_data_total[ID2MONS[k]] += v
+    
+    
+    realms.append("total")
+    avg_monster_per_realm.append(total_monsters / len(st.session_state['level']))
+    for k, v in monster_data_total.items():
+        monster_data[k].append(v*100/total_monsters)
     width = 0.5
     fig, ax = plt.subplots(figsize=(5, 4))
     ax2 = ax.twinx()
@@ -200,6 +209,52 @@ with st.container():
     ax2.plot(ax.get_xticks(), avg_monster_per_realm, color="black")
     with st.columns([1,4,1])[1]:
         st.pyplot(fig, use_container_width=False)
+
+
+def draw_bar(df, realm):
+    fig, ax = plt.subplots(figsize=(20, 7))
+    sub_df = df[df['realm_id'] == realm]
+    
+    colors = ['g' if m >= 0 else 'r' for m in sub_df['max_step_&_monster_hp'].tolist()]
+    ax = sub_df.plot.bar(x='node_id', y='max_step_&_monster_hp', ax=ax, rot=65, title=f"Realm {realm}", color=colors,edgecolor='black')
+    ax.get_legend().remove()
+    for bar in ax.patches:
+        if bar.get_height() < 0:
+            ax.annotate(str(format(bar.get_height(), '.0f')), 
+                        (bar.get_x() + bar.get_width() / 2, 
+                            bar.get_height()), ha='center', va='center',
+                        xytext=(0, -8),
+                        textcoords='offset points')
+        else:
+            ax.annotate(str(format(bar.get_height(), '.0f')), 
+                        (bar.get_x() + bar.get_width() / 2, 
+                            bar.get_height()), ha='center', va='center',
+                        xytext=(0, 8),
+                        textcoords='offset points')
+    ax.annotate("Higher is easier to win the level.",
+            xy = (0.5, -0.15),
+            xycoords='axes fraction',
+            ha='center',
+            va="center",
+            fontsize=15)
+    return fig
+
+
+with st.container():
+    df = st.session_state['level']
+    realms = df['realm_id'].unique().tolist()
+    df['max_step_&_monster_hp'] = df.apply(lambda row: row['max_step'] - sum([mon['kwargs']['hp'] for mon in row['monsters']]), axis=1)
+    st.header("Difference between Max Step and Monster HP", divider=True)
+    
+    for realm in realms:
+        with st.columns([1,8, 1])[1]:
+            if f'common_realm_{realm}' not in st.session_state:
+                fig = draw_bar(df, realm)
+                st.session_state[f'common_realm_{realm}'] = fig
+            else:
+                fig = st.session_state[f'common_realm_{realm}']
+            st.pyplot(fig, use_container_width=False)
+    pass
 
 with st.container():
 
@@ -225,5 +280,6 @@ with st.container():
                 else:
                     fig = st.session_state[f'realm_{realm}_monster']
                 st.pyplot(fig)
-                
+
+# print(st.session_state['level'])
     

@@ -292,8 +292,8 @@ class RolloutBuffer(BaseBuffer):
             ) / np.sqrt(10 * 10 + 9 * 9)
 
             _reward = (
-                reward["match_damage_on_monster"] * 1.5
-                + reward["power_damage_on_monster"] * 1.5
+                reward["match_damage_on_monster"] * 0.1
+                + reward["power_damage_on_monster"] * 0.1
                 + reward["create_pu_score"] * 0.1
                 + (reward["score"] * 0.01)
                 * near_monster
@@ -306,7 +306,7 @@ class RolloutBuffer(BaseBuffer):
                 _reward += 0.3
 
             if reward["create_pu_score"] <= 0:
-                _reward -= 0.05
+                _reward -= 0.15
                 
             _reward = np.clip(_reward, -5, 5)
 

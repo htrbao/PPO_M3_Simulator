@@ -183,6 +183,7 @@ with st.container():
             map = df[(df['realm_id'] == realm_id) & (df['node_id'] == node_id)]
             map = map.reset_index()
             level = map.at[0, 'level']
+            monsters = map.at[0, 'monsters']
             max_step = map.at[0,'max_step']
             colors = [(0.7, 0.7, 0.7), (0, 0, 0), (1, 0, 0), (1, 0, 0)]  # White, Black, Red
             values = [0, 1/15, 14/15, 1]  # Mapping values (0 for white, 1 for black, 15 or more for red)
@@ -198,4 +199,4 @@ with st.container():
             st.subheader(f"Max step: {max_step}")
             st.subheader(f"Num tile: {level.n_shapes}")
             st.subheader(f"Monsters:")
-            st.write("\n".join([f"{id+1}. " + str(mons) for id, mons in enumerate(level.list_monsters)]))
+            st.write(monsters)
