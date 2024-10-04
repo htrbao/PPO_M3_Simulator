@@ -89,7 +89,10 @@ def process_map(map_str, monsters, monster_max_hp, num_tiles):
     if monster_ids_start.shape[0]!= len(monsters):
         raise Exception("Cannot find suitable starting points for monsters")
 
+    total_monster_hp = sum([monster_info['monster_hp'] for monster_info in monsters])
+
     for monster_id, monster_info in zip(monster_ids_start, monsters):
+        monster_hp = monster_info['monster_hp']
         monster_create = monster_info['monster_create']
         kwargs = monster_info['kwargs']
         monster_height = kwargs["height"] - 1
@@ -101,7 +104,7 @@ def process_map(map_str, monsters, monster_max_hp, num_tiles):
         kwargs["position"] = Point(
             monster_id_start[0], 
             monster_id_start[1])
-        kwargs["hp"] = monster_max_hp
+        kwargs["hp"] = int(monster_max_hp * monster_hp / total_monster_hp)
         monster_list.append(
             monster_create["class"](**kwargs)
         )
@@ -153,6 +156,7 @@ def create_kwargs_class(width, height, monster_type, action):
         
     return kwargs
 
+
 def create_monster(monster_infos, realm_level):
     monsters = []
 
@@ -162,6 +166,7 @@ def create_monster(monster_infos, realm_level):
             monster_id = str(monster_id)
 
             name, _, _, width, height, stats, stateInfos = MONSTERS_CONFIG[monster_id].values()
+            monster_hp = int(stats[0]['maxHp'])
             monster_type, action = get_skill_monster(stateInfos)
             monster_create = MONSTER_CREATE[monster_type]
 
@@ -172,6 +177,7 @@ def create_monster(monster_infos, realm_level):
                 "name": name,
                 "monster_create": monster_create,
                 "kwargs": kwargs,
+                "monster_hp": monster_hp,
             })
             STATIC_MONSTERS[monster_type] += 1
         except Exception as e:
