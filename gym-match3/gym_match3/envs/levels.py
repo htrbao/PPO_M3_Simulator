@@ -199,14 +199,14 @@ for x in range(0, 9):
                 Level(
                     10,
                     9,
-                    5,
+                    4,
                     copy.deepcopy(easy_board),
                     [
                         DameMonster(
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
+                            hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 30) + base_hp,
                             request_masked=[1, 1, 1, 1, 0],
                         )
                     ],
@@ -216,14 +216,14 @@ for x in range(0, 9):
                 Level(
                     10,
                     9,
-                    5,
+                    4,
                     copy.deepcopy(easy_board),
                     [
                         DameMonster(
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(7 if (x == 0 or y == 0 or x == 8 or y == 7) else 15) + base_hp,
+                            hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 30) + base_hp,
                             request_masked=[0, 0, 0, 0, 1],
                         )
                     ],
