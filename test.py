@@ -41,6 +41,8 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
     __num_win_games = 0
     __num_damage = 0
     __num_hit = 0
+    __dmg_match = 0
+    __dmg_pu = 0
     __total_step = 0
     __remain_mons_hp = 0
     total_monster_hp =  sum([m['kwargs']['hp'] for m in env['monsters']])
@@ -70,9 +72,11 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
         obs, rewards, dones, infos = envs.step(actions)
         for id, (done, reward) in enumerate(zip(dones, rewards)):
             if not check_dones[id]:
-                total_dmg = reward["match_damage_on_monster"] + reward["power_damage_on_monster"]
+                total_dmg = reward["rate_match_damage_on_monster"] + reward["rate_power_damage_on_monster"]
                 __num_damage += total_dmg
                 __num_hit += 0 if total_dmg == 0 else 1
+                __dmg_match += reward["rate_match_damage_on_monster"]
+                __dmg_pu += reward["rate_power_damage_on_monster"]
                 __total_step += 1
                 if "game" in reward.keys():
                     if reward["game"] > 0:
@@ -97,6 +101,8 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
         "num_win_games": __num_win_games,
         "num_hit": __num_hit,
         "total_damage": __num_damage,
+        "total_damage_pu": __dmg_pu,
+        "total_damage_match": __dmg_match,
         "total_step": __total_step,
         "avg_damage_per_hit": __num_damage / __num_hit,
         "hit_rate": __num_hit / __total_step,
