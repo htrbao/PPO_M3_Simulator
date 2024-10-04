@@ -11,9 +11,9 @@ from . import (
 )
 
 ALL_LEVELS = [
-    *less_color_large_size.MY_LEVEL,
-    *color_5_tanky.MY_LEVEL,
-    *corners.MY_LEVEL,
+    # *less_color_large_size.MY_LEVEL,
+    # *color_5_tanky.MY_LEVEL,/
+    # *corners.MY_LEVEL,
     *with_obstacle.MY_LEVEL,
     *multiple_mons.MY_LEVEL,
     *no_dame_direction_yes_pu.MY_LEVEL,
