@@ -155,6 +155,7 @@ def create_kwargs_class(width, height, monster_type, action):
 
 def create_monster(monster_infos, realm_level):
     monsters = []
+    ratio = 1.35
     for monster_info in monster_infos:
         try:            
             monster_id, level, _ = monster_info.values()
@@ -163,6 +164,8 @@ def create_monster(monster_infos, realm_level):
             name, _, _, width, height, stats, stateInfos = MONSTERS_CONFIG[monster_id].values()
             monster_type, action = get_skill_monster(stateInfos)
             monster_create = MONSTER_CREATE[monster_type]
+            if monster_type == SkillDefine.ACTION_ADD_SHIELD:
+                ratio = 1.7
             
             kwargs = create_kwargs_class(width, height, monster_type, action)
             
@@ -175,7 +178,7 @@ def create_monster(monster_infos, realm_level):
         except Exception as e:
             # print(f"\t\t\tWARNING: realm level {realm_level} connot load monster")
             continue
-    return monsters
+    return ratio, monsters
 
 
 def get_map_infos(realm_info: dict, hit_rate: float = 0.5):
@@ -191,7 +194,7 @@ def get_map_infos(realm_info: dict, hit_rate: float = 0.5):
 
         monster_max_hp = get_monster_max_hp(realm_id=realm_id, node_id=realm_node)
 
-        monsters = create_monster(realm_level_phase_monster, realm_level)
+        ratio, monsters = create_monster(realm_level_phase_monster, realm_level)
         max_step = get_player_hp(realm_id, monsters)
 
         if len(monsters) == 0:
@@ -206,7 +209,7 @@ def get_map_infos(realm_info: dict, hit_rate: float = 0.5):
             "node_id": realm_node,
             "level_id": realm_level,
             "level": processed_map,
-            "max_step": max_step,
+            "max_step": max(max_step, int(monster_max_hp*ratio*0.75 + max_step*0.35)),
             "monsters": monsters
         }
     except Exception as e:
