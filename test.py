@@ -4,7 +4,9 @@ import argparse
 import json
 import time
 import os
-
+import math
+import sys
+from copy import deepcopy
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels
 from test.level_generate import get_real_levels
@@ -16,25 +18,59 @@ from training.common.policies import (
     ActorCriticCnnPolicy
 )
 from training.common.utils import obs_as_tensor
-from training.common.vec_env import SubprocVecEnv
 
-
-def make_env(levels, max_step, obs_order):
-    def _init():
-        env = Match3Env(
-            max_step,
-            obs_order=obs_order,
-            levels=Match3Levels([levels]),
-            
-        )
-        return env
-
-    return _init
+def eval_single_loop(envs, model, device, max_step, total_monster_hp):
+    __num_damage = 0
+    __num_hit = 0
+    __dmg_match = 0
+    __dmg_pu = 0
+    __num_win_games = 0
+    __remain_mons_hp = 0
+    current_step = 0
+    obs, infos = envs.reset()
+    while(current_step < max_step):
+        with torch.no_grad():
+            action_space = infos['action_space']
+            obs_tensor = obs_as_tensor(obs, device)
+            action_space = obs_as_tensor(action_space, device)
+            actions, values, log_probs = model(obs_tensor, action_space)
+        actions = actions.cpu().numpy()[0]
+        
+        obs, reward, done, infos = envs.step(actions)
+        total_dmg = reward["rate_match_damage_on_monster"] + reward["rate_power_damage_on_monster"]
+        __num_damage += total_dmg
+        __num_hit += 0 if total_dmg == 0 else 1
+        __dmg_match += reward["rate_match_damage_on_monster"]
+        __dmg_pu += reward["rate_power_damage_on_monster"]
+        current_step += 1
+        if "game" in reward.keys():
+            if reward["game"] > 0:
+                __num_win_games += 1
+            elif reward["game"] < 0: 
+                __remain_mons_hp += reward["hp_mons"] / total_monster_hp
+            break
+        if done:
+            break
+    return {
+        "__num_damage": __num_damage, 
+        "__num_hit": __num_hit, 
+        "__dmg_match": __dmg_match, 
+        "__dmg_pu": __dmg_pu, 
+        "__num_win_games": __num_win_games, 
+        "__remain_mons_hp": __remain_mons_hp,
+        "current_step": current_step
+        }
 
 def eval(model, obs_order, env, device, store_dir, num_eval=5):
-    model = model.to(device)
-    level = env['level']
     max_step = env['max_step']
+    level = deepcopy(env['level'])
+
+    envs = Match3Env(
+        max_step,
+        obs_order=obs_order,
+        random_state=13,
+        levels=Match3Levels([level]),
+    )
     for i in range(len(env['monsters'])):
         env['monsters'][i].pop('monster_create')
         env['monsters'][i]['kwargs']['position'] = str(env['monsters'][i]['kwargs']['position'])
@@ -48,49 +84,18 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
     total_monster_hp =  sum([m['kwargs']['hp'] for m in env['monsters']])
     start_time = time.time()
 
-    envs = SubprocVecEnv(
-            [
-                make_env(level, max_step, obs_order)
-                for _ in range(num_eval)
-            ]
-        )
 
-    current_step = 0
-    obs = envs.reset()
-    action_space = np.stack([x["action_space"] for x in envs.reset_infos])
-    
-    check_dones = [0] * num_eval
-    while(current_step < max_step):
-        with torch.no_grad():
-            obs_tensor = obs_as_tensor(obs, device)
-            action_space = obs_as_tensor(action_space, device)
 
-            actions, values, log_probs = model(obs_tensor, action_space)
-            
-        actions = actions.cpu().numpy()
-
-        obs, rewards, dones, infos = envs.step(actions)
-        for id, (done, reward) in enumerate(zip(dones, rewards)):
-            if not check_dones[id]:
-                total_dmg = reward["rate_match_damage_on_monster"] + reward["rate_power_damage_on_monster"]
-                __num_damage += total_dmg
-                __num_hit += 0 if total_dmg == 0 else 1
-                __dmg_match += reward["rate_match_damage_on_monster"]
-                __dmg_pu += reward["rate_power_damage_on_monster"]
-                __total_step += 1
-                if "game" in reward.keys():
-                    if reward["game"] > 0:
-                        __num_win_games += 1
-                    elif reward["game"] < 0: 
-                        __remain_mons_hp += reward["hp_mons"] / total_monster_hp
-            if done:
-                check_dones[id] = 1
-        if all(check_dones):
-            break
-        current_step += 1
-        action_space = np.stack([x["action_space"] for x in infos])
-    envs.close()
-    
+    for i in range(num_eval):
+        stat = eval_single_loop(envs, model, device, max_step, total_monster_hp)
+        __num_damage += stat['__num_damage']
+        __num_hit += stat['__num_hit']
+        __dmg_match += stat['__dmg_match']
+        __dmg_pu += stat['__dmg_pu']
+        __num_win_games += stat['__num_win_games']
+        __remain_mons_hp += stat['__remain_mons_hp']
+        __total_step += stat['current_step']
+        
     result = {
         "realm_id": env['realm_id'],
         "node_id": env['node_id'],
@@ -118,16 +123,22 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
 
 def normal_eval(model, obs_order, device, num_eval, REAL_LEVELS, store_dir):
     results = []
+    model = model.to(device)
     for level in REAL_LEVELS:
         results.append(eval(model, obs_order, level, device, store_dir, num_eval))
     return results
     
-def wrapper_eval(queue, model, device, rank, len_group, obs_order, num_eval, REAL_LEVELS, store_dir):
+def wrapper_eval(queue, model, device, len_group, obs_order, num_eval, REAL_LEVELS, store_dir, num_processes):
+    torch.set_num_threads(math.floor(os.cpu_count()/num_processes))
     model = model.to(device)
     results = []
-    for level in REAL_LEVELS[rank*len_group:(rank+1)*len_group]:
-        results.append(eval(model, obs_order, level, device, store_dir, num_eval))
-    queue.extend(results)
+    levels = deepcopy(REAL_LEVELS[len_group[0]: len_group[1]])
+    for level in levels:
+        result = eval(model, obs_order, level, device, store_dir, num_eval)
+        queue.put(result)
+    
+    print(f"done {len_group}")
+
     
     
 def write_csv(results, store_dir, sep=','):
@@ -188,27 +199,34 @@ def main():
     
     
     model = ActorCriticCnnPolicy.load(args.checkpoint) if args.model_type == 'cnn' else ActorCriticPolicy.load(args.checkpoint)
-    # model = model.to(device)
+
     model.share_memory()
     results = []
     REAL_LEVELS = get_real_levels(True)
     if num_processes > 0:
-        queue = manager.list()
+        queue = manager.Queue()  # Use manager.Queue() instead of manager.list()
         processes = []
+        len_group = len(REAL_LEVELS) // num_processes
         for rank in range(num_processes):
-            len_group = len(REAL_LEVELS) // num_processes
-            p = mp.Process(target=wrapper_eval, args=(queue, model, device, rank, len_group, obs_order, num_eval, REAL_LEVELS, store_dir))
+            first_len_group = rank * len_group
+            if rank == (num_processes - 1):
+                last_len_group = len(REAL_LEVELS)
+            else:
+                last_len_group = (rank+1)*len_group
+            p = mp.Process(target=wrapper_eval, args=(queue, model, device, (first_len_group, last_len_group), obs_order, num_eval, REAL_LEVELS, store_dir, num_processes))
             p.start()
             processes.append(p)
-            
+
         for p in processes:
             p.join()
-        
+
+        # Gather results from the queue
         results = []
-        for item in queue:
-            results.append(item)
+        while not queue.empty():
+            results.append(queue.get())  # Combine results from all processes
     else:
         results = normal_eval(model, obs_order, device, num_eval, REAL_LEVELS, store_dir)
+
     
     
     with open(os.path.join(store_dir, 'final_result.json'), 'w') as f:

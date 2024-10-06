@@ -22,6 +22,8 @@ from test.global_config import (
 from gym_match3.envs.game import Point
 from gym_match3.envs.constants import Level, GameObject
 
+np.random.seed(13)
+
 def get_monster_max_hp(realm_id, node_id):
     try:
         level_info = LEVEL_MATCH.loc[LEVEL_MATCH.RealmID.eq(realm_id) & LEVEL_MATCH.Node.eq(node_id)].reset_index()
@@ -80,7 +82,6 @@ def process_map(map_str, monsters, monster_max_hp, num_tiles):
     monster_list = []
     # print(map_str)
     processed_map = np.array([list(row) for row in map_str])
-    monster_max_hp = monster_max_hp / len(monsters)
     
     monster_ids_start = np.transpose(np.nonzero(processed_map == MONSTER_ID))
     processed_map = np.where(processed_map == NONTILE, -1, 0)

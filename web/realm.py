@@ -106,6 +106,7 @@ def draw_bar_monster(df, realm, ax):
     
 def draw_plot(df):
     realms = df['realm_id'].unique().tolist()
+    realms = sorted(realms)
 
     with st.container():
         col1, col2, col3, col4 = st.columns(4)
