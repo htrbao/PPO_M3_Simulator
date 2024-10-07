@@ -199,7 +199,8 @@ def main():
     
     
     model = ActorCriticCnnPolicy.load(args.checkpoint) if args.model_type == 'cnn' else ActorCriticPolicy.load(args.checkpoint)
-
+    model = model.cpu()
+    model.eval()
     model.share_memory()
     results = []
     REAL_LEVELS = get_real_levels(True)
