@@ -183,13 +183,15 @@ def check_availability_dec(func):
 class Board(AbstractBoard):
     """board for match3 game"""
 
-    def __init__(self, rows, columns, n_shapes, immovable_shape=-1):
+    def __init__(self, rows, columns, n_shapes, immovable_shape=-1, random_state=None):
         self.__rows = rows
         self.__columns = columns
         self.__n_shapes = n_shapes
         self.__immovable_shape = immovable_shape
         self.__board = None  # np.ndarray
         self.power_points = set()
+        self.__random_state = random_state
+        np.random.seed(self.__random_state)
 
         if 0 <= immovable_shape < n_shapes:
             raise ValueError("Immovable shape has to be less or greater than n_shapes")
@@ -237,7 +239,6 @@ class Board(AbstractBoard):
     def shuffle(self, random_state=None):
         moveable_mask = self.board != self.immovable_shape
         board_ravel = self.board[moveable_mask]
-        np.random.seed(random_state)
         np.random.shuffle(board_ravel)
         self.put_mask(moveable_mask, board_ravel)
 
@@ -393,8 +394,6 @@ class RandomBoard(Board):
 
     def set_random_board(self, random_state=None):
         board_size = self.board_size
-
-        np.random.seed(random_state)
         board = np.random.randint(
             low=GameObject.color1, high=self.n_shapes + 1, size=board_size
         )
@@ -1427,6 +1426,7 @@ class Filler(AbstractFiller):
 
     def __init__(self, random_state=None):
         self.__random_state = random_state
+        np.random.seed(self.__random_state)
 
     def move_and_fill(self, board: Board):
         self.__move_nans(board)
@@ -1472,7 +1472,6 @@ class Filler(AbstractFiller):
         is_nan_mask = np.isnan(board.board)
         num_of_nans = is_nan_mask.sum()
 
-        np.random.seed(self.__random_state)
         new_shapes = np.random.randint(
             low=GameObject.color1, high=board.n_shapes + 1, size=num_of_nans
         )
@@ -1531,7 +1530,7 @@ class Game(AbstractGame):
         immovable_shape=-1,
         random_state=None,
     ):
-        self.board = Board(rows=rows, columns=columns, n_shapes=n_shapes)
+        self.board = Board(rows=rows, columns=columns, n_shapes=n_shapes, random_state=random_state)
         self.__max_player_hp = player_hp
         self.__player_hp = player_hp
         self.__random_state = random_state
@@ -1816,7 +1815,7 @@ class Game(AbstractGame):
         possible_moves = self.__get_possible_moves()
         while len(possible_moves) == 0:
             print("not have move")
-            self.board.shuffle(self.__random_state)
+            self.board.shuffle()
             self.__scan_del_mvnans_fill_until()
             possible_moves = self.__get_possible_moves()
         return self
@@ -1829,6 +1828,6 @@ class RandomGame(Game):
 
     def start(self, random_state=None, *args, **kwargs):
         rows, cols = self.board.board_size
-        tmp_board = RandomBoard(rows, cols, self.board.n_shapes)
+        tmp_board = RandomBoard(rows, cols, self.board.n_shapes, random_state)
         tmp_board.set_random_board(random_state=random_state)
         super().start(tmp_board.board)
