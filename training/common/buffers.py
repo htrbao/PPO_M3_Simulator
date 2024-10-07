@@ -299,14 +299,11 @@ class RolloutBuffer(BaseBuffer):
                 * near_monster
                 + reward.get("game", 0)
             )
-            
-            if total_dmg <= 0:
-                _reward -= 0.2
+
+            if reward["create_pu_score"] <= 0 and total_dmg <= 0:
+                _reward -= 0.5
             else:
                 _reward += 0.3
-
-            if reward["create_pu_score"] <= 0:
-                _reward -= 0.15
                 
             _reward = np.clip(_reward, -5, 5)
 
