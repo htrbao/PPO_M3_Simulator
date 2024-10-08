@@ -1155,7 +1155,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                         tmp_prev_point = tmp_cur_point
                                     else:
                                         break
-                                for i in range(1, 5):
+                                for _ in range(1, 5):
                                     tmp_prev_point = prev_point
                                     tmp_cur_point = tmp_prev_point + Point(0, j)
                                     if not self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
