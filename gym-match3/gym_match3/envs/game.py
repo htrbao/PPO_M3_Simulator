@@ -351,7 +351,7 @@ class Board(AbstractBoard):
                 ).T.tolist()
             )
         self.__board[coordinates] = np.nan
-        print("DELETE: ", self.__board)
+        # print("DELETE: ", self.__board)
         return self
 
     def get_line(self, ind, axis=1):
