@@ -295,18 +295,15 @@ class RolloutBuffer(BaseBuffer):
                 reward["match_damage_on_monster"] * 0.1
                 + reward["power_damage_on_monster"] * 0.1
                 + reward["create_pu_score"] * 0.1
-                + (reward["score"] * 0.01)
-                * near_monster
+                + reward["score"] * 0.005
+                + 0.05 * (near_monster if (near_monster > 0.5) else 0)
                 + reward.get("game", 0)
             )
-            
-            if total_dmg <= 0:
-                _reward -= 0.2
-            else:
-                _reward += 0.3
 
-            if reward["create_pu_score"] <= 0:
-                _reward -= 0.15
+            if reward["create_pu_score"] <= 0 and total_dmg <= 0:
+                _reward -= 0.5
+            else:
+                _reward += 0.2
                 
             _reward = np.clip(_reward, -5, 5)
 

@@ -3,14 +3,12 @@ CUDA_VISIBLE_DEVICES=1 python training.py \
     --strategy milestone \
     --pi 256 128 128 128 128 128 128 128 128 128 \
     --vf 4096 256 256 256 256 256 256 256 256 256 \
-    --kernel_size 3 \
-    --mid_channels 64 \
-    --num_first_cnn_layer 3 \
+    --num_heads 2 \
     --n_steps 131072 \
     --batch_size 1024 \
     --lr 0.000012 \
     --gamma 0.985 \
-    --num_envs 32 \
+    --num_envs 64 \
     --wandb
 
 # REMEMBER TO CHANGE LOGIC OF HELPER
