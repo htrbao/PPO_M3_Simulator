@@ -710,6 +710,7 @@ class AbstractMonster(ABC):
         width: int = 1,
         height: int = 1,
         have_paper_box: bool = False,
+        have_teleport: bool = False,
         request_masked: list[int] = None
     ):
         self.real_monster = True
@@ -721,9 +722,10 @@ class AbstractMonster(ABC):
         self._position = position
         self._width, self._height = width, height
         self.have_paper_box = have_paper_box
+        self.escape_paper_box = True
         if self.have_paper_box:
-            self._setup_interval = 3
             self._paper_box_hp = 0
+            self.escape_paper_box = True
 
         self.__left_dmg_mask = self.__get_left_mask(self._position, self._height)
         self.__right_dmg_mask = self.__get_right_mask(
@@ -788,6 +790,8 @@ class AbstractMonster(ABC):
             self._paper_box_hp -= 1 if match_damage > 0 else 0
             if pu_damage > 0:
                 pu_on_box = True
+            if self._paper_box_hp == 0:
+                self.escape_paper_box = True
         else:
             damage = match_damage + pu_damage
 
@@ -885,9 +889,11 @@ class DameMonster(AbstractMonster):
                     "cancel_score": 2,
                 }
         else:
-            if self._paper_box_hp < 0:
+            if self._paper_box_hp <= 0:
                 self.available_mask = [1, 1, 1, 1, 1]
-                self._progress = 0
+                if self.escape_paper_box:
+                    self._progress = 0
+                    self.escape_paper_box = False
 
         if self._progress > self._relax_interval + self._setup_interval:
             self._progress = 0
@@ -899,11 +905,10 @@ class DameMonster(AbstractMonster):
         damage = match_damage + pu_damage
 
         if (
-            self.have_paper_box and self._relax_interval < self._progress
-            and self._progress <= self._relax_interval + self._setup_interval
+            self.have_paper_box and self._progress >= self._relax_interval + self._setup_interval
         ):
             if self._paper_box_hp <= 0:
-                self._paper_box_hp = self._setup_interval
+                self._paper_box_hp = 3
                 self.available_mask = [1, 1, 1, 1, 0]
 
         return super().attacked(match_damage, pu_damage)
@@ -1156,7 +1161,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                 for _ in range(1, 5):
                                     tmp_prev_point = prev_point
                                     tmp_cur_point = tmp_prev_point + Point(i, 0)
-                                    if self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
+                                    if not self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
                                         brokens.append(tmp_cur_point)
                                         tmp_prev_point = tmp_cur_point
                                     else:
@@ -1164,12 +1169,12 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                 for i in range(1, 5):
                                     tmp_prev_point = prev_point
                                     tmp_cur_point = tmp_prev_point + Point(0, j)
-                                    if self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
+                                    if not self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):
                                         brokens.append(tmp_cur_point)
                                         tmp_prev_point = tmp_cur_point
                                     else:
                                         break
-                                if self.check_shield(prev_point, prev_point + Point(i, j), board, list_monsters):
+                                if not self.check_shield(prev_point, prev_point + Point(i, j), board, list_monsters):
                                     cur_point = prev_point + Point(i, j)
                                     brokens.append(cur_point)
                                     brokens.extend(check_for_diagonal(3, i, j, cur_point))
@@ -1365,11 +1370,11 @@ class PowerUpActivator(AbstractPowerUpActivator):
                         brokens.append(cur_point)
                         prev_point = cur_point
 
-                        if self.check_shield(prev_point, prev_point + Point(i, 0), board, list_monsters):
+                        if not self.check_shield(prev_point, prev_point + Point(i, 0), board, list_monsters):
                             brokens.append(prev_point + Point(i, 0))
-                        if self.check_shield(prev_point, prev_point + Point(0, j), board, list_monsters):
+                        if not self.check_shield(prev_point, prev_point + Point(0, j), board, list_monsters):
                             brokens.append(prev_point + Point(0, j))
-                        if self.check_shield(prev_point, prev_point + Point(i, j), board, list_monsters):
+                        if not self.check_shield(prev_point, prev_point + Point(i, j), board, list_monsters):
                             brokens.append(prev_point + Point(i, j))
                     else:
                         continue
