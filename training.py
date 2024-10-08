@@ -75,6 +75,12 @@ def get_args():
         default=8,
         help="Number of intermediary layers in CNN model",
     )
+    parser.add_argument(
+        "--num_heads",
+        type=int,
+        default=2,
+        help="Number of num heads in Multi-head Attention",
+    )
 
     # Rollout Data
     parser.add_argument(
@@ -209,7 +215,7 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3CnnWiderFeatureExtractor,
+            "features_extractor_class": M3SelfAttentionFeatureExtractor,
             "features_extractor_kwargs": {
                 "kernel_size": args.kernel_size,
                 "start_channel": 32,
@@ -217,6 +223,7 @@ def main():
                 "out_channels": 256,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
                 "num_self_attention_layers": args.num_self_attention_layers,
+                "num_heads": args.num_heads,
                 "layers_dims": [4096, 2048, 2048, 2048],
                 "max_channels": 256,
                 "size": 9*10
