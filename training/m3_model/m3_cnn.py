@@ -118,7 +118,7 @@ class M3LocFeatureExtractor(nn.Module):
         self.layers = layers
         self.num_first_cnn_layer = kwargs["num_first_cnn_layer"]
         self.net = nn.Sequential(*layers)
-        self.features_dim = kwargs["out_channels"] * target_pooling_shape[0] * (target_pooling_shape[1] if len(target_pooling_shape) == 2 else 1)
+        self.features_dim = kwargs["max_channels"] * target_pooling_shape[0] * (target_pooling_shape[1] if len(target_pooling_shape) == 2 else 1)
 
 
 
@@ -152,7 +152,7 @@ class M3CnnLargerFeatureExtractor(nn.Module):
         layers = []
         layers.append(
             nn.Conv2d(
-                in_channels.shape[0], kwargs["mid_channels"], kwargs["kernel_size"], stride=1, padding=1
+                in_channels.shape[0], kwargs["mid_channels"], kwargs.get("kernel_size", 3), stride=1, padding=1
             )
         )  # (batch, mid_channels, (size))
         layers.append(nn.ReLU())
@@ -337,6 +337,8 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
         self.features_dim = n_channels * in_channels.shape[1] * in_channels.shape[2]
 
     def forward(self, x: torch.Tensor):
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
         x = x.view(*x.shape[:2], -1)
         x = x.transpose(1, 2)
 

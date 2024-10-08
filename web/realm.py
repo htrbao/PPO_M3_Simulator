@@ -30,6 +30,7 @@ def load_csv_files(folder_path):
     csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
     for file in csv_files:
         df = pd.read_csv(os.path.join(folder_path, file))
+        df = df.sort_values(by=["realm_id", "node_id"])
         df.info()
         return df
 
@@ -107,7 +108,6 @@ def draw_bar_monster(df, realm, ax):
 def draw_plot(df):
     realms = df['realm_id'].unique().tolist()
     realms = sorted(realms)
-
     with st.container():
         col1, col2, col3, col4 = st.columns(4)
         fig = draw_line(x_axis=np.arange(len(realms)), y_axis=(df.groupby(by=['realm_id'])['win_rate'].mean() * 100).round(1).tolist(), color="blue", label="Win rate")
@@ -132,11 +132,11 @@ def draw_plot(df):
     df = pd.merge(df, level_df, on=['realm_id', 'node_id'], how="inner")
     for realm in realms:
         with st.columns([1,8, 1])[1]:
-            if f'realm_{realm}' not in st.session_state:
-                fig = draw_bar(df, realm)
-                st.session_state[f'realm_{realm}'] = fig
-            else:
-                fig = st.session_state[f'realm_{realm}']
+            # if f'realm_{realm}' not in st.session_state:
+            #     fig = draw_bar(df, realm)
+            #     st.session_state[f'realm_{realm}'] = fig
+            # else:
+            fig = draw_bar(df, realm)
             st.pyplot(fig, use_container_width=False)
 
 

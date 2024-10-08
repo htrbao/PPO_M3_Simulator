@@ -21,7 +21,14 @@ from training.common.utils import obs_as_tensor
 
 def eval_single_loop(envs, model, device, max_step, total_monster_hp):
     __num_damage = 0
+    # xai nhung ko hit
+    __num_pu_move = 0
+    __num_match_move = 0
+    # xai nhung hit
     __num_hit = 0
+    __num_pu_hit = 0
+    __num_match_hit = 0
+    __pu_on_box = 0
     __dmg_match = 0
     __dmg_pu = 0
     __num_win_games = 0
@@ -37,11 +44,25 @@ def eval_single_loop(envs, model, device, max_step, total_monster_hp):
         actions = actions.cpu().numpy()[0]
         
         obs, reward, done, infos = envs.step(actions)
+        
         total_dmg = reward["rate_match_damage_on_monster"] + reward["rate_power_damage_on_monster"]
+        
         __num_damage += total_dmg
-        __num_hit += 0 if total_dmg == 0 else 1
         __dmg_match += reward["rate_match_damage_on_monster"]
         __dmg_pu += reward["rate_power_damage_on_monster"]
+        __pu_on_box += reward["pu_on_box"]
+        if total_dmg > 0:
+            __num_hit += 1
+            if reward["rate_match_damage_on_monster"] > 0:
+                __num_match_hit += 1
+            if reward["rate_power_damage_on_monster"] > 0:
+                __num_pu_hit += 1
+        else:
+            if reward["match_score"] > 0:
+                __num_match_move += 1
+            if reward["pu_score"] > 0:
+                __num_pu_move += 1
+                
         current_step += 1
         if "game" in reward.keys():
             if reward["game"] > 0:
@@ -58,13 +79,17 @@ def eval_single_loop(envs, model, device, max_step, total_monster_hp):
         "__dmg_pu": __dmg_pu, 
         "__num_win_games": __num_win_games, 
         "__remain_mons_hp": __remain_mons_hp,
-        "current_step": current_step
+        "current_step": current_step,
+        "__pu_on_box": __pu_on_box,
+        "__num_pu_move": __num_pu_move,
+        "__num_match_move": __num_match_move,
+        "__num_pu_hit": __num_pu_hit,
+        "__num_match_hit": __num_match_hit,
         }
 
 def eval(model, obs_order, env, device, store_dir, num_eval=5):
     max_step = env['max_step']
     level = deepcopy(env['level'])
-
     envs = Match3Env(
         max_step,
         obs_order=obs_order,
@@ -81,6 +106,11 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
     __dmg_pu = 0
     __total_step = 0
     __remain_mons_hp = 0
+    __pu_on_box = 0
+    __num_pu_move = 0
+    __num_match_move = 0
+    __num_pu_hit = 0
+    __num_match_hit = 0
     total_monster_hp =  sum([m['kwargs']['hp'] for m in env['monsters']])
     start_time = time.time()
 
@@ -95,7 +125,11 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
         __num_win_games += stat['__num_win_games']
         __remain_mons_hp += stat['__remain_mons_hp']
         __total_step += stat['current_step']
-        
+        __pu_on_box += stat['__pu_on_box']
+        __num_pu_move += stat['__num_pu_move']
+        __num_match_move += stat['__num_match_move']
+        __num_pu_hit += stat['__num_pu_hit']
+        __num_match_hit += stat['__num_match_hit']
     result = {
         "realm_id": env['realm_id'],
         "node_id": env['node_id'],
@@ -105,14 +139,19 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
         "num_games": num_eval,
         "num_win_games": __num_win_games,
         "num_hit": __num_hit,
-        "total_damage": __num_damage,
-        "total_damage_pu": __dmg_pu,
-        "total_damage_match": __dmg_match,
+        "total_damage": __num_damage / num_eval,
+        "total_damage_pu": __dmg_pu / num_eval,
+        "total_damage_match": __dmg_match / num_eval,
         "total_step": __total_step,
         "avg_damage_per_hit": __num_damage / __num_hit,
         "hit_rate": __num_hit / __total_step,
         "win_rate": __num_win_games / num_eval,
         "remain_hp_monster": (__remain_mons_hp / (num_eval - __num_win_games)) if __num_win_games != num_eval else 0,
+        "pu_on_box_rate": __pu_on_box / __total_step,
+        "num_pu_move_rate": __num_pu_move  / __total_step,
+        "num_match_move_rate": __num_match_move  / __total_step,
+        "num_pu_hit_rate": __num_pu_hit  / __total_step,
+        "num_match_hit_rate": __num_match_hit  / __total_step,
     }
     
     print("Evaluation time: {:.2f}s".format(time.time() - start_time), result)
@@ -133,6 +172,7 @@ def wrapper_eval(queue, model, device, len_group, obs_order, num_eval, REAL_LEVE
     model = model.to(device)
     results = []
     levels = deepcopy(REAL_LEVELS[len_group[0]: len_group[1]])
+    np.random.shuffle(levels)
     for level in levels:
         result = eval(model, obs_order, level, device, store_dir, num_eval)
         queue.put(result)

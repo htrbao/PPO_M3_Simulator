@@ -248,11 +248,11 @@ with st.container():
     
     for realm in realms:
         with st.columns([1,8, 1])[1]:
-            if f'common_realm_{realm}' not in st.session_state:
-                fig = draw_bar(df, realm)
-                st.session_state[f'common_realm_{realm}'] = fig
-            else:
-                fig = st.session_state[f'common_realm_{realm}']
+            # if f'common_realm_{realm}' not in st.session_state:
+            #     fig = draw_bar(df, realm)
+            #     st.session_state[f'common_realm_{realm}'] = fig
+            # else:
+            fig = draw_bar(df, realm)
             st.pyplot(fig, use_container_width=False)
     pass
 
@@ -267,18 +267,18 @@ with st.container():
             st.subheader("Realm: " + realm, divider="rainbow")
             col1, col2 = st.columns(2)
             with col1:
-                if f"realm_{realm}_wall" not in st.session_state:
-                    fig = draw_heatmap(data["wall_map"], data["num_levels"], "wall", cmap="BuGn")
-                    st.session_state[f'realm_{realm}_wall'] = fig
-                else:
-                    fig = st.session_state[f'realm_{realm}_wall']
+                # if f"realm_{realm}_wall" not in st.session_state:
+                #     fig = draw_heatmap(data["wall_map"], data["num_levels"], "wall", cmap="BuGn")
+                #     st.session_state[f'realm_{realm}_wall'] = fig
+                # else:
+                fig = draw_heatmap(data["wall_map"], data["num_levels"], "wall", cmap="BuGn")
                 st.pyplot(fig)
             with col2:
-                if f"realm_{realm}_monster" not in st.session_state:
-                    fig = draw_heatmap(data["monster_map"], data["num_levels"], "monster", cmap="BuGn")
-                    st.session_state[f'realm_{realm}_monster'] = fig
-                else:
-                    fig = st.session_state[f'realm_{realm}_monster']
+                # if f"realm_{realm}_monster" not in st.session_state:
+                #     fig = draw_heatmap(data["monster_map"], data["num_levels"], "monster", cmap="BuGn")
+                #     st.session_state[f'realm_{realm}_monster'] = fig
+                # else:
+                fig = draw_heatmap(data["monster_map"], data["num_levels"], "monster", cmap="BuGn")
                 st.pyplot(fig)
 
 # print(st.session_state['level'])

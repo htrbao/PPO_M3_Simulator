@@ -189,7 +189,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(45 if (x == 0 or y == 0 or x == 8 or y == 7) else 70) + base_hp,
+                            hp=(35 if (x == 0 or y == 0 or x == 8 or y == 7) else 55) + base_hp,
                         )
                     ],
                 )
@@ -276,7 +276,7 @@ LEVELS = [
                 setup_interval=1,
                 width=9,
                 height=2,
-                hp=70,
+                hp=55,
                 dame=3,
             )
         ],
@@ -324,7 +324,7 @@ LEVELS = [
                 setup_interval=1,
                 width=9,
                 height=2,
-                hp=70,
+                hp=55,
                 dame=3,
             )
         ],
@@ -352,7 +352,7 @@ LEVELS = [
                 setup_interval=1,
                 width=2,
                 height=10,
-                hp=70,
+                hp=55,
                 dame=3,
             )
         ],
@@ -380,7 +380,7 @@ LEVELS = [
                 setup_interval=1,
                 width=2,
                 height=10,
-                hp=70,
+                hp=55,
                 dame=3,
             )
         ],
