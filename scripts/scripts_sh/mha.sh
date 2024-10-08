@@ -1,5 +1,5 @@
 CUDA_VISIBLE_DEVICES=1 python training.py \
-    --prefix_name milestone_mha_penalty_not_create_pu \
+    --prefix_name milestone_mha_penalty_not_both_harder \
     --strategy milestone \
     --pi 256 128 128 128 128 128 128 128 128 128 \
     --vf 4096 256 256 256 256 256 256 256 256 256 \
