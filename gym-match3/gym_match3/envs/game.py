@@ -783,13 +783,17 @@ class AbstractMonster(ABC):
         ]
 
     def attacked(self, match_damage, pu_damage):
+        pu_on_box = False
         if self.have_paper_box and self._paper_box_hp > 0:
             self._paper_box_hp -= 1 if match_damage > 0 else 0
+            if pu_damage > 0:
+                pu_on_box = True
         else:
             damage = match_damage + pu_damage
 
             assert self._hp > 0, f"self._hp need to be positive, but self._hp = {self._hp}"
             self._hp -= damage
+        return pu_on_box
 
     @staticmethod
     def __get_left_mask(point: Point, height: int):
@@ -902,7 +906,7 @@ class DameMonster(AbstractMonster):
                 self._paper_box_hp = self._setup_interval
                 self.available_mask = [1, 1, 1, 1, 0]
 
-        super().attacked(match_damage, pu_damage)
+        return super().attacked(match_damage, pu_damage)
 
 
 class BoxMonster(AbstractMonster):
@@ -1020,6 +1024,7 @@ class ThornyBlocker(DameMonster):
             self._hp = -999
         elif match_damage > 0:
             self._progress = self._relax_interval + self._setup_interval + 1
+        return 0
 
 
 class AbstractPowerUpActivator(ABC):
@@ -1680,11 +1685,16 @@ class Game(AbstractGame):
                 "match_damage_on_monster": 0,
                 "power_damage_on_monster": 0,
                 "damage_on_user": 0,
+                "match_score": 0,
+                "pu_score": 0,
+                "pu_on_box": 0,
             }
 
 
     def __move(self, point: Point, direction: Point):
         score = 0
+        match_score = 0
+        pu_score = 0
         near_monster = 100
         cancel_score = 0
         create_pu_score = 0
@@ -1692,6 +1702,7 @@ class Game(AbstractGame):
         rate_power_dmg = 0
         total_match_dmg = 0
         total_power_dmg = 0
+        pu_on_box = 0
         dmg = 0
         self_dmg = 0
 
@@ -1699,7 +1710,10 @@ class Game(AbstractGame):
 
         # Calculate scores
         score += len(brokens) + len(disco_brokens)
-
+        
+        pu_score = score
+        match_score = len(matches)
+        
         for i in range(len(self.list_monsters)):
             near_monster = min(near_monster, point.euclidean_distance(self.list_monsters[i]._position))
             match_damage, pu_damage = self.list_monsters[i].get_dame(matches, inside_brokens, disco_brokens)
@@ -1709,7 +1723,7 @@ class Game(AbstractGame):
             total_power_dmg += pu_damage
             score -= pu_damage
 
-            self.list_monsters[i].attacked(match_damage, pu_damage)
+            pu_on_box += self.list_monsters[i].attacked(match_damage, pu_damage)
             monster_result = self.list_monsters[i].act()
 
         self.__player_hp -= self_dmg
@@ -1756,6 +1770,9 @@ class Game(AbstractGame):
             self.__operate_until_possible_moves()
         reward = {
             "score": score,
+            "match_score": match_score,
+            "pu_score": pu_score,
+            "pu_on_box": pu_on_box,
             "cancel_score": cancel_score,
             "near_monster": near_monster,
             "create_pu_score": create_pu_score,

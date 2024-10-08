@@ -518,6 +518,19 @@ class M3Helper:
 
         action_space = np.zeros((self.num_action))
         obs = {
+            "tiles": (
+                0 * (board == GameObject.immovable_shape) \
+                + 1 * (board == GameObject.color1) \
+                + 2 * (board == GameObject.color2) \
+                + 3 * (board == GameObject.color3) \
+                + 4 * (board == GameObject.color4) \
+                + 5 * (board == GameObject.color5) \
+                + 6 * (board == GameObject.power_disco) \
+                + 7 * (board == GameObject.power_bomb) \
+                + 8 * (board == GameObject.power_missile_h) \
+                + 9 * (board == GameObject.power_missile_v) \
+                + 10 * (board == GameObject.power_plane)
+            ) / 10.0,
             "none_tile": (board == GameObject.immovable_shape),
             "color_1": (board == GameObject.color1),
             "color_2": (board == GameObject.color2),
