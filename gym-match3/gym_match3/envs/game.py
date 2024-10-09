@@ -425,6 +425,15 @@ class AbstractSearcher(ABC):
             + [-1] * len(self.__directions)
         )
 
+        # All possible directions can occur in game
+        self.__full_directions = (
+                self.__disco_directions
+                + self.__bomb_directions
+                + self.__missile_directions
+                + self.__plane_directions
+                + self.__directions
+        )
+
     @staticmethod
     def __get_directions(board_ndim):
         directions = [
@@ -502,14 +511,8 @@ class AbstractSearcher(ABC):
         return self.__power_up_cls[ind]
 
     @property
-    def directions(self):
-        return (
-            self.__disco_directions
-            + self.__bomb_directions
-            + self.__missile_directions
-            + self.__plane_directions
-            + self.__directions
-        )
+    def full_directions(self):
+        return self.__full_directions
 
     @property
     def normal_directions(self):
@@ -537,7 +540,8 @@ class AbstractSearcher(ABC):
                 yield Point(i, j)
 
     @staticmethod
-    def generate_movable_point(rows, cols, board_contain_shapes, focus_range=None):
+    def generate_movable_point(rows, cols, board_contain_shapes, focus_range=None,
+                               set_shapes=GameObject.set_movable_shape):
         if not focus_range:
             loop_range = product(range(rows), range(cols))
         else:
@@ -545,15 +549,14 @@ class AbstractSearcher(ABC):
             loop_range = product(range(0, min(max_row + 1, rows)), range(max(start_col, 0), min(end_col + 1, cols)))
 
         return (Point(i, j) for i, j in loop_range
-                if board_contain_shapes.__getitem__((i, j)) != GameObject.immovable_shape and
-                need_to_match(board_contain_shapes.__getitem__((i, j))))
+                if board_contain_shapes.__getitem__((i, j)) in set_shapes)
 
     def axis_directions_gen(self):
-        for axis_dirs in self.directions:
+        for axis_dirs in self.full_directions:
             yield axis_dirs
 
     def directions_gen(self):
-        for axis_dirs in self.directions:
+        for axis_dirs in self.full_directions:
             for direction in axis_dirs:
                 yield direction
 
@@ -604,11 +607,10 @@ class MatchesSearcher(AbstractSearcher):
     #         matches.update(lst[i][0])
     #         new_power_ups.update(lst[i][1])
 
-
     #     return matches, new_power_ups
 
     def scan_board_for_matches(self, board: Board, need_all: bool = True,
-                               checking_point: list[Point] = [], focus_range=None):
+                               checking_point: list[Point] = None, focus_range=None):
         matches = set()
         new_power_ups = dict()
 
@@ -639,7 +641,7 @@ class MatchesSearcher(AbstractSearcher):
         power_up_list: dict[Point, int] = {}
         early_stop = False
 
-        search_directions = self.normal_directions + self.plane_directions if (not need_all) else self.directions
+        search_directions = self.normal_directions + self.plane_directions if (not need_all) else self.full_directions
 
         for neighbours, length, idx in cfunctions.generator_neighbours(board_rows, board_cols, board_contain_shapes,
                    *point.get_coord(), shape, search_directions, early_stop):
@@ -674,7 +676,7 @@ class MatchesSearcher(AbstractSearcher):
         lst_cells = []
 
         for idx, axis_dirs in enumerate(self.normal_directions + self.plane_directions
-                                        if only_2_matches else self.directions):
+                                        if only_2_matches else self.full_directions):
             newCells = []
             for dir_ in axis_dirs:
                 newRow, newCol = curRow + dir_[0], curCol + dir_[1]
@@ -1363,18 +1365,15 @@ class MovesSearcher(AbstractMovesSearcher, MatchesSearcher):
                     break
 
         if all_moves is True or (all_moves is False and not_have_pu):
-            for point in self.generate_movable_point(board_rows, board_cols, board_contain_shapes):
-                # This point was valid in points generator -> get shape instantly
-                cur_row, cur_col = point.get_coord()
+            for point in self.generate_movable_point(board_rows, board_cols, board_contain_shapes,
+                                                     None, GameObject.set_tiles_shape):
+                possible_moves_for_point = self.__search_moves_for_point(
+                    board, point, need_all=all_moves
+                )
 
-                if board_contain_shapes.__getitem__((cur_row, cur_col)) in GameObject.set_tiles_shape:
-                    possible_moves_for_point = self.__search_moves_for_point(
-                        board, point, need_all=all_moves
-                    )
-
-                    possible_moves.update(possible_moves_for_point)
-                    if len(possible_moves_for_point) > 0 and not all_moves:
-                        break
+                possible_moves.update(possible_moves_for_point)
+                if len(possible_moves_for_point) > 0 and not all_moves:
+                    break
 
         return possible_moves
 
@@ -1602,7 +1601,6 @@ class Game(AbstractGame):
                 "damage_on_user": 0,
             }
 
-
     def __move(self, point: Point, direction: Point):
         score = 0
         near_monster = 100
@@ -1709,7 +1707,6 @@ class Game(AbstractGame):
         #     print(f"old_matches: {matches}")
         #     print(f"focus_range: {test_matches}")
         #     print("------------------------------------------------------------------------")
-
 
         return matches, new_power_ups, return_brokens, disco_brokens, inside_brokens
 

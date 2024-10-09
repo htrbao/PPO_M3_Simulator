@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import torch
 
@@ -76,8 +78,9 @@ class M3Helper:
         for x, y in check_type:
             # if color_board[0][0] == 1:
             # print("\t\t", x, y)
+            check_row, check_col = i + x, j + y
             if (
-                    not self.check_legal_pos_to_move(i + x, j + y, raw_board)
+                    not (0 <= check_row < self.num_row and 0 <= check_col < self.num_col)
                     or raw_board[i + x][j + y] != color
             ):
 
@@ -128,29 +131,54 @@ class M3Helper:
         )
 
         oo = 1e9
-        for i in range(self.num_row):
-            for j in range(self.num_col):
-                color = raw_board[i][j]
-                if color not in GameObject.set_tiles_shape: continue
+        for i, j in itertools.product(range(self.num_row), range(self.num_col)):
+            color = raw_board[i][j]
+            if color not in GameObject.set_tiles_shape: continue
 
-                raw_board[i][j] = -oo
-                # wipe right
-                if self.check_legal_pos_to_move(i, j + 1, raw_board):
-                    has_match_3 = False
-                    for type_c in [0, 1, 2, 3]:
+            raw_board[i][j] = -oo
+            # wipe right
+            if self.check_legal_pos_to_move(i, j + 1, raw_board):
+                has_match_3 = False
+                for type_c in [0, 1, 2, 3]:
+                    if self.check_required_tile(
+                            color, raw_board, i, j + 1, check_types[type_c]
+                    ):
+                        has_match_3 = True
+                        legal_action[i][j] = 1
+                        legal_action[i][j + 1] = 1
+                        action_space[(self.num_col - 1) * i + j] = 1
+                        # print((self.num_col - 1) * i + j)
+
+                        match_normal[i][j + 1] = 1
+                        for x, y in check_types[type_c]:
+                            match_normal[i + x][j + 1 + y] = 1
+                for type_c in [8, 9]:
+                    if self.check_required_tile(
+                            color, raw_board, i, j + 1, check_types[type_c]
+                    ):
+                        legal_action[i][j] = 1
+                        legal_action[i][j + 1] = 1
+                        action_space[(self.num_col - 1) * i + j] = 1
+                        # print((self.num_col - 1) * i + j)
+
+                        match_2x2[i][j + 1] = 1
+                        for x, y in check_types[type_c]:
+                            match_2x2[i + x][j + 1 + y] = 1
+                        break
+                if has_match_3:
+                    for type_c in [12, 13]:
                         if self.check_required_tile(
                                 color, raw_board, i, j + 1, check_types[type_c]
                         ):
-                            has_match_3 = True
                             legal_action[i][j] = 1
                             legal_action[i][j + 1] = 1
                             action_space[(self.num_col - 1) * i + j] = 1
                             # print((self.num_col - 1) * i + j)
 
-                            match_normal[i][j + 1] = 1
+                            match_4_v[i][j + 1] = 1
                             for x, y in check_types[type_c]:
-                                match_normal[i + x][j + 1 + y] = 1
-                    for type_c in [8, 9]:
+                                match_4_v[i + x][j + 1 + y] = 1
+                    for type_c in [15]:
                         if self.check_required_tile(
                                 color, raw_board, i, j + 1, check_types[type_c]
                         ):
@@ -159,77 +187,65 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + j] = 1
                             # print((self.num_col - 1) * i + j)
 
-                            match_2x2[i][j + 1] = 1
+                            match_5[i][j + 1] = 1
                             for x, y in check_types[type_c]:
-                                match_2x2[i + x][j + 1 + y] = 1
-                            break
-                    if has_match_3:
-                        for type_c in [12, 13]:
-                            if self.check_required_tile(
-                                    color, raw_board, i, j + 1, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i][j + 1] = 1
-                                action_space[(self.num_col - 1) * i + j] = 1
-                                # print((self.num_col - 1) * i + j)
-
-                                match_4_v[i][j + 1] = 1
-                                for x, y in check_types[type_c]:
-                                    match_4_v[i + x][j + 1 + y] = 1
-                        for type_c in [15]:
-                            if self.check_required_tile(
-                                    color, raw_board, i, j + 1, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i][j + 1] = 1
-                                action_space[(self.num_col - 1) * i + j] = 1
-                                # print((self.num_col - 1) * i + j)
-
-                                match_5[i][j + 1] = 1
-                                for x, y in check_types[type_c]:
-                                    match_5[i + x][j + 1 + y] = 1
-                        for type_c in [18, 19]:
-                            if self.check_required_tile(
-                                    color, raw_board, i, j + 1, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i][j + 1] = 1
-                                action_space[(self.num_col - 1) * i + j] = 1
-                                # print((self.num_col - 1) * i + j)
-
-                                match_L[i][j + 1] = 1
-                                for x, y in check_types[type_c]:
-                                    match_L[i + x][j + 1 + y] = 1
-                        for type_c in [21]:
-                            if self.check_required_tile(
-                                    color, raw_board, i, j + 1, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i][j + 1] = 1
-                                action_space[(self.num_col - 1) * i + j] = 1
-                                # print((self.num_col - 1) * i + j)
-
-                                match_T[i][j + 1] = 1
-                                for x, y in check_types[type_c]:
-                                    match_T[i + x][j + 1 + y] = 1
-
-                # wipe left
-                if self.check_legal_pos_to_move(i, j - 1, raw_board):
-                    has_match_3 = False
-                    for type_c in [0, 1, 2, 5]:
+                                match_5[i + x][j + 1 + y] = 1
+                    for type_c in [18, 19]:
                         if self.check_required_tile(
-                                color, raw_board, i, j - 1, check_types[type_c]
+                                color, raw_board, i, j + 1, check_types[type_c]
                         ):
-                            has_match_3 = True
                             legal_action[i][j] = 1
-                            legal_action[i][j - 1] = 1
-                            action_space[(self.num_col - 1) * i + (j - 1)] = 1
-                            # print((self.num_col - 1) * i + (j - 1))
+                            legal_action[i][j + 1] = 1
+                            action_space[(self.num_col - 1) * i + j] = 1
+                            # print((self.num_col - 1) * i + j)
 
-                            match_normal[i][j - 1] = 1
+                            match_L[i][j + 1] = 1
                             for x, y in check_types[type_c]:
-                                match_normal[i + x][j - 1 + y] = 1
-                    for type_c in [6, 7]:
+                                match_L[i + x][j + 1 + y] = 1
+                    for type_c in [21]:
+                        if self.check_required_tile(
+                                color, raw_board, i, j + 1, check_types[type_c]
+                        ):
+                            legal_action[i][j] = 1
+                            legal_action[i][j + 1] = 1
+                            action_space[(self.num_col - 1) * i + j] = 1
+                            # print((self.num_col - 1) * i + j)
+
+                            match_T[i][j + 1] = 1
+                            for x, y in check_types[type_c]:
+                                match_T[i + x][j + 1 + y] = 1
+
+            # wipe left
+            if self.check_legal_pos_to_move(i, j - 1, raw_board):
+                has_match_3 = False
+                for type_c in [0, 1, 2, 5]:
+                    if self.check_required_tile(
+                            color, raw_board, i, j - 1, check_types[type_c]
+                    ):
+                        has_match_3 = True
+                        legal_action[i][j] = 1
+                        legal_action[i][j - 1] = 1
+                        action_space[(self.num_col - 1) * i + (j - 1)] = 1
+                        # print((self.num_col - 1) * i + (j - 1))
+
+                        match_normal[i][j - 1] = 1
+                        for x, y in check_types[type_c]:
+                            match_normal[i + x][j - 1 + y] = 1
+                for type_c in [6, 7]:
+                    if self.check_required_tile(
+                            color, raw_board, i, j - 1, check_types[type_c]
+                    ):
+                        legal_action[i][j] = 1
+                        legal_action[i][j - 1] = 1
+                        action_space[(self.num_col - 1) * i + (j - 1)] = 1
+                        # print((self.num_col - 1) * i + (j - 1))
+
+                        match_2x2[i][j - 1] = 1
+                        for x, y in check_types[type_c]:
+                            match_2x2[i + x][j - 1 + y] = 1
+                        break
+                if has_match_3:
+                    for type_c in [12, 13]:
                         if self.check_required_tile(
                                 color, raw_board, i, j - 1, check_types[type_c]
                         ):
@@ -238,68 +254,88 @@ class M3Helper:
                             action_space[(self.num_col - 1) * i + (j - 1)] = 1
                             # print((self.num_col - 1) * i + (j - 1))
 
-                            match_2x2[i][j - 1] = 1
+                            match_4_v[i][j - 1] = 1
                             for x, y in check_types[type_c]:
-                                match_2x2[i + x][j - 1 + y] = 1
-                            break
-                    if has_match_3:
-                        for type_c in [12, 13]:
-                            if self.check_required_tile(
-                                    color, raw_board, i, j - 1, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i][j - 1] = 1
-                                action_space[(self.num_col - 1) * i + (j - 1)] = 1
-                                # print((self.num_col - 1) * i + (j - 1))
+                                match_4_v[i + x][j - 1 + y] = 1
+                    for type_c in [15]:
+                        if self.check_required_tile(
+                                color, raw_board, i, j - 1, check_types[type_c]
+                        ):
+                            legal_action[i][j] = 1
+                            legal_action[i][j - 1] = 1
+                            action_space[(self.num_col - 1) * i + (j - 1)] = 1
+                            # print((self.num_col - 1) * i + (j - 1))
 
-                                match_4_v[i][j - 1] = 1
-                                for x, y in check_types[type_c]:
-                                    match_4_v[i + x][j - 1 + y] = 1
-                        for type_c in [15]:
-                            if self.check_required_tile(
-                                    color, raw_board, i, j - 1, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i][j - 1] = 1
-                                action_space[(self.num_col - 1) * i + (j - 1)] = 1
-                                # print((self.num_col - 1) * i + (j - 1))
+                            match_5[i][j - 1] = 1
+                            for x, y in check_types[type_c]:
+                                match_5[i + x][j - 1 + y] = 1
+                    for type_c in [16, 17]:
+                        if self.check_required_tile(
+                                color, raw_board, i, j - 1, check_types[type_c]
+                        ):
+                            legal_action[i][j] = 1
+                            legal_action[i][j - 1] = 1
+                            action_space[(self.num_col - 1) * i + (j - 1)] = 1
+                            # print((self.num_col - 1) * i + (j - 1))
 
-                                match_5[i][j - 1] = 1
-                                for x, y in check_types[type_c]:
-                                    match_5[i + x][j - 1 + y] = 1
-                        for type_c in [16, 17]:
-                            if self.check_required_tile(
-                                    color, raw_board, i, j - 1, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i][j - 1] = 1
-                                action_space[(self.num_col - 1) * i + (j - 1)] = 1
-                                # print((self.num_col - 1) * i + (j - 1))
+                            match_L[i][j - 1] = 1
+                            for x, y in check_types[type_c]:
+                                match_L[i + x][j - 1 + y] = 1
+                    for type_c in [23]:
+                        if self.check_required_tile(
+                                color, raw_board, i, j - 1, check_types[type_c]
+                        ):
+                            legal_action[i][j] = 1
+                            legal_action[i][j - 1] = 1
+                            action_space[(self.num_col - 1) * i + (j - 1)] = 1
+                            # print((self.num_col - 1) * i + (j - 1))
 
-                                match_L[i][j - 1] = 1
-                                for x, y in check_types[type_c]:
-                                    match_L[i + x][j - 1 + y] = 1
-                        for type_c in [23]:
-                            if self.check_required_tile(
-                                    color, raw_board, i, j - 1, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i][j - 1] = 1
-                                action_space[(self.num_col - 1) * i + (j - 1)] = 1
-                                # print((self.num_col - 1) * i + (j - 1))
+                            match_T[i][j - 1] = 1
+                            for x, y in check_types[type_c]:
+                                match_T[i + x][j - 1 + y] = 1
 
-                                match_T[i][j - 1] = 1
-                                for x, y in check_types[type_c]:
-                                    match_T[i + x][j - 1 + y] = 1
+            # wipe up
+            if self.check_legal_pos_to_move(i - 1, j, raw_board):
+                has_match_3 = False
+                for type_c in [2, 3, 4, 5]:
+                    if self.check_required_tile(
+                            color, raw_board, i - 1, j, check_types[type_c]
+                    ):
+                        has_match_3 = True
+                        legal_action[i][j] = 1
+                        legal_action[i - 1][j] = 1
+                        action_space[
+                            (self.num_col - 1) * self.num_row
+                            + self.num_col * (i - 1)
+                            + j
+                            ] = 1
+                        # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                # wipe up
-                if self.check_legal_pos_to_move(i - 1, j, raw_board):
-                    has_match_3 = False
-                    for type_c in [2, 3, 4, 5]:
+                        match_normal[i - 1][j] = 1
+                        for x, y in check_types[type_c]:
+                            match_normal[i - 1 + x][j + y] = 1
+                for type_c in [6, 8]:
+                    if self.check_required_tile(
+                            color, raw_board, i - 1, j, check_types[type_c]
+                    ):
+                        legal_action[i][j] = 1
+                        legal_action[i - 1][j] = 1
+                        action_space[
+                            (self.num_col - 1) * self.num_row
+                            + self.num_col * (i - 1)
+                            + j
+                            ] = 1
+                        # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
+
+                        match_2x2[i - 1][j] = 1
+                        for x, y in check_types[type_c]:
+                            match_2x2[i - 1 + x][j + y] = 1
+                        break
+                if has_match_3:
+                    for type_c in [10, 11]:
                         if self.check_required_tile(
                                 color, raw_board, i - 1, j, check_types[type_c]
                         ):
-                            has_match_3 = True
                             legal_action[i][j] = 1
                             legal_action[i - 1][j] = 1
                             action_space[
@@ -309,10 +345,10 @@ class M3Helper:
                                 ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_normal[i - 1][j] = 1
+                            match_4_h[i - 1][j] = 1
                             for x, y in check_types[type_c]:
-                                match_normal[i - 1 + x][j + y] = 1
-                    for type_c in [6, 8]:
+                                match_4_h[i - 1 + x][j + y] = 1
+                    for type_c in [14]:
                         if self.check_required_tile(
                                 color, raw_board, i - 1, j, check_types[type_c]
                         ):
@@ -325,95 +361,77 @@ class M3Helper:
                                 ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_2x2[i - 1][j] = 1
+                            match_5[i - 1][j] = 1
                             for x, y in check_types[type_c]:
-                                match_2x2[i - 1 + x][j + y] = 1
-                            break
-                    if has_match_3:
-                        for type_c in [10, 11]:
-                            if self.check_required_tile(
-                                    color, raw_board, i - 1, j, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i - 1][j] = 1
-                                action_space[
-                                    (self.num_col - 1) * self.num_row
-                                    + self.num_col * (i - 1)
-                                    + j
-                                    ] = 1
-                                # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
-
-                                match_4_h[i - 1][j] = 1
-                                for x, y in check_types[type_c]:
-                                    match_4_h[i - 1 + x][j + y] = 1
-                        for type_c in [14]:
-                            if self.check_required_tile(
-                                    color, raw_board, i - 1, j, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i - 1][j] = 1
-                                action_space[
-                                    (self.num_col - 1) * self.num_row
-                                    + self.num_col * (i - 1)
-                                    + j
-                                    ] = 1
-                                # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
-
-                                match_5[i - 1][j] = 1
-                                for x, y in check_types[type_c]:
-                                    match_5[i - 1 + x][j + y] = 1
-                        for type_c in [16, 19]:
-                            if self.check_required_tile(
-                                    color, raw_board, i - 1, j, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i - 1][j] = 1
-                                action_space[
-                                    (self.num_col - 1) * self.num_row
-                                    + self.num_col * (i - 1)
-                                    + j
-                                    ] = 1
-                                # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
-
-                                match_L[i - 1][j] = 1
-                                for x, y in check_types[type_c]:
-                                    match_L[i - 1 + x][j + y] = 1
-                        for type_c in [20]:
-                            if self.check_required_tile(
-                                    color, raw_board, i - 1, j, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i - 1][j] = 1
-                                action_space[
-                                    (self.num_col - 1) * self.num_row
-                                    + self.num_col * (i - 1)
-                                    + j
-                                    ] = 1
-                                # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
-
-                                match_T[i - 1][j] = 1
-                                for x, y in check_types[type_c]:
-                                    match_T[i - 1 + x][j + y] = 1
-
-                # wipe down
-                if self.check_legal_pos_to_move(i + 1, j, raw_board):
-                    has_match_3 = False
-                    for type_c in [0, 3, 4, 5]:
+                                match_5[i - 1 + x][j + y] = 1
+                    for type_c in [16, 19]:
                         if self.check_required_tile(
-                                color, raw_board, i + 1, j, check_types[type_c]
+                                color, raw_board, i - 1, j, check_types[type_c]
                         ):
-                            has_match_3 = True
                             legal_action[i][j] = 1
-                            legal_action[i + 1][j] = 1
+                            legal_action[i - 1][j] = 1
                             action_space[
-                                (self.num_col - 1) * self.num_row + self.num_col * i + j
+                                (self.num_col - 1) * self.num_row
+                                + self.num_col * (i - 1)
+                                + j
                                 ] = 1
-                            # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
+                            # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
 
-                            match_normal[i + 1][j] = 1
+                            match_L[i - 1][j] = 1
                             for x, y in check_types[type_c]:
-                                match_normal[i + 1 + x][j + y] = 1
-                    for type_c in [7, 9]:
+                                match_L[i - 1 + x][j + y] = 1
+                    for type_c in [20]:
+                        if self.check_required_tile(
+                                color, raw_board, i - 1, j, check_types[type_c]
+                        ):
+                            legal_action[i][j] = 1
+                            legal_action[i - 1][j] = 1
+                            action_space[
+                                (self.num_col - 1) * self.num_row
+                                + self.num_col * (i - 1)
+                                + j
+                                ] = 1
+                            # print((self.num_col - 1) * self.num_row + self.num_col * (i - 1) + j)
+
+                            match_T[i - 1][j] = 1
+                            for x, y in check_types[type_c]:
+                                match_T[i - 1 + x][j + y] = 1
+
+            # wipe down
+            if self.check_legal_pos_to_move(i + 1, j, raw_board):
+                has_match_3 = False
+                for type_c in [0, 3, 4, 5]:
+                    if self.check_required_tile(
+                            color, raw_board, i + 1, j, check_types[type_c]
+                    ):
+                        has_match_3 = True
+                        legal_action[i][j] = 1
+                        legal_action[i + 1][j] = 1
+                        action_space[
+                            (self.num_col - 1) * self.num_row + self.num_col * i + j
+                            ] = 1
+                        # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
+
+                        match_normal[i + 1][j] = 1
+                        for x, y in check_types[type_c]:
+                            match_normal[i + 1 + x][j + y] = 1
+                for type_c in [7, 9]:
+                    if self.check_required_tile(
+                            color, raw_board, i + 1, j, check_types[type_c]
+                    ):
+                        legal_action[i][j] = 1
+                        legal_action[i + 1][j] = 1
+                        action_space[
+                            (self.num_col - 1) * self.num_row + self.num_col * i + j
+                            ] = 1
+                        # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
+
+                        match_2x2[i + 1][j] = 1
+                        for x, y in check_types[type_c]:
+                            match_2x2[i + 1 + x][j + y] = 1
+                        break
+                if has_match_3:
+                    for type_c in [10, 11]:
                         if self.check_required_tile(
                                 color, raw_board, i + 1, j, check_types[type_c]
                         ):
@@ -424,68 +442,52 @@ class M3Helper:
                                 ] = 1
                             # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                            match_2x2[i + 1][j] = 1
+                            match_4_h[i + 1][j] = 1
                             for x, y in check_types[type_c]:
-                                match_2x2[i + 1 + x][j + y] = 1
-                            break
-                    if has_match_3:
-                        for type_c in [10, 11]:
-                            if self.check_required_tile(
-                                    color, raw_board, i + 1, j, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i + 1][j] = 1
-                                action_space[
-                                    (self.num_col - 1) * self.num_row + self.num_col * i + j
-                                    ] = 1
-                                # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
+                                match_4_h[i + 1 + x][j + y] = 1
+                    for type_c in [14]:
+                        if self.check_required_tile(
+                                color, raw_board, i + 1, j, check_types[type_c]
+                        ):
+                            legal_action[i][j] = 1
+                            legal_action[i + 1][j] = 1
+                            action_space[
+                                (self.num_col - 1) * self.num_row + self.num_col * i + j
+                                ] = 1
+                            # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                                match_4_h[i + 1][j] = 1
-                                for x, y in check_types[type_c]:
-                                    match_4_h[i + 1 + x][j + y] = 1
-                        for type_c in [14]:
-                            if self.check_required_tile(
-                                    color, raw_board, i + 1, j, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i + 1][j] = 1
-                                action_space[
-                                    (self.num_col - 1) * self.num_row + self.num_col * i + j
-                                    ] = 1
-                                # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
+                            match_5[i + 1][j] = 1
+                            for x, y in check_types[type_c]:
+                                match_5[i + 1 + x][j + y] = 1
+                    for type_c in [17, 18]:
+                        if self.check_required_tile(
+                                color, raw_board, i + 1, j, check_types[type_c]
+                        ):
+                            legal_action[i][j] = 1
+                            legal_action[i + 1][j] = 1
+                            action_space[
+                                (self.num_col - 1) * self.num_row + self.num_col * i + j
+                                ] = 1
+                            # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                                match_5[i + 1][j] = 1
-                                for x, y in check_types[type_c]:
-                                    match_5[i + 1 + x][j + y] = 1
-                        for type_c in [17, 18]:
-                            if self.check_required_tile(
-                                    color, raw_board, i + 1, j, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i + 1][j] = 1
-                                action_space[
-                                    (self.num_col - 1) * self.num_row + self.num_col * i + j
-                                    ] = 1
-                                # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
+                            match_L[i + 1][j] = 1
+                            for x, y in check_types[type_c]:
+                                match_L[i + 1 + x][j + y] = 1
+                    for type_c in [22]:
+                        if self.check_required_tile(
+                                color, raw_board, i + 1, j, check_types[type_c]
+                        ):
+                            legal_action[i][j] = 1
+                            legal_action[i + 1][j] = 1
+                            action_space[
+                                (self.num_col - 1) * self.num_row + self.num_col * i + j
+                                ] = 1
+                            # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
 
-                                match_L[i + 1][j] = 1
-                                for x, y in check_types[type_c]:
-                                    match_L[i + 1 + x][j + y] = 1
-                        for type_c in [22]:
-                            if self.check_required_tile(
-                                    color, raw_board, i + 1, j, check_types[type_c]
-                            ):
-                                legal_action[i][j] = 1
-                                legal_action[i + 1][j] = 1
-                                action_space[
-                                    (self.num_col - 1) * self.num_row + self.num_col * i + j
-                                    ] = 1
-                                # print((self.num_col - 1) * self.num_row + self.num_col * i + j)
-
-                                match_T[i + 1][j] = 1
-                                for x, y in check_types[type_c]:
-                                    match_T[i + 1 + x][j + y] = 1
-                raw_board[i][j] = color
+                            match_T[i + 1][j] = 1
+                            for x, y in check_types[type_c]:
+                                match_T[i + 1 + x][j + y] = 1
+            raw_board[i][j] = color
 
         return (
             match_normal,
