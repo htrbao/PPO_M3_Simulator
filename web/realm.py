@@ -1,27 +1,26 @@
 import streamlit as st
 import pandas as pd
 import os
-import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
-import numpy as np
 from matplotlib import ticker
+import numpy as np
 from test.level_generate import get_real_levels
-matplotlib.use('Agg')
+
 st.set_page_config(page_title="M3 Testing Metrics", layout="wide", initial_sidebar_state='collapsed')
 
+# Initial state setup
 if 'level' not in st.session_state:
     st.session_state['level'] = pd.DataFrame(get_real_levels(full_info=True))
-    
+
 if 'old' not in st.session_state:
-    old = {
+    st.session_state['old'] = {
         "num_level": 0,
         "avg_win_rate": 0,
         "avg_hit_rate": 0,
         "avg_damage_per_hit": 0,
         "remain_hp_monster": 0,
     }
-    st.session_state['old'] = old
 
 store_dir = "_saved_test"
 
@@ -31,20 +30,18 @@ def load_csv_files(folder_path):
     for file in csv_files:
         df = pd.read_csv(os.path.join(folder_path, file))
         df = df.sort_values(by=["realm_id", "node_id"])
-        df.info()
         return df
 
+# Plotting functions
 def draw_line(x_axis, y_axis, color, label):
     fig, ax  = plt.subplots(figsize=(5, 5))
-    
     ax.plot(x_axis, y_axis, label=label, color=color)
     ax.set_xticks(x_axis, [f"realm {realm}" for realm in x_axis])
     ax.legend(loc='best', ncols=1)
     ax.set_ylim([0, 100])
-    
-    for x ,y in zip(x_axis, y_axis):
-        ax.annotate(str(y)+'%',xy=(x,y), color='black', ha='center', va='bottom',xytext=(0, 1),  # 4 points vertical offset.
-                        textcoords='offset points')
+    ax.grid(True, linestyle='--', alpha=0.7)
+    for x, y in zip(x_axis, y_axis):
+        ax.annotate(f'{y}%', xy=(x, y), color='black', ha='center', va='bottom', xytext=(0, 1), textcoords='offset points')
     ax.yaxis.set_major_formatter(ticker.PercentFormatter())
     return fig
 
@@ -54,57 +51,53 @@ def draw_bar(df, realm):
     sub_df.loc[:, "win_rate"] = sub_df["win_rate"] * 100
     sub_df.loc[:, "hit_rate"] = sub_df["hit_rate"] * 100
     sub_df.loc[:, "remain_hp_monster"] = sub_df["remain_hp_monster"] * 100
-    # sub_df.plot.bar(x='node_id', y='win_rate', figsize=(10, 5), title=f"Realm {realm} Win Rate", ax=ax, rot=60)
     axes = sub_df.plot.bar(x='node_id', y=['win_rate', 'hit_rate', 'remain_hp_monster'], subplots=True, ax=ax[0: 3], rot=65, title=f"Realm {realm}")
     for axs in axes:
         axs.yaxis.set_major_formatter(ticker.PercentFormatter())
         axs.set_ylim([0, 100])
+        axs.grid(True, linestyle='--', alpha=0.7)
         for bar in axs.patches:
             if bar.get_height() < 100 and bar.get_height() > 0:
-                axs.annotate(str(format(bar.get_height(), '.0f')) + '%', 
-                            (bar.get_x() + bar.get_width() / 2, 
-                                bar.get_height()), ha='center', va='center',
-                            xytext=(0, 8),
-                            textcoords='offset points')
+                axs.annotate(f'{format(bar.get_height(), ".0f")}%', (bar.get_x() + bar.get_width() / 2, bar.get_height()), ha='center', va='center', xytext=(0, 8), textcoords='offset points')
     draw_bar_monster(sub_df, realm, ax[3])
     return fig
 
-
 def draw_bar_monster(df, realm, ax):
-    
     colors = ['g' if m >= 0 else 'r' for m in df['max_step_&_monster_hp'].tolist()]
     ax = df.plot.bar(x='node_id', y='max_step_&_monster_hp', ax=ax, rot=65, title=f"Difference between Max Step and Monster HP", color=colors)
-    pa1 = Patch(facecolor='red')
-    pa2 = Patch(facecolor='green')
-    ax.legend(handles=[pa1, pa2], labels=["", "difference_max_step_&_monster_hp"],loc='best', ncol=2, handletextpad=0.5, handlelength=1.0, columnspacing=-0.5,)
-
+    ax.legend(handles=[Patch(facecolor='red'), Patch(facecolor='green')], labels=["Below 0 (Hard)", "Above 0 (Easier)"], loc='best', fontsize=10)  # Clear legend
+    ax.grid(True, linestyle='--', alpha=0.7)
     for bar in ax.patches:
-        if bar.get_height() < 0:
-            ax.annotate(str(format(bar.get_height(), '.0f')), 
-                        (bar.get_x() + bar.get_width() / 2, 
-                            bar.get_height()), ha='center', va='center',
-                        xytext=(0, -8),
-                        textcoords='offset points')
-        else:
-            ax.annotate(str(format(bar.get_height(), '.0f')), 
-                        (bar.get_x() + bar.get_width() / 2, 
-                            bar.get_height()), ha='center', va='center',
-                        xytext=(0, 8),
-                        textcoords='offset points')
-    ax.annotate("Higher is easier to win the level.",
-            xy = (0.5, -0.4),
-            xycoords='axes fraction',
-            ha='center',
-            va="center",
-            fontsize=13)
+        annotation_text = str(format(bar.get_height(), '.0f'))
+        xytext_offset = (0, -8) if bar.get_height() < 0 else (0, 8)
+        ax.annotate(annotation_text, (bar.get_x() + bar.get_width() / 2, bar.get_height()), ha='center', va='center', xytext=xytext_offset, textcoords='offset points')
+    ax.annotate("Higher is easier to win the level.", xy=(0.5, -0.4), xycoords='axes fraction', ha='center', va="center", fontsize=13)
 
+# Function for additional metrics
+def draw_additional_plots(df, realm):
 
-
-# with st.container():
-    # realms = df['realm_id'].unique().tolist()
-    # st.header("", divider=True)
-
+    sub_df = df[df['realm_id'] == realm]
+    fig, ax = plt.subplots(5, 1, figsize=(20, 9), sharex=True)
     
+    metrics = ['pu_on_box_rate', 'num_pu_move_rate', 'num_match_move_rate', 'num_pu_hit_rate', 'num_match_hit_rate']
+    titles = ['Power-Up on Box Rate', 'Number of Power-Up Moves Rate', 'Number of Match Moves Rate', 'Power-Up Hit Rate', 'Match Hit Rate']
+    for metric in metrics:
+        sub_df.loc[:, metric] = sub_df[metric] * 100
+    axes = sub_df.plot.bar(x='node_id', y=metrics, subplots=True, ax=ax, rot=65, title=f"Realm {realm}")
+    for axs, title in zip(axes, titles):
+        axs.yaxis.set_major_formatter(ticker.PercentFormatter())
+        axs.set_ylim([0, 100])
+        axs.grid(axis='y', linestyle='--', alpha=0.7)
+        for bar in axs.patches:
+            if bar.get_height() < 100 and bar.get_height() > 0:
+                axs.annotate(f'{format(bar.get_height(), ".0f")}%', (bar.get_x() + bar.get_width() / 2, bar.get_height()), ha='center', va='center', xytext=(0, 8), textcoords='offset points')
+
+        axs.set_title(f"Realm {realm} - {title}")
+        axs.set_ylabel(f"{title} (%)")
+        
+
+    return fig
+            
 def draw_plot(df):
     realms = df['realm_id'].unique().tolist()
     realms = sorted(realms)
@@ -132,53 +125,57 @@ def draw_plot(df):
     df = pd.merge(df, level_df, on=['realm_id', 'node_id'], how="inner")
     for realm in realms:
         with st.columns([1,8, 1])[1]:
-            # if f'realm_{realm}' not in st.session_state:
-            #     fig = draw_bar(df, realm)
-            #     st.session_state[f'realm_{realm}'] = fig
-            # else:
             fig = draw_bar(df, realm)
             st.pyplot(fig, use_container_width=False)
+            try:
+                fig = draw_additional_plots(df, realm)
+                st.pyplot(fig, use_container_width=False)
+            except:
+                continue
 
-
+# Common Statistics Section
 def draw_common_stat(df):
+    st.subheader(f"Test on {df['num_games'].max()} games per level ({len(df)} levels)")
+    col1, col2, col3, col4 = st.columns(4)
     
-    level = len(df)
-    num_games = df['num_games'].max()
-    
-    avg_win_rate = df['win_rate'].mean()
-    avg_hit_rate = df['hit_rate'].mean()
+    avg_win_rate = df['win_rate'].mean() * 100
+    avg_hit_rate = df['hit_rate'].mean() * 100
     avg_damage_per_hit = df['avg_damage_per_hit'].mean()
-    remain_hp_monster = df[df['remain_hp_monster'] > 0]["remain_hp_monster"].mean()
-    st.subheader(f"Test on {num_games} games per levels ({level} levels)")
+    remain_hp_monster = df[df['remain_hp_monster'] > 0]["remain_hp_monster"].mean() * 100
     
-    col2, col3, col4, col5 = st.columns(4)
-    
-    
-    col2.metric("Average Win Rate", f"{avg_win_rate*100:.2f}%", delta=f"{(avg_win_rate - st.session_state['old']['avg_win_rate'])*100:.2f}%")
-    col3.metric("Average Hit Rate", f"{avg_hit_rate*100:.2f}%", delta=f"{(avg_hit_rate - st.session_state['old']['avg_hit_rate'])*100:.2f}%")
-    col4.metric("Average Remaining HP of Monster (Lose Only)", f"{remain_hp_monster*100:.2f}%", delta=f"{(remain_hp_monster - st.session_state['old']['remain_hp_monster'])*100:.2f}%", delta_color ="inverse")
-    col5.metric("Average Damage per Hit", f"{avg_damage_per_hit*100:.2f}%", delta=f"{(avg_damage_per_hit - st.session_state['old']['avg_damage_per_hit'])*100:.2f}%")
+    col1.metric("Average Win Rate", f"{avg_win_rate:.2f}%", delta=f"{(avg_win_rate - st.session_state['old']['avg_win_rate']):.2f}%")
+    col2.metric("Average Hit Rate", f"{avg_hit_rate:.2f}%", delta=f"{(avg_hit_rate - st.session_state['old']['avg_hit_rate']):.2f}%")
+    col3.metric("Remaining HP of Monster (Lose Only)", f"{remain_hp_monster:.2f}%", delta=f"{(remain_hp_monster - st.session_state['old']['remain_hp_monster']):.2f}%", delta_color="inverse")
+    col4.metric("Average Damage per Hit", f"{avg_damage_per_hit:.2f}", delta=f"{(avg_damage_per_hit - st.session_state['old']['avg_damage_per_hit']):.2f}")
 
-    st.session_state['old']["avg_win_rate"] = avg_win_rate
-    st.session_state['old']["avg_hit_rate"] = avg_hit_rate
-    st.session_state['old']["avg_damage_per_hit"] = avg_damage_per_hit
-    st.session_state['old']["remain_hp_monster"] = remain_hp_monster
-
+    # Update old state
+    st.session_state['old'].update({
+        "avg_win_rate": avg_win_rate / 100,
+        "avg_hit_rate": avg_hit_rate / 100,
+        "avg_damage_per_hit": avg_damage_per_hit,
+        "remain_hp_monster": remain_hp_monster / 100,
+    })
 
 # Main Streamlit app
-st.title("CSV File Loader and Plotter")
+st.title("M3 Testing Metrics")
 
 # Input folder name
-dir_list = [d for d in os.listdir(store_dir) if os.path.isdir(os.path.join(store_dir, d))]
+folder_path = st.selectbox("Select the model:", options=[d for d in os.listdir(store_dir) if os.path.isdir(os.path.join(store_dir, d))])
 
-folder_path = st.selectbox("Select the model:", options=dir_list)
-
-# Load CSVs when folder path is provided
 if folder_path:
-
+    # Load CSV and display
     df = load_csv_files(os.path.join(store_dir, folder_path))
     st.success(f"Loaded {len(df)} rows.")
-    st.header("Common statistics", divider=True)
+
+    # Common stats
+    st.header("Common Statistics", divider=True)
     draw_common_stat(df)
+
+    # Plot Realm-level charts
+    st.header("Realm-Level Metrics", divider=True)
     draw_plot(df)
+
+
+    # Display the full data table
+    st.subheader("Full Data")
     st.dataframe(df, use_container_width=True)
