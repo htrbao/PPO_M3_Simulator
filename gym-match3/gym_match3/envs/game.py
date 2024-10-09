@@ -544,9 +544,9 @@ class AbstractSearcher(ABC):
             max_row, start_col, end_col = focus_range
             loop_range = product(range(0, min(max_row + 1, rows)), range(max(start_col, 0), min(end_col + 1, cols)))
 
-        return [Point(i, j) for i, j in loop_range
+        return (Point(i, j) for i, j in loop_range
                 if board_contain_shapes.__getitem__((i, j)) != GameObject.immovable_shape and
-                need_to_match(board_contain_shapes.__getitem__((i, j)))]
+                need_to_match(board_contain_shapes.__getitem__((i, j))))
 
     def axis_directions_gen(self):
         for axis_dirs in self.directions:
@@ -643,19 +643,18 @@ class MatchesSearcher(AbstractSearcher):
 
         for neighbours, length, idx in cfunctions.generator_neighbours(board_rows, board_cols, board_contain_shapes,
                    *point.get_coord(), shape, search_directions, early_stop):
-            if len(neighbours) == length:
-                match3_list.extend([Cell(n[0], n[1], n[2]) for n in neighbours])
+            match3_list.extend([Cell(n[0], n[1], n[2]) for n in neighbours])
 
-                if not need_all:
-                    early_stop = True
+            if not need_all:
+                early_stop = True
 
-                if length > 2 and idx != -1 and isinstance(point, Point):
-                    if point in power_up_list.keys():
-                        power_up_list[point] = max(
-                            power_up_list[point], self.get_power_up_type(idx)
-                        )
-                    else:
-                        power_up_list[point] = self.get_power_up_type(idx)
+            if length > 2 and idx != -1 and isinstance(point, Point):
+                if point in power_up_list.keys():
+                    power_up_list[point] = max(
+                        power_up_list[point], self.get_power_up_type(idx)
+                    )
+                else:
+                    power_up_list[point] = self.get_power_up_type(idx)
 
         if len(match3_list) > 0:
             match3_list.append(Cell(shape, *point.get_coord()))
