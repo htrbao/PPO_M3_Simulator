@@ -171,6 +171,7 @@ class Match3Levels:
 
 easy_levels = []
 shield_one_mon_level = []
+paper_box_mon_level = []
 for x in range(0, 9):
     for y in range(0, 8):
         easy_board = [[0 for _ in range(9)] for _ in range(10)]
@@ -206,7 +207,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(15 if (x == 0 or y == 0 or x == 8 or y == 7) else 35) + base_hp,
+                            hp=(20 if (x == 0 or y == 0 or x == 8 or y == 7) else 40) + base_hp,
                             request_masked=[1, 1, 1, 1, 0],
                         )
                     ],
@@ -223,16 +224,38 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(20 if (x == 0 or y == 0 or x == 8 or y == 7) else 45) + base_hp,
+                            hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 50) + base_hp,
                             request_masked=[0, 0, 0, 0, 1],
                         )
                     ],
                 )
             )
-
+            paper_box_mon_level.append(
+                Level(
+                    10,
+                    9,
+                    4,
+                    copy.deepcopy(easy_board),
+                    [
+                        DameMonster(
+                            position=Point(x, y),
+                            width=2,
+                            height=2,
+                            hp=(30 if (x == 0 or y == 0 or x == 8 or y == 7) else 50) + base_hp,
+                            have_paper_box=True,
+                            setup_interval= 6,
+                            relax_interval= 2,
+                        )
+                    ],
+                )
+            )
+# print("len easy", len(easy_levels))
+# print("len shield", len(shield_one_mon_level))
+# print("len paper_box", len(paper_box_mon_level))
 LEVELS = [
     *easy_levels,
     *shield_one_mon_level,
+    *paper_box_mon_level,
     Level(
         10,
         9,
