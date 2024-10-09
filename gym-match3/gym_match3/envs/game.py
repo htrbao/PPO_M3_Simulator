@@ -11,6 +11,7 @@ import threading
 
 from gym_match3.envs.constants import GameObject, mask_immov_mask, need_to_match
 from gym_match3.envs.functions import is_valid_point
+from gym_match3.envs.cython_functions import cfunctions
 
 
 class OutOfBoardError(IndexError):
@@ -624,6 +625,7 @@ class MatchesSearcher(AbstractSearcher):
             to_del, to_add = self.__get_match3_for_point(
                 board_rows, board_cols, board_contain_shapes, point, need_all=need_all
             )
+
             if to_del:
                 matches.update(to_del)
                 new_power_ups.update(to_add)
@@ -637,12 +639,12 @@ class MatchesSearcher(AbstractSearcher):
         power_up_list: dict[Point, int] = {}
         early_stop = False
 
-        for neighbours, length, idx in self.__generator_neighbours(
-            board_rows, board_cols, board_contain_shapes,
-            point, shape, early_stop, (not need_all)
-        ):
+        search_directions = self.normal_directions + self.plane_directions if (not need_all) else self.directions
+
+        for neighbours, length, idx in cfunctions.generator_neighbours(board_rows, board_cols, board_contain_shapes,
+                   *point.get_coord(), shape, search_directions, early_stop):
             if len(neighbours) == length:
-                match3_list.extend(neighbours)
+                match3_list.extend([Cell(n[0], n[1], n[2]) for n in neighbours])
 
                 if not need_all:
                     early_stop = True
@@ -1166,7 +1168,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                         tmp_prev_point = tmp_cur_point
                                     else:
                                         break
-                                for i in range(1, 5):
+                                for _ in range(1, 5):
                                     tmp_prev_point = prev_point
                                     tmp_cur_point = tmp_prev_point + Point(0, j)
                                     if not self.check_shield(tmp_prev_point, tmp_cur_point, board, list_monsters):

@@ -189,7 +189,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(45 if (x == 0 or y == 0 or x == 8 or y == 7) else 70) + base_hp,
+                            hp=(40 if (x == 0 or y == 0 or x == 8 or y == 7) else 65) + base_hp,
                         )
                     ],
                 )
@@ -206,7 +206,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 40) + base_hp,
+                            hp=(15 if (x == 0 or y == 0 or x == 8 or y == 7) else 35) + base_hp,
                             request_masked=[1, 1, 1, 1, 0],
                         )
                     ],
@@ -223,7 +223,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 50) + base_hp,
+                            hp=(20 if (x == 0 or y == 0 or x == 8 or y == 7) else 45) + base_hp,
                             request_masked=[0, 0, 0, 0, 1],
                         )
                     ],
@@ -276,7 +276,7 @@ LEVELS = [
                 setup_interval=1,
                 width=9,
                 height=2,
-                hp=70,
+                hp=65,
                 dame=3,
             )
         ],
@@ -324,7 +324,7 @@ LEVELS = [
                 setup_interval=1,
                 width=9,
                 height=2,
-                hp=70,
+                hp=65,
                 dame=3,
             )
         ],
@@ -352,7 +352,7 @@ LEVELS = [
                 setup_interval=1,
                 width=2,
                 height=10,
-                hp=70,
+                hp=65,
                 dame=3,
             )
         ],
@@ -380,7 +380,7 @@ LEVELS = [
                 setup_interval=1,
                 width=2,
                 height=10,
-                hp=70,
+                hp=65,
                 dame=3,
             )
         ],
