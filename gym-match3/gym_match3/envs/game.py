@@ -1695,6 +1695,7 @@ class Game(AbstractGame):
                 "match_score": 0,
                 "pu_score": 0,
                 "pu_on_box": 0,
+                "create_pu": {}
             }
 
 
@@ -1712,6 +1713,13 @@ class Game(AbstractGame):
         pu_on_box = 0
         dmg = 0
         self_dmg = 0
+        create_pu = {
+            "disco": 0,
+            "missile_v": 0,
+            "missile_h": 0,
+            "plane": 0,
+            "bomb": 0 
+        }
 
         matches, new_power_ups, brokens, disco_brokens , inside_brokens = self.__check_matches(point, direction)
 
@@ -1749,14 +1757,19 @@ class Game(AbstractGame):
                 self.board.put_shape(_point, _shape)
                 if _shape == GameObject.power_missile_h:
                     create_pu_score += 0.9
+                    create_pu["missile_h"] += 1
                 if _shape == GameObject.power_missile_v:
                     create_pu_score += 1
+                    create_pu["missile_v"] += 1
                 elif _shape == GameObject.power_plane:
                     create_pu_score += 1.5
+                    create_pu["plane"] += 1
                 elif _shape == GameObject.power_bomb:
                     create_pu_score += 2.5
+                    create_pu["bomb"] += 1
                 elif _shape == GameObject.power_disco:
                     create_pu_score += 4.5
+                    create_pu["disco"] += 1
             
             ### Handle add power up and attack user
             if "box" in monster_result.keys():
@@ -1783,6 +1796,7 @@ class Game(AbstractGame):
             "cancel_score": cancel_score,
             "near_monster": near_monster,
             "create_pu_score": create_pu_score,
+            "create_pu": create_pu,
             "rate_match_damage_on_monster": rate_match_dmg,
             "rate_power_damage_on_monster": rate_power_dmg,
             "match_damage_on_monster": total_match_dmg,

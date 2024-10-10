@@ -33,6 +33,13 @@ def eval_single_loop(envs, model, device, max_step, total_monster_hp):
     __dmg_pu = 0
     __num_win_games = 0
     __remain_mons_hp = 0
+    __create_pu = {
+            "disco": 0,
+            "missile_v": 0,
+            "missile_h": 0,
+            "plane": 0,
+            "bomb": 0 
+        }
     current_step = 0
     obs, infos = envs.reset()
     while(current_step < max_step):
@@ -62,6 +69,9 @@ def eval_single_loop(envs, model, device, max_step, total_monster_hp):
                 __num_match_move += 1
             if reward["pu_score"] > 0:
                 __num_pu_move += 1
+            for k in __create_pu.keys():
+                __create_pu[k] += reward["create_pu"].get(k, 0)
+            
                 
         current_step += 1
         if "game" in reward.keys():
@@ -85,6 +95,7 @@ def eval_single_loop(envs, model, device, max_step, total_monster_hp):
         "__num_match_move": __num_match_move,
         "__num_pu_hit": __num_pu_hit,
         "__num_match_hit": __num_match_hit,
+        "__create_pu": __create_pu
         }
 
 def eval(model, obs_order, env, device, store_dir, num_eval=5):
@@ -111,6 +122,13 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
     __num_match_move = 0
     __num_pu_hit = 0
     __num_match_hit = 0
+    __create_pu = {
+            "disco": 0,
+            "missile_v": 0,
+            "missile_h": 0,
+            "plane": 0,
+            "bomb": 0 
+        }
     total_monster_hp =  sum([m['kwargs']['hp'] for m in env['monsters']])
     start_time = time.time()
 
@@ -130,6 +148,8 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
         __num_match_move += stat['__num_match_move']
         __num_pu_hit += stat['__num_pu_hit']
         __num_match_hit += stat['__num_match_hit']
+        for k in __create_pu.keys():
+            __create_pu[k] += stat["__create_pu"][k]
     result = {
         "realm_id": env['realm_id'],
         "node_id": env['node_id'],
@@ -152,6 +172,11 @@ def eval(model, obs_order, env, device, store_dir, num_eval=5):
         "num_match_move_rate": __num_match_move  / __total_step,
         "num_pu_hit_rate": __num_pu_hit  / __total_step,
         "num_match_hit_rate": __num_match_hit  / __total_step,
+        "create_disco": __create_pu["disco"] / (__num_pu_move + __num_match_move),
+        "create_bomb": __create_pu["bomb"] / (__num_pu_move + __num_match_move),
+        "create_plane": __create_pu["plane"] / (__num_pu_move + __num_match_move),
+        "create_missile_h": __create_pu["missile_h"] / (__num_pu_move + __num_match_move),
+        "create_missile_v": __create_pu["missile_v"] / (__num_pu_move + __num_match_move),
     }
     
     print("Evaluation time: {:.2f}s".format(time.time() - start_time), result)
