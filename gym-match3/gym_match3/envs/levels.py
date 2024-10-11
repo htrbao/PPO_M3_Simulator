@@ -556,4 +556,4 @@ for i, (level1, kwargs1) in enumerate(LOC_LEVELS):
             
             MULTI_LOC_LEVELS.append(new_level)
 
-LOC_LEVELS = [l[0] for l in LOC_LEVELS]
+LOC_LEVELS = [l[0] for l in LOC_LEVELS] + MULTI_LOC_LEVELS
