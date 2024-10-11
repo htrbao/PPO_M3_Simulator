@@ -1,7 +1,8 @@
 import math
 import numpy as np
 import test.SkillDefine as SkillDefine
-
+import os
+import pandas as pd
 from test.global_config import (
     LEVEL_MATCH, 
     MONSTER_ATK, 
@@ -16,7 +17,8 @@ from test.global_config import (
     MONSTERS_CONFIG,
     PHASES_CONFIG,
     AVAILABLE_SKILL,
-    NONTILE
+    NONTILE,
+    DB_CONFIG
 )
 
 from gym_match3.envs.game import Point
@@ -221,3 +223,14 @@ def get_map_infos(realm_info: dict, hit_rate: float = 0.5):
     except Exception as e:
         print("\t\tWARNING: ",e)
         return None
+    
+def import_single_model(checkpoint_path, report_date, db):
+    row = 0
+    df = pd.read_csv(os.path.join(checkpoint_path, "final_result.csv"))
+    df = df.sort_values(by=["realm_id", "node_id"])
+    model_name = os.path.basename(checkpoint_path).split(".")[0]
+    df["model_name"] = model_name
+    df["report_date"] = report_date
+    db.drop(DB_CONFIG['table'], f"model_name = '{model_name}' AND report_date = toDate('{report_date.date()}')")
+    row = db.insert_df(DB_CONFIG["table"], df)
+    return row

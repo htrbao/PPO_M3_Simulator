@@ -1,7 +1,7 @@
 import json
 import os
 import pandas as pd
-
+import yaml
 import test.SkillDefine as SkillDefine
 
 from gym_match3.envs.game import DameMonster, BoxMonster
@@ -18,7 +18,7 @@ monster_file = os.path.join(config_dir, "MonsterV2.json")
 level_match = os.path.join(config_dir, "LevelMatch.xlsx")
 real2vir_file = os.path.join(config_dir, "RealToVir.json")
 monster_atk_file = os.path.join(config_dir, "MonsterTimeAtk.xlsx")
-
+db_file = os.path.join(config_dir, "db.yaml")
 
 level_data = read_file(level_file)
 monster_data = read_file(monster_file)
@@ -71,3 +71,5 @@ MONSTER_DIRECTION = [
                     [1, 1]
                 ]
 
+with open(db_file, 'r') as f:
+    DB_CONFIG = yaml.load(f, Loader=yaml.SafeLoader)
