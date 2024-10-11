@@ -865,7 +865,7 @@ class DameMonster(AbstractMonster):
         have_paper_box: bool = False,
         request_masked: list[int] = None
     ):
-        super().__init__(relax_interval, setup_interval, position, hp, width, height, have_paper_box, request_masked)
+        super().__init__(relax_interval, setup_interval, position, hp, width, height, have_paper_box, request_masked=request_masked)
 
         self._damage = dame
 

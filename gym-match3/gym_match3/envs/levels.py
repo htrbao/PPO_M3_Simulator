@@ -224,7 +224,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(25 if (x == 0 or y == 0 or x == 8 or y == 7) else 50) + base_hp,
+                            hp=(50 if (x == 0 or y == 0 or x == 8 or y == 7) else 50) + base_hp,
                             request_masked=[0, 0, 0, 0, 1],
                         )
                     ],
