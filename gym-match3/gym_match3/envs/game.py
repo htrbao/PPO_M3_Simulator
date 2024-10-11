@@ -1683,6 +1683,7 @@ class Game(AbstractGame):
 
     def __move(self, point: Point, direction: Point):
         score = 0
+        rate_mons_hp = 0
         near_monster = 100
         cancel_score = 0
         create_pu_score = 0
@@ -1709,6 +1710,8 @@ class Game(AbstractGame):
 
             self.list_monsters[i].attacked(match_damage, pu_damage)
             monster_result = self.list_monsters[i].act()
+
+            rate_mons_hp += self.list_monsters[i].get_hp() / self.list_monsters[i]._origin_hp
 
         self.__player_hp -= self_dmg
         if len(matches) > 0 or len(brokens) > 0 or len(disco_brokens) > 0:
@@ -1761,6 +1764,7 @@ class Game(AbstractGame):
             "rate_power_damage_on_monster": rate_power_dmg,
             "match_damage_on_monster": total_match_dmg,
             "power_damage_on_monster": total_power_dmg,
+            "rate_mons_hp": rate_mons_hp,
             "damage_on_user": self_dmg,
         }
         return reward
