@@ -1,0 +1,1 @@
+python training.py --prefix_name milestone_mha_penalty_not_both_harderer_8gamma --strategy milestone --pi 256 128 128 128 128 128 128 128 128 128 --vf 4096 256 256 256 256 256 256 256 256 256 --num_heads 2 --n_steps 131072 --batch_size 1024 --lr 0.000012 --gamma 0.8 --num_envs 32 --wandb
