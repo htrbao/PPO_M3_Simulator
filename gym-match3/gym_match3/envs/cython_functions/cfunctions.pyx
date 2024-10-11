@@ -1,8 +1,11 @@
 # cython: boundscheck=False, wraparound=False, nonecheck=False
 # cython: profile=True
+# cython: language_level=3
+
 import numpy as np
 cimport numpy as np
 
+# -------- GAME - FUNCTIONS --------
 cdef bint is_valid_point(int row, int col, int max_row, int max_col):
     return 0 <= row < max_row and 0 <= col < max_col
 
@@ -31,7 +34,7 @@ cpdef generator_neighbours(
 
             shape = board_contain_shapes[newRow, newCol]
             if shape != filter_shape:
-                continue
+                break
 
             newCells.append((shape, newRow, newCol))
         else:
@@ -40,3 +43,5 @@ cpdef generator_neighbours(
         if early_stop:
             break
     return lst_cells
+
+# -------------------------------------------------------------------------------------------------------------------

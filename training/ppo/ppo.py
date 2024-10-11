@@ -93,6 +93,7 @@ class PPO(OnPolicyAlgorithm):
         n_steps: int = 2048,
         batch_size: int = 64,
         n_epochs: int = 10,
+        n_updations: int = 300,
         gamma: float = 0.99,
         gae_lambda: float = 0.95,
         clip_range: Union[float, Schedule] = 0.2,
@@ -173,6 +174,7 @@ class PPO(OnPolicyAlgorithm):
                 )
         self.batch_size = batch_size
         self.n_epochs = n_epochs
+        self._n_updations = n_updations
         self.clip_range = clip_range
         self.clip_range_vf = clip_range_vf
         self.normalize_advantage = normalize_advantage
@@ -199,8 +201,8 @@ class PPO(OnPolicyAlgorithm):
 
         self.lr_scheduler = th.optim.lr_scheduler.CosineAnnealingLR(
             self.policy.optimizer,
-            T_max=1000,
-            eta_min = 0, # Minimum learning rate
+            T_max=self._n_updations,
+            eta_min = 0.01 * self.learning_rate, # Minimum learning rate
             last_epoch = -1,
             verbose=True
         )

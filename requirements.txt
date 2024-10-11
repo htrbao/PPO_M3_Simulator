@@ -1,3 +1,5 @@
 torchrl
 pandas
 wandb
+IPython
+opencv-python

@@ -96,6 +96,13 @@ def get_args():
         metavar="n_steps",
         help="rollout data length (default: 32)",
     )
+    parser.add_argument(
+        "--n_updations",
+        type=int,
+        default=300,
+        metavar="n_updates",
+        help="Times of updations (default: 300)",
+    )
 
     # Optimizer parameters
     parser.add_argument(
@@ -241,7 +248,7 @@ def main():
     print("trainable parameters", sum(p.numel() for p in PPO_trainer.policy.parameters() if p.requires_grad))
     run_i = 0
     print(PPO_trainer.n_steps)
-    while run_i < 700:
+    while run_i < args.n_updations:
         run_i += 1
         s_t = time.time()
         res = (

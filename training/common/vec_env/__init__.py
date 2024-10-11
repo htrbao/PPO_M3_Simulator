@@ -11,7 +11,7 @@ from training.common.vec_env.vec_frame_stack import VecFrameStack
 from training.common.vec_env.vec_monitor import VecMonitor
 from training.common.vec_env.vec_normalize import VecNormalize
 from training.common.vec_env.vec_transpose import VecTransposeImage
-from training.common.vec_env.vec_video_recorder import VecVideoRecorder
+# from training.common.vec_env.vec_video_recorder import VecVideoRecorder
 
 VecEnvWrapperT = TypeVar("VecEnvWrapperT", bound=VecEnvWrapper)
 
