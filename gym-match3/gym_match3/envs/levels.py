@@ -410,3 +410,150 @@ LEVELS = [
     ),
     *ALL_LEVELS,
 ]
+
+
+HEIGHT = 10
+WIDTH = 9
+min_height_mons = 2
+max_height_mons = 3
+max_step = 90
+
+def condition_check_tiles(x, y, request_masked, paper_box, hp):
+    # if monster is on side of board, this function return num tiles = 3
+    # if monster is not near side of board, num tiles is 4 or 5
+    # if monster sum of request_masked <= 2 or paper_box is True or hp is smaller < 50, num tiles is 3
+    # else random num tiles 4 and 5  
+    
+    # If monster is on a side of the board, return num_tiles = 3
+    if (x == 0 or y == 0 or x == WIDTH - 1 or y == HEIGHT - 1  or hp > 60) or sum(request_masked) <= 2 or paper_box:
+        return 3
+    return np.random.random.choice([4, 5], p=[0.4, 0.6])
+
+def generate_request_masked(y, x, hp):
+    # default request masked is boolean array [1, 1, 1, 1, 1] meaning monster take dmg from left, right, top, bottom, inside
+    # using this function to generate request masked based on the given position and its position
+    # if monster is on side of board, request masked will have at least 3 direction to take dmg example [0, 0, 1, 1, 1]
+    # if monster is not near side of board, request masked will at least 1 or 2 direction to take dmg example [1, 0, 0, 0, 1]
+    
+    # Default request mask is [1, 1, 1, 1, 1] (left, right, top, bottom, inside)
+    request_masked = [1, 1, 1, 1, 1]
+
+    if x <= WIDTH // 2:
+        request_masked[1] = 0
+    else:
+        request_masked[0] = 0
+
+    if y <= HEIGHT // 2:
+        request_masked[3] = 0
+    else:
+        request_masked[2] = 0
+    
+    if x > 0 and x < WIDTH - 1 and y > 0 or y < HEIGHT - 1:
+        possible_directions = [i for i, v in enumerate(request_masked) if v == 1]
+        if possible_directions:
+            disable_direction = random.choice(possible_directions)
+            request_masked[disable_direction] = 0
+            
+    return request_masked
+
+def generate_max_mons_hp(x, y, type, height_mon):
+    # Default HP values for different monster types
+    default_hp = {0: 70, 1: 50, 2: 40}
+    
+    # Get the base HP for the given monster type
+    hp = default_hp.get(type, 40)  # Default to 40 if type is not recognized
+
+    # Decrease HP if the monster is near the side of the board
+    if x == 0 or y == 0 or x == WIDTH - 1 or y == HEIGHT - 1:
+        hp -= 10
+
+    # Increase HP if the monster's area (height x WIDTH) is greater than 4
+    if (height_mon ** 2) > 4:
+        hp += 10
+
+    return hp
+
+LOC_LEVELS = []
+for y in range(0, 9):
+    for x in range(0, 8):
+        for height_mon in range(min_height_mons, max_height_mons+1):
+            # print(height_mon + y, x + height_mon)
+            if not (height_mon + y < HEIGHT and x + height_mon < WIDTH):
+                continue
+            easy_board = np.zeros((HEIGHT, WIDTH), dtype=int)
+            easy_board[y: y+height_mon,x: x+height_mon] = GameObject.monster_dame
+            for type_monster in range(3):
+                hp = generate_max_mons_hp(x, y, type_monster, height_mon)
+                monster_kwargs = {
+                    'position': Point(y, x),
+                    'width': height_mon,
+                    'height': height_mon,
+                    'hp': hp,
+                    'dame': 3
+                }
+                
+                if type_monster == 1:
+                    monster_kwargs['request_masked'] = generate_request_masked(y, x, hp)
+                elif type_monster == 2:
+                    monster_kwargs['have_paper_box'] = True
+                    monster_kwargs['relax_interval'] = 12
+                    monster_kwargs['setup_interval'] = 6 
+                num_tiles = condition_check_tiles(x, y, 
+                                                monster_kwargs.get("request_masked", [1, 1, 1, 1, 1]), 
+                                                monster_kwargs.get("have_paper_box", False), 
+                                                hp)
+                monster = DameMonster(
+                                **monster_kwargs
+                            )
+                LOC_LEVELS.append(
+                    (Level(
+                        10,
+                        9,
+                        num_tiles,
+                        easy_board.copy(),
+                        [
+                            monster
+                        ],
+                    ), monster_kwargs)
+                )
+
+MULTI_LOC_LEVELS = []
+
+for i, (level1, kwargs1) in enumerate(LOC_LEVELS):
+    for j, (level2, kwargs2) in enumerate(LOC_LEVELS):
+        if i >= j:
+            continue  
+
+        # Extract monster positions and dimensions
+        monster1 = level1.list_monsters[0]
+        monster2 = level2.list_monsters[0]
+
+        new_board = np.maximum(level1.board, level2.board)
+        monster1_coord = kwargs1["position"].get_coord()
+        monster2_coord = kwargs2["position"].get_coord()
+
+        if ((
+            monster1_coord[1] + kwargs1["width"] <= monster2_coord[1] or
+            monster2_coord[1] + kwargs2["width"] <= monster1_coord[1]
+            ) 
+            or 
+            (
+            monster1_coord[0] + kwargs1["height"] <= monster2_coord[0] or
+            monster2_coord[0] + kwargs2["height"] <= monster1_coord[0]
+            )
+            ):
+
+            # Create a new board by combining the two boards
+
+            # Create a new level with the two monsters
+            new_level = Level(
+                h=10,
+                w=9,
+                n_shapes=min(level1.n_shapes, level2.n_shapes),
+                board=new_board,
+                list_monsters=[monster1, monster2]
+            )
+            
+            MULTI_LOC_LEVELS.append(new_level)
+
+LOC_LEVELS = [l[0] for l in LOC_LEVELS]
