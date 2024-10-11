@@ -3,6 +3,7 @@ import argparse
 import time
 import torch
 import numpy as np
+import wandb
 
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
@@ -17,7 +18,9 @@ from training.m3_model.m3_cnn import (
     M3MlpFeatureExtractor,
     M3LocFeatureExtractor
 )
+from info_config import *
 
+wandb.login(key=API_WANDB_TOKEN)
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -243,7 +246,7 @@ def main():
         _wandb=args.wandb,
         device="cuda",
         seed=13,
-        prefix_name=args.prefix_name,
+        prefix_name=f"{COMPUTER_NAME}_{args.prefix_name}",
     )
     print("trainable parameters", sum(p.numel() for p in PPO_trainer.policy.parameters() if p.requires_grad))
     run_i = 0
