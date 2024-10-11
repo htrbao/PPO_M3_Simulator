@@ -713,7 +713,6 @@ class AbstractMonster(ABC):
         width: int = 1,
         height: int = 1,
         have_paper_box: bool = False,
-        have_teleport: bool = False,
         request_masked: list[int] = None
     ):
         self.real_monster = True
