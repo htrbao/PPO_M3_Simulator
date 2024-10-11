@@ -3,7 +3,6 @@ import argparse
 import time
 import torch
 import numpy as np
-import wandb
 
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
@@ -19,8 +18,6 @@ from training.m3_model.m3_cnn import (
     M3LocFeatureExtractor
 )
 from info_config import *
-
-wandb.login(key=API_WANDB_TOKEN)
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -244,6 +241,7 @@ def main():
         },
         _checkpoint=args.checkpoint,
         _wandb=args.wandb,
+        _api_wandb_key=API_WANDB_TOKEN,
         device="cuda",
         seed=13,
         prefix_name=f"{COMPUTER_NAME}_{args.prefix_name}",
