@@ -297,7 +297,7 @@ class RolloutBuffer(BaseBuffer):
                 + reward["create_pu_score"] * 0.1
                 + reward["score"] * 0.005
                 + 0.05 * (near_monster if (near_monster > 0.5) else 0)
-                - reward["rate_mons_hp"],
+                - reward["rate_mons_hp"]
                 + reward.get("game", 0)
             )
 
