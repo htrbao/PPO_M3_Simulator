@@ -544,7 +544,7 @@ class M3Helper:
             # | (board == GameObject.blocker_bomb)),
             "monster": np.zeros((self.num_row, self .num_col)),
             "monster_match_dmg_mask": np.zeros((self.num_row, self.num_col)),
-            "monster_match_hp": np.zeros((self.num_row, self.num)),
+            "monster_match_hp": np.zeros((self.num_row, self.num_col)),
             "monster_inside_dmg_mask": np.zeros((self.num_row, self.num_col)),
             "monster_inside_hp": np.zeros((self.num_row, self.num_col)),
             "self_dmg_mask": np.zeros((self.num_row, self.num_col)),
