@@ -183,14 +183,14 @@ for x in range(0, 9):
                 Level(
                     10,
                     9,
-                    5,
+                    4,
                     copy.deepcopy(easy_board),
                     [
                         DameMonster(
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(45 + (y - 9) if (x == 0 or y == 0 or x == 8 or y == 7) else 65) + base_hp,
+                            hp=(90 + (y - 9) if (x == 0 or y == 0 or x == 8 or y == 7) else 100) + base_hp,
                         )
                     ],
                 )
@@ -207,7 +207,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(20 if (x == 0 or y == 0 or x == 8 or y == 7) else 40) + base_hp,
+                            hp=(35 if (x == 0 or y == 0 or x == 8 or y == 7) else 45) + base_hp,
                             request_masked=[1, 1, 1, 1, 0],
                         )
                     ],
@@ -224,7 +224,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(50 if (x == 0 or y == 0 or x == 8 or y == 7) else 50) + base_hp,
+                            hp=(60 if (x == 0 or y == 0 or x == 8 or y == 7) else 60) + base_hp,
                             request_masked=[0, 0, 0, 0, 1],
                         )
                     ],
@@ -241,7 +241,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(30 if (x == 0 or y == 0 or x == 8 or y == 7) else 50) + base_hp,
+                            hp=(35 if (x == 0 or y == 0 or x == 8 or y == 7) else 45) + base_hp,
                             have_paper_box=True,
                             setup_interval= 6,
                             relax_interval= 2,
