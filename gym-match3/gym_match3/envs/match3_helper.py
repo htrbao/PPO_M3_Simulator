@@ -513,9 +513,6 @@ class M3Helper:
         if not device == "cpu":
             device = "cuda:" + str(device)
 
-        start_value, end_value = 1, 1.2
-        increment = (end_value - start_value) / (self.num_row - 1)
-
         action_space = np.zeros((self.num_action))
         obs = {
             "none_tile": (board == GameObject.immovable_shape),
@@ -545,9 +542,11 @@ class M3Helper:
             # | (board == GameObject.monster_box_both)
             # | (board == GameObject.blocker_thorny)
             # | (board == GameObject.blocker_bomb)),
-            "monster": np.zeros((self.num_row, self.num_col)),
+            "monster": np.zeros((self.num_row, self .num_col)),
             "monster_match_dmg_mask": np.zeros((self.num_row, self.num_col)),
+            "monster_match_hp": np.zeros((self.num_row, self.num)),
             "monster_inside_dmg_mask": np.zeros((self.num_row, self.num_col)),
+            "monster_inside_hp": np.zeros((self.num_row, self.num_col)),
             "self_dmg_mask": np.zeros((self.num_row, self.num_col)),
             "match_normal": np.zeros((self.num_row, self.num_col)),
             "match_2x2": np.zeros((self.num_row, self.num_col)),
@@ -577,12 +576,14 @@ class M3Helper:
                 for p in _mons.inside_dmg_mask:
                     try:
                         obs["monster_inside_dmg_mask"][p.get_coord()] = 1
+                        obs["monster_inside_hp"][p.get_coord()] = _mons.get_hp() / _mons._origin_hp
                     except IndexError:
                         continue
 
             for p in _mons.dmg_mask:
                 try:
                     obs["monster_match_dmg_mask"][p.get_coord()] = 1
+                    obs["monster_match_hp"][p.get_coord()] = _mons.get_hp() / _mons._origin_hp
                 except IndexError:
                     continue
 
