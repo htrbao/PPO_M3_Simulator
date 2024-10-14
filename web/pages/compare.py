@@ -98,15 +98,18 @@ dir_list = [d for d in os.listdir(store_dir) if os.path.isdir(os.path.join(store
 
 
 dfs = load_csv_files(store_dir, dir_list)
+dfs = dict(sorted(dfs.items()))
 st.success(f"Loaded {len(dfs)} model.")
 st.header("Higest win rate model statistics", divider=True)
 
 highest_model = list(dict(sorted(dfs.items(), key=lambda x: x[1]['win_rate'].mean(), reverse=True)).keys())[0]
 df = dfs[highest_model]
+df = df.sort_values(by=['realm_id', 'node_id'])
 st.subheader(f'Highest win rate model: {highest_model}')
 draw_common_stat(df)
 st.header("Statistics", divider=True)
 draw_plot(dfs)
-# st.dataframe(df, use_container_width=True)
+st.header("Highest model: ", divider=True)
+st.dataframe(df, use_container_width=True)
     
 

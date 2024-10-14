@@ -1,6 +1,6 @@
-host = "10.30.42.37"
-port = 8124
-user = "locht3"
-password = "password"
-database = "m3bot_db"
-table = "eval_log"
+host: 10.30.42.37
+port: 8124
+user: locht3
+password: password
+database: m3bot_db
+table: eval_log
