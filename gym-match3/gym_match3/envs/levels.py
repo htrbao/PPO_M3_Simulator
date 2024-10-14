@@ -190,7 +190,7 @@ for x in range(0, 9):
                             position=Point(x, y),
                             width=2,
                             height=2,
-                            hp=(40 if (x == 0 or y == 0 or x == 8 or y == 7) else 65) + base_hp,
+                            hp=(45 + (y - 9) if (x == 0 or y == 0 or x == 8 or y == 7) else 65) + base_hp,
                         )
                     ],
                 )
