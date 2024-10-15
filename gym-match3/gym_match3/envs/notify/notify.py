@@ -6,14 +6,14 @@ import requests
 
 def notify_finish(is_success):
     MODEL_NAME = os.getenv('MODEL_NAME', "MODEL_NOT_DEFINED")
-    USER_DEVICE = os.getenv('USER_DEVICE', "USER_DEVICE_NOT_DEFINED")
+    USER_DEVICE = os.getenv('COMPUTER_NAME', "USER_DEVICE_NOT_DEFINED")
     message = f"{MODEL_NAME} training completed {'successfully' if is_success else 'fail'} on {USER_DEVICE}"
 
     send(message)
 
 
 def send(message):
-    BOT_TOKEN = os.getenv('BOT_TOKEN', None)
+    BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', None)
     CHAT_ID = os.getenv('CHAT_ID', None)
 
     if not BOT_TOKEN or not CHAT_ID: return
@@ -38,7 +38,7 @@ def send(message):
 
 
 def send_image(image, image_caption=""):
-    BOT_TOKEN = os.getenv('BOT_TOKEN')
+    BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
     CHAT_ID = os.getenv('CHAT_ID')
 
     if not BOT_TOKEN or not CHAT_ID: return
