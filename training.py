@@ -18,7 +18,6 @@ from training.m3_model.m3_cnn import (
     M3MlpFeatureExtractor,
     M3LocFeatureExtractor
 )
-from info_config import *
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -159,6 +158,7 @@ def get_args():
 
 
 def make_env(obs_order, level_group, render):
+    print("AAA")
     def _init():
         env = Match3Env(
             90,
@@ -194,6 +194,10 @@ def make_env_loc(args, milestones=0, step=4, render=False):
 
 
 def main():
+    # Get parameters from envs
+    COMPUTER_NAME = os.getenv('COMPUTER_NAME', "MODEL_NOT_DEFINED")
+    API_WANDB_TOKEN = os.getenv('API_WANDB_TOKEN', "API_WANDB_TOKEN_NOT_DEFINED")
+
     args = get_args()
     max_level = len(LEVELS)
     envs = None
@@ -209,6 +213,9 @@ def main():
         envs = make_env_loc(args, milestones=milestone, render=args.render)
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
+    
+
+    print(COMPUTER_NAME, API_WANDB_TOKEN)
 
     print(f"Agent will be train on {len(LEVELS)} levels")
     print("Observation Space:", envs.observation_space)
