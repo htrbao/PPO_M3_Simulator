@@ -1,9 +1,8 @@
 services:
-  m3-sim:
-    container_name: m3-sim
-    profiles: ["m3-sim"]
-    build:
-      context: .
+  m3:
+    container_name: m3
+    profiles: ["m3"]
+    build: .
     environment:
       - GIT_BRANCH=main
 

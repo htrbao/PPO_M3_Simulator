@@ -1,6 +1,10 @@
 ##!/bin/bash
 #git reset --hard HEAD
 git pull
+echo $BATCH_SIZE
+echo $LEARNING_RATE
+echo $GAMMA
+echo $NUM_ENVS
 
 python training.py \
   --prefix_name milestone_mha_penalty_not_both_harder_ta_advice \
