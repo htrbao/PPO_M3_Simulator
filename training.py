@@ -4,6 +4,7 @@ import time
 import torch
 import numpy as np
 
+from gym_match3.envs.notify import notify
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.common.vec_env import SubprocVecEnv
@@ -291,5 +292,11 @@ def main():
             PPO_trainer.set_random_seed(13)
 
 if __name__ == "__main__":
-    
-    main()
+    is_success = True
+    try:
+        main()
+    except Exception as e:
+        is_success = False
+        raise e
+    finally:
+        notify.notify_finish(is_success)
