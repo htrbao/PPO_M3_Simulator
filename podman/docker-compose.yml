@@ -1,8 +1,7 @@
 services:
   m3:
     container_name: m3
-    profiles: ["m3"]
-    build: .
+    image: localhost/m3-sim
     environment:
       - GIT_BRANCH=main
 
