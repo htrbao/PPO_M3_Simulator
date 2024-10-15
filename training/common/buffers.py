@@ -290,24 +290,26 @@ class RolloutBuffer(BaseBuffer):
             near_monster = 1 - reward.get(
                 "near_monster", np.sqrt(10 * 10 + 9 * 9)
             ) / np.sqrt(10 * 10 + 9 * 9)
+            
+            dmg_reward = reward["match_damage_on_monster"] * 0.05 + reward["power_damage_on_monster"] * 0.1
+            dmg_reward = min(max(0, dmg_reward), 1)
+            
+            match_reward = reward["score"] * 0.01 * near_monster
+            match_reward = min(max(0, match_reward), 0.5)
 
             _reward = (
-                (reward["match_damage_on_monster"] * 1.5
-                + reward["power_damage_on_monster"] * 3) ** 0.75
-                + reward["create_pu_score"] * 0.1
-                +(reward["score"] ** 1.2) * 0.04 * near_monster
-                + reward.get("game", 0)
+                dmg_reward + match_reward
+                + reward["create_pu_score"] * 0.03
+                + reward.get("game", 0) * 1.25
             )
                 
             if total_dmg <= 0:
-                _reward -= 0.5
-            else:
-                _reward += 0.5
+                _reward -= 0.1
 
             if reward["create_pu_score"] <= 0:
-                _reward -= 0.1
+                _reward -= 0.02
                 
-            _reward = np.clip(_reward, -7, 7)
+            _reward = np.clip(_reward, -5, 5)
 
             new_rewards.append(_reward)
         # print(new_rewards)

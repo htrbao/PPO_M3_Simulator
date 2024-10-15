@@ -5,7 +5,7 @@ import torch
 import numpy as np
 
 from gym_match3.envs.match3_env import Match3Env
-from gym_match3.envs.levels import Match3Levels, LEVELS
+from gym_match3.envs.levels import Match3Levels, LEVELS, MULTI_LOC_LEVELS, MonsterType
 from training.common.vec_env import SubprocVecEnv
 from training.ppo import PPO
 from training.m3_model.m3_cnn import (
@@ -153,6 +153,11 @@ def get_args():
         action='store_true',
         help="initiate renderer object",
     )
+    
+    parser.add_argument(
+        "--monster_type",
+        type=lambda x: MonsterType.get(x, None), choices=list(MonsterType)
+    )
 
     return parser.parse_args()
 
@@ -169,8 +174,28 @@ def make_env(obs_order, level_group, render):
 
     return _init
 
-def make_env_loc(args, milestones=0, step=4, render=False):
-    max_level = min(len(LEVELS), args.num_envs + step*milestones)
+def make_env_level(obs_order, levels, level_group, render):
+    def _init():
+        env = Match3Env(
+            90,
+            obs_order=obs_order,
+            levels=Match3Levels(levels),
+            level_group=level_group,
+            is_render=render,
+        )
+        return env
+
+    return _init
+
+def make_env_loc(args, level, milestones=0, step=4, render=False):
+    max_window_size = 200
+    max_milestones = (len(level) - 16)// 10
+    milestones %= max_milestones
+    
+    current_level = args.num_envs + step*milestones
+    max_level = min(max_window_size, current_level)
+    
+    current_level_idx = max(current_level - max_window_size, 0)
     
     r = max_level % args.num_envs
     d = max_level // args.num_envs
@@ -178,23 +203,36 @@ def make_env_loc(args, milestones=0, step=4, render=False):
 
     envs = SubprocVecEnv(
         [
-            make_env(args.obs_order, (i * d, (i + 1) * d), render)
+            make_env_level(args.obs_order,
+                level[
+                    (i * d + current_level_idx):
+                    ((i + 1) * d + current_level_idx)
+                ], (i * d + current_level_idx),
+                    ((i + 1) * d + current_level_idx), render)
             for i in range(num_keeps)
         ]
         
         + 
         
         [
-            make_env(args.obs_order, (num_keeps * d + i * (d + 1), num_keeps * d + (i + 1) * (d + 1)), render)
+            make_env_level(args.obs_order, 
+                level[
+                    (num_keeps * d + i * (d + 1) + current_level_idx):
+                    min((num_keeps * d + (i + 1) * (d + 1) + current_level_idx), len(level))
+                ], (num_keeps * d + i * (d + 1) + current_level_idx),
+                    min((num_keeps * d + (i + 1) * (d + 1) + current_level_idx), len(level)), render)
             for i in range(r)
         ]
     )
     return envs
 
 
+
 def main():
     args = get_args()
-    max_level = len(LEVELS)
+    level = MULTI_LOC_LEVELS[args.monster_type] if args.monster_type is not None else LEVELS
+    
+    max_level = len(level)
     envs = None
     milestone = 0
     if args.strategy == 'sequential':
@@ -209,7 +247,7 @@ def main():
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
 
-    print(f"Agent will be train on {len(LEVELS)} levels")
+    print(f"Agent will be train on {max_level} levels")
     print("Observation Space:", envs.observation_space)
     print("Action Space", envs.action_space)
     PPO_trainer = PPO(
@@ -222,7 +260,7 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3SelfAttentionFeatureExtractor,
+            "features_extractor_class": M3CnnWiderFeatureExtractor,
             "features_extractor_kwargs": {
                 "kernel_size": args.kernel_size,
                 "start_channel": 32,
@@ -255,7 +293,7 @@ def main():
         res = (
             PPO_trainer.collect_rollouts(
                 PPO_trainer.env, PPO_trainer.rollout_buffer, PPO_trainer.n_steps,
-                num_levels = len(LEVELS)
+                num_levels = max_level
             )
         )
         # extract stat
@@ -280,13 +318,14 @@ def main():
             num_win_games=num_win_games,
             num_damage=num_damage,
             num_hit=num_hit,
-            win_list=win_list
+            win_list=win_list,
+            level=level
         )
         print("training time", time.time() - s_t)
         if args.strategy == 'milestone' and win_rate > 80.0:
             milestone += 1
             envs.close()
-            envs = make_env_loc(args, milestone, step=10, render=args.render)
+            envs = make_env_loc(args, level, milestone, step=10, render=args.render)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)
 

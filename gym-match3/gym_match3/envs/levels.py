@@ -422,6 +422,9 @@ class MonsterType(Enum):
     DMG_MONSTER = 0
     BLOCKER_MONSTER = 1
     PAPER_BOX_MONSTER = 2
+    def __str__(self):
+        return self.name
+
 
 def condition_check_tiles(x, y, request_masked, paper_box, hp, height_mon):
     # if monster is on side of board, this function return num tiles = 3

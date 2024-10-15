@@ -222,14 +222,14 @@ class PPO(OnPolicyAlgorithm):
             wandb.log(stats)
         pass
     
-    def csv_log(self, count_win):
+    def csv_log(self, level, count_win):
         log_dir = os.path.join("_saved_csv", self._model_name)
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
             
         with open(os.path.join(log_dir, f"csv_log_count_win.csv"), "a") as f:
             _str = []
-            for i in range(len(LEVELS)):
+            for i in range(len(level)):
                 _str.append(f"{str(count_win.get(i, 0))}")
             f.write(",".join(_str)+"\n")
 
@@ -243,7 +243,7 @@ class PPO(OnPolicyAlgorithm):
         num_hit = kwargs["num_hit"]
         win_list = kwargs["win_list"]
         count_win = Counter(win_list)
-        self.csv_log(count_win)
+        self.csv_log(kwargs.get('level', LEVELS), count_win)
         # Switch to train mode (this affects batch norm / dropout)
         self.policy.set_training_mode(True)
         # Compute current clip range
