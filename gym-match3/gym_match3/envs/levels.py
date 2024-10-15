@@ -6,7 +6,7 @@ import copy
 from gym_match3.envs.game import Point, Board, DameMonster, BoxMonster
 from gym_match3.envs.constants import GameObject, Level, base_hp
 from gym_match3.envs.level import ALL_LEVELS
-
+from enum import Enum
 import os
 import importlib
 
@@ -418,6 +418,11 @@ min_height_mons = 2
 max_height_mons = 3
 max_step = 90
 
+class MonsterType(Enum):
+    DMG_MONSTER = 0
+    BLOCKER_MONSTER = 1
+    PAPER_BOX_MONSTER = 2
+
 def condition_check_tiles(x, y, request_masked, paper_box, hp, height_mon):
     # if monster is on side of board, this function return num tiles = 3
     # if monster is not near side of board, num tiles is 4 or 5
@@ -458,22 +463,66 @@ def generate_request_masked(y, x, hp):
 
 def generate_max_mons_hp(x, y, type, height_mon):
     # Default HP values for different monster types
-    default_hp = {0: 60, 1: 45, 2: 35}
+    default_hp = {MonsterType.DMG_MONSTER: 60, MonsterType.BLOCKER_MONSTER: 45, MonsterType.PAPER_BOX_MONSTER: 35}
     
     # Get the base HP for the given monster type
     hp = default_hp.get(type, 40)  # Default to 40 if type is not recognized
 
     # Decrease HP if the monster is near the side of the board
     if x == 0 or y == 0 or x == WIDTH - height_mon or y == HEIGHT - height_mon:
-        hp -= (8 + 2 * type)
+        hp -= (8 + 2 * type.value)
 
     # Increase HP if the monster's area (height x WIDTH) is greater than 4
     if (height_mon ** 2) > 4:
-        hp += (8 - 1 * type) 
+        hp += (8 - 1 * type.value) 
 
     return hp
 
-LOC_LEVELS = []
+def merge_mutliple_level(levels1, levels2):
+    merged_levels = []
+    for i, (level1, kwargs1) in enumerate(levels1):
+        for j, (level2, kwargs2) in enumerate(levels2):
+            if i >= j:
+                continue  
+
+            # Extract monster positions and dimensions
+            monster1 = level1.list_monsters[0]
+            monster2 = level2.list_monsters[0]
+
+            new_board = np.maximum(level1.board, level2.board)
+            monster1_coord = kwargs1["position"].get_coord()
+            monster2_coord = kwargs2["position"].get_coord()
+
+            if ((
+                monster1_coord[1] + kwargs1["width"] <= monster2_coord[1] or
+                monster2_coord[1] + kwargs2["width"] <= monster1_coord[1]
+                ) 
+                or 
+                (
+                monster1_coord[0] + kwargs1["height"] <= monster2_coord[0] or
+                monster2_coord[0] + kwargs2["height"] <= monster1_coord[0]
+                )
+                ):
+
+                # Create a new board by combining the two boards
+                
+                # Create a new level with the two monsters
+                new_level = Level(
+                    h=10,
+                    w=9,
+                    n_shapes=min(level1.n_shapes, level2.n_shapes),
+                    board=new_board,
+                    list_monsters=[monster1, monster2]
+                )
+                
+                merged_levels.append(new_level)
+    return merged_levels
+
+LOC_LEVELS = {
+    MonsterType.DMG_MONSTER: [],
+    MonsterType.BLOCKER_MONSTER: [],
+    MonsterType.PAPER_BOX_MONSTER: []
+}
 for y in range(0, 9, 2):
     for x in range(0, 8):
         for height_mon in range(min_height_mons, max_height_mons+1):
@@ -482,7 +531,7 @@ for y in range(0, 9, 2):
                 continue
             easy_board = np.zeros((HEIGHT, WIDTH), dtype=int)
             easy_board[y: y+height_mon,x: x+height_mon] = GameObject.monster_dame
-            for type_monster in range(3):
+            for type_monster in list(MonsterType):
                 hp = generate_max_mons_hp(x, y, type_monster, height_mon)
                 monster_kwargs = {
                     'position': Point(y, x),
@@ -492,9 +541,9 @@ for y in range(0, 9, 2):
                     'dame': 0
                 }
                 
-                if type_monster == 1:
+                if type_monster == MonsterType.BLOCKER_MONSTER:
                     monster_kwargs['request_masked'] = generate_request_masked(y, x, hp)
-                elif type_monster == 2:
+                elif type_monster == MonsterType.PAPER_BOX_MONSTER:
                     monster_kwargs['have_paper_box'] = True
                     monster_kwargs['relax_interval'] = 12
                     monster_kwargs['setup_interval'] = 6 
@@ -506,7 +555,7 @@ for y in range(0, 9, 2):
                 monster = DameMonster(
                                 **monster_kwargs
                             )
-                LOC_LEVELS.append(
+                LOC_LEVELS[type_monster].append(
                     (Level(
                         10,
                         9,
@@ -518,43 +567,20 @@ for y in range(0, 9, 2):
                     ), monster_kwargs)
                 )
 
-MULTI_LOC_LEVELS = []
+MULTI_LOC_LEVELS = {
+    MonsterType.DMG_MONSTER: merge_mutliple_level(LOC_LEVELS[MonsterType.DMG_MONSTER], LOC_LEVELS[MonsterType.DMG_MONSTER]),
+    MonsterType.BLOCKER_MONSTER: merge_mutliple_level(LOC_LEVELS[MonsterType.BLOCKER_MONSTER], LOC_LEVELS[MonsterType.BLOCKER_MONSTER]),
+    MonsterType.PAPER_BOX_MONSTER: merge_mutliple_level(LOC_LEVELS[MonsterType.PAPER_BOX_MONSTER], LOC_LEVELS[MonsterType.PAPER_BOX_MONSTER]),
+}
 
-for i, (level1, kwargs1) in enumerate(LOC_LEVELS):
-    for j, (level2, kwargs2) in enumerate(LOC_LEVELS):
-        if i >= j:
-            continue  
+MULTI_LOC_LEVELS[MonsterType.DMG_MONSTER] = [l[0] for l in LOC_LEVELS[MonsterType.DMG_MONSTER]] + MULTI_LOC_LEVELS[MonsterType.DMG_MONSTER]
+MULTI_LOC_LEVELS[MonsterType.BLOCKER_MONSTER] = [l[0] for l in LOC_LEVELS[MonsterType.BLOCKER_MONSTER]] + MULTI_LOC_LEVELS[MonsterType.BLOCKER_MONSTER]
+MULTI_LOC_LEVELS[MonsterType.PAPER_BOX_MONSTER] = [l[0] for l in LOC_LEVELS[MonsterType.PAPER_BOX_MONSTER]] + MULTI_LOC_LEVELS[MonsterType.PAPER_BOX_MONSTER]
 
-        # Extract monster positions and dimensions
-        monster1 = level1.list_monsters[0]
-        monster2 = level2.list_monsters[0]
 
-        new_board = np.maximum(level1.board, level2.board)
-        monster1_coord = kwargs1["position"].get_coord()
-        monster2_coord = kwargs2["position"].get_coord()
+LARGE_LOC_LEVELS = []
+for dmg_level, block_level, paper_level in zip(LOC_LEVELS[MonsterType.DMG_MONSTER], LOC_LEVELS[MonsterType.BLOCKER_MONSTER], LOC_LEVELS[MonsterType.PAPER_BOX_MONSTER]):
+    LARGE_LOC_LEVELS.extend([dmg_level, block_level, paper_level])
 
-        if ((
-            monster1_coord[1] + kwargs1["width"] <= monster2_coord[1] or
-            monster2_coord[1] + kwargs2["width"] <= monster1_coord[1]
-            ) 
-            or 
-            (
-            monster1_coord[0] + kwargs1["height"] <= monster2_coord[0] or
-            monster2_coord[0] + kwargs2["height"] <= monster1_coord[0]
-            )
-            ):
-
-            # Create a new board by combining the two boards
-            
-            # Create a new level with the two monsters
-            new_level = Level(
-                h=10,
-                w=9,
-                n_shapes=min(level1.n_shapes, level2.n_shapes),
-                board=new_board,
-                list_monsters=[monster1, monster2]
-            )
-            
-            MULTI_LOC_LEVELS.append(new_level)
-
-LOC_LEVELS = [l[0] for l in LOC_LEVELS] + MULTI_LOC_LEVELS
+LARGE_MULTI_LOC_LEVELS = merge_mutliple_level(LARGE_LOC_LEVELS, LARGE_LOC_LEVELS)
+LARGE_MULTI_LOC_LEVELS = [l[0] for l in LARGE_LOC_LEVELS] + LARGE_MULTI_LOC_LEVELS
