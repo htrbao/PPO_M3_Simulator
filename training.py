@@ -10,7 +10,7 @@ from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.common.vec_env import SubprocVecEnv
 from training.ppo import PPO
 from training.m3_model.m3_cnn import (
-    M3CnnFeatureExtractor,
+    M3CnnFeatureExtractor,F
     M3CnnLargerFeatureExtractor,
     M3CnnWiderFeatureExtractor,
     M3SelfAttentionFeatureExtractor,
@@ -158,7 +158,6 @@ def get_args():
 
 
 def make_env(obs_order, level_group, render):
-    print("AAA")
     def _init():
         env = Match3Env(
             90,
@@ -230,10 +229,10 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3SelfAttentionFeatureExtractor,
+            "features_extractor_class": M3CnnWiderFeatureExtractor,
             "features_extractor_kwargs": {
                 "kernel_size": args.kernel_size,
-                "start_channel": 32,
+                "start_channel": 8,
                 "mid_channels": args.mid_channels,
                 "out_channels": 256,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
