@@ -18,4 +18,4 @@ python training.py \
   --lr $LEARNING_RATE \
   --gamma $GAMMA \
   --n_updations 1 \
-  --num_envs $NUM_ENVS >>"logging/{$MODEL_NAME}.log"
+  --num_envs $NUM_ENVS >>"logging/$MODEL_NAME.log"
