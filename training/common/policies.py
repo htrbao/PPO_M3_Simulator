@@ -823,6 +823,100 @@ class ActorCriticPolicy(BasePolicy):
         return self.value_net(latent_vf)
 
 
+class ActorCriticStrategyPolicy(ActorCriticPolicy):
+    def __init__(
+        self,
+        observation_space: spaces.Space,
+        action_space: spaces.Space,
+        lr_schedule: Schedule,
+        strategic_net_arch: Optional[Union[List[int], Dict[str, List[int]]]] = None,
+        net_arch: Optional[Union[List[int], Dict[str, List[int]]]] = None,
+        activation_fn: Type[nn.Module] = nn.Tanh,
+        ortho_init: bool = True,
+        use_sde: bool = False,
+        log_std_init: float = 0.0,
+        full_std: bool = True,
+        use_expln: bool = False,
+        squash_output: bool = False,
+        features_extractor_class: Type[BaseFeaturesExtractor] = NatureCNN,
+        features_extractor_kwargs: Optional[Dict[str, Any]] = None,
+        share_features_extractor: bool = True,
+        normalize_images: bool = True,
+        optimizer_class: Type[torch.optim.Optimizer] = torch.optim.Adam,
+        optimizer_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(
+            observation_space,
+            action_space,
+            lr_schedule,
+            net_arch,
+            activation_fn,
+            ortho_init,
+            use_sde,
+            log_std_init,
+            full_std,
+            use_expln,
+            squash_output,
+            features_extractor_class,
+            features_extractor_kwargs,
+            share_features_extractor,
+            normalize_images,
+            optimizer_class,
+            optimizer_kwargs,
+        )
+        self.strategic_net_arch = strategic_net_arch
+
+    def _build_strategic_mlp(self, feature_dim, strategic_net_arch, activation_fn, device) -> None:
+        """
+        Build the MLP strategic policy
+        """
+        policy_net: List[nn.Module] = []
+
+        last_layer_dim_pi = feature_dim
+
+        # save dimensions of layers in policy and value nets
+        if isinstance(strategic_net_arch, dict):
+            # Note: if key is not specificed, assume linear network
+            pi_layers_dims = strategic_net_arch.get("pi", [])  # Layer sizes of the policy network
+        else:
+            pi_layers_dims = strategic_net_arch
+        # Iterate through the policy layers and build the policy net
+        for curr_layer_dim in pi_layers_dims:
+            policy_net.append(nn.Linear(last_layer_dim_pi, curr_layer_dim))
+            policy_net.append(activation_fn())
+            last_layer_dim_pi = curr_layer_dim
+        # Iterate through the value layers and build the value net
+
+        # Save dim, used to create the distributions
+        self.latent_dim_pi = last_layer_dim_pi
+
+        # Create networks
+        # If the list of layers is empty, the network will just act as an Identity module
+        self.policy_net = nn.Sequential(*policy_net).to(device)
+
+
+    def _build_mlp_extractor(self) -> None:
+        """
+        Create the policy and value networks.
+        Part of the layers can be shared.
+        """
+        # Note: If net_arch is None and some features extractor is used,
+        #       net_arch here is an empty list and mlp_extractor does not
+        #       really contain any layers (acts like an identity module).
+
+        self.strategic_policy = self._build_strategic_mlp(
+            feature_dim=self.features_dim,
+            strategic_net_arch=self.strategic_net_arch,
+            activation_fn=self.activation_fn,
+            device=self.device,
+        )
+        self.mlp_extractor = MlpExtractor(
+            self.features_dim,
+            net_arch=self.net_arch,
+            activation_fn=self.activation_fn,
+            device=self.device,
+        )
+
 class ActorCriticCnnPolicy(ActorCriticPolicy):
     """
     CNN policy class for actor-critic algorithms (has both policy and value prediction).
