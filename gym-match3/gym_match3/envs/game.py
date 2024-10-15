@@ -9,7 +9,7 @@ import random
 import traceback
 import threading
 
-from gym_match3.envs.constants import GameObject, mask_immov_mask, need_to_match
+from gym_match3.envs.constants import GameAction, GameObject, mask_immov_mask, need_to_match
 from gym_match3.envs.functions import is_valid_point
 from gym_match3.envs.cython_functions import cfunctions
 
@@ -841,18 +841,20 @@ class AbstractMonster(ABC):
         return: match_damage, pu_damage
         """
         __matches = [ele.point for ele in matches]
+        __disco_brokens = [(ele.point if isinstance(ele, Cell) else ele) for ele in disco_brokens]
         mons_inside_dmg = 0
         for coor in brokens:
+            if isinstance(coor, Cell):
+                coor = coor.point
             if coor in set(self.inside_dmg_mask):
                 mons_inside_dmg += 1
-        # print("dmg_mask:", self.dmg_mask)
-        # print("dmg_pus:", self.inside_dmg_mask)
+
         # print(self.available_mask)
         # print(self.__right_dmg_mask)
         # print(self.__down_dmg_mask)
 
         return len(set(self.dmg_mask) & set(__matches)), \
-            mons_inside_dmg + len(set(self.dmg_mask) & set(disco_brokens))
+            mons_inside_dmg + len(set(self.dmg_mask) & set(__disco_brokens))
 
 class DameMonster(AbstractMonster):
     def __init__(
@@ -1052,6 +1054,8 @@ class PowerUpActivator(AbstractPowerUpActivator):
         shape1 = board.get_shape(point)
         shape2 = board.get_shape(point2)
 
+        swap_type = None
+
         if shape1 in GameObject.set_powers_shape and shape2 in GameObject.set_powers_shape:
 
             #adding both points to return_brokens
@@ -1066,6 +1070,13 @@ class PowerUpActivator(AbstractPowerUpActivator):
             # With disco
             if shape1 == GameObject.power_disco:
                 if shape2 != GameObject.power_disco:
+                    if shape2 == GameObject.power_missile_h or shape2 == GameObject.power_missile_v:
+                        swap_type = GameAction.swap_merge_missile_disco
+                    elif shape2 == GameObject.power_bomb:
+                        swap_type = GameAction.swap_merge_bomb_disco
+                    elif shape2 == GameObject.power_plane:
+                        swap_type = GameAction.swap_merge_plane_disco                    
+                    
                     chosen_color = np.random.randint(1, board.n_shapes + 1)
                     # print("Chosen Color For merging", chosen_color)
                     for i in range(board.board_size[0]):
@@ -1077,20 +1088,27 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                 shape2 = shape2 if (shape2 > GameObject.power_missile_v) else random.choice([GameObject.power_missile_h, GameObject.power_missile_v])
                                 brokens.extend(self.__activate_not_merge(shape2, _p, board, list_monsters, None))
                 else:
+                    swap_type = GameAction.swap_merge_disco_disco
                     brokens = [Point(i, j) for i, j in product(range(board.board_size[0]), range(board.board_size[1]))]
                     disco_brokens = set(brokens)
 
             # With plane
             elif shape1 == GameObject.power_plane:
                 for _dir in self.__plane_affect:
-                        brokens.append(point + Point(*_dir))
+                    brokens.append(point + Point(*_dir))
                 mons_pos = board.get_monster()
                 try:
                     if shape2 != GameObject.power_plane:
+                        if shape2 == GameObject.power_missile_h or shape2 == GameObject.power_missile_v:
+                            swap_type = GameAction.swap_merge_missile_plane
+                        elif shape2 == GameObject.power_bomb:
+                            swap_type = GameAction.swap_merge_bomb_plane
                         random_mons = mons_pos[np.random.randint(0, len(mons_pos))]
                         brokens.append(random_mons)
+                        brokens.append(random_mons) # Because of self activate of another PU
                         brokens.extend(self.__activate_not_merge(shape2, random_mons, board, list_monsters, None))
                     else:
+                        swap_type = GameAction.swap_merge_plane_plane
                         brokens.extend(random.sample(mons_pos, 6) if len(mons_pos) > 6 else mons_pos)
                 except:
                     # print("No Monster on Board")
@@ -1099,10 +1117,16 @@ class PowerUpActivator(AbstractPowerUpActivator):
             # With bomb
             elif shape1 == GameObject.power_bomb:
                 if shape2  != GameObject.power_bomb:
+                    if shape2 == GameObject.power_missile_h or shape2 == GameObject.power_missile_v:
+                        swap_type = GameAction.swap_merge_missile_bomb
                     for i in range(-1,2,1):
+                        brokens.append(point + Point(i,0)) # Because of self activate of another PU
                         brokens.extend(self.__activate_not_merge(shape2, point + Point(i,0), board, list_monsters, None))
+                        brokens.append(point + Point(0,i)) # Because of self activate of another PU
                         brokens.extend(self.__activate_not_merge(shape2, point + Point(0,i), board, list_monsters, None))
                 else:
+                    brokens.append(point)
+                    swap_type = GameAction.swap_merge_bomb_bomb
                     def check_for_diagonal(i, _h, _v, point):
                         out_lst = []
                         prev_point = point
@@ -1184,28 +1208,48 @@ class PowerUpActivator(AbstractPowerUpActivator):
                                 continue
             # With missiles
             else:
+                swap_type = GameAction.swap_merge_missile_missile
+                brokens.append(point)
                 brokens.extend(self.__activate_not_merge( GameObject.power_missile_h, point, board, list_monsters, None))
                 brokens.extend(self.__activate_not_merge( GameObject.power_missile_v, point, board, list_monsters, None))
 
         elif shape1 in GameObject.set_powers_shape:
             return_brokens.add(point)
             if shape1 == GameObject.power_disco:
+                swap_type = GameAction.swap_power_disco
                 disco_brokens |= set(
                     self.__activate_not_merge(shape1, point, board, list_monsters, shape2)
                 )
             else:
+                if shape1 == GameObject.power_missile_h:
+                    swap_type = GameAction.swap_power_missile_h
+                elif shape1 == GameObject.power_missile_v:
+                    swap_type = GameAction.swap_power_missile_v
+                elif shape1 == GameObject.power_bomb:
+                    swap_type = GameAction.swap_power_bomb
+                elif shape1 == GameObject.power_plane:
+                    swap_type = GameAction.swap_power_plane
                 brokens = self.__activate_not_merge(shape1, point, board, list_monsters, shape2)
 
         elif shape2 in GameObject.set_powers_shape:
             return_brokens.add(point2)
             if shape2 == GameObject.power_disco:
+                swap_type = GameAction.swap_power_disco
                 disco_brokens |= set(
                     self.__activate_not_merge(shape2, point2, board, list_monsters, shape1)
                 )
             else:
+                if shape2 == GameObject.power_missile_h:
+                    swap_type = GameAction.swap_power_missile_h
+                elif shape2 == GameObject.power_missile_v:
+                    swap_type = GameAction.swap_power_missile_v
+                elif shape2 == GameObject.power_bomb:
+                    swap_type = GameAction.swap_power_bomb
+                elif shape2 == GameObject.power_plane:
+                    swap_type = GameAction.swap_power_plane
                 brokens = self.__activate_not_merge(shape2, point2, board, list_monsters, shape1)
 
-        inside_brokens = copy.copy(brokens)
+        inside_brokens = copy.deepcopy(brokens)
         brokens = list(set(brokens))
         while brokens:
             try:
@@ -1234,7 +1278,7 @@ class PowerUpActivator(AbstractPowerUpActivator):
             except OutOfBoardError:
                 continue
 
-        return return_brokens, disco_brokens, inside_brokens
+        return return_brokens, disco_brokens, inside_brokens, swap_type
 
     # def __activate_merge(
     #     self,
@@ -1683,6 +1727,7 @@ class Game(AbstractGame):
             print("Error when swaping", e)
             print("There was an error when swaping", [mon.get_hp() for mon in self.list_monsters])
             return {
+                "board": self.board.board,
                 "score": 0,
                 "cancel_score": 0,
                 "create_pu_score": 0,
@@ -1718,7 +1763,7 @@ class Game(AbstractGame):
             "bomb": 0 
         }
 
-        matches, new_power_ups, brokens, disco_brokens , inside_brokens = self.__check_matches(point, direction)
+        matches, new_power_ups, brokens, disco_brokens , inside_brokens, swap_type = self.__check_matches(point, direction)
 
         # Calculate scores
         score += len(brokens) + len(disco_brokens)
@@ -1788,6 +1833,7 @@ class Game(AbstractGame):
             self.__filler.move_and_fill(self.board)
             self.__operate_until_possible_moves()
         reward = {
+            "swap_type": swap_type,
             "score": score,
             "match_score": match_score,
             "pu_score": pu_score,
@@ -1808,7 +1854,7 @@ class Game(AbstractGame):
     def __check_matches(self, point: Point, direction: Point):
         tmp_board = self.__get_copy_of_board()
         tmp_board.move(point, direction)
-        return_brokens, disco_brokens, inside_brokens = self.__pu_activator.activate_power_up(
+        return_brokens, disco_brokens, inside_brokens, swap_type = self.__pu_activator.activate_power_up(
             point, direction, tmp_board, self.list_monsters
         )
 
@@ -1838,7 +1884,7 @@ class Game(AbstractGame):
         #     print(f"focus_range: {test_matches}")
         #     print("------------------------------------------------------------------------")
 
-        return matches, new_power_ups, return_brokens, disco_brokens, inside_brokens
+        return matches, new_power_ups, return_brokens, disco_brokens, inside_brokens, swap_type
 
     def _sweep_died_monster(self):
         mons_points = set()
