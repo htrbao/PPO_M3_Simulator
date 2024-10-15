@@ -10,7 +10,7 @@ from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.common.vec_env import SubprocVecEnv
 from training.ppo import PPO
 from training.m3_model.m3_cnn import (
-    M3CnnFeatureExtractor,F
+    M3CnnFeatureExtractor,
     M3CnnLargerFeatureExtractor,
     M3CnnWiderFeatureExtractor,
     M3SelfAttentionFeatureExtractor,
