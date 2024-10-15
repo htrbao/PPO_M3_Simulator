@@ -156,7 +156,7 @@ def get_args():
     
     parser.add_argument(
         "--monster_type",
-        type=lambda x: MonsterType.get(x, None), choices=list(MonsterType)
+        type=lambda x: MonsterType[x], choices=list(MonsterType)
     )
 
     return parser.parse_args()
@@ -207,8 +207,8 @@ def make_env_loc(args, level, milestones=0, step=4, render=False):
                 level[
                     (i * d + current_level_idx):
                     ((i + 1) * d + current_level_idx)
-                ], (i * d + current_level_idx),
-                    ((i + 1) * d + current_level_idx), render)
+                ],((i * d + current_level_idx),
+                    ((i + 1) * d + current_level_idx)), render)
             for i in range(num_keeps)
         ]
         
@@ -219,8 +219,8 @@ def make_env_loc(args, level, milestones=0, step=4, render=False):
                 level[
                     (num_keeps * d + i * (d + 1) + current_level_idx):
                     min((num_keeps * d + (i + 1) * (d + 1) + current_level_idx), len(level))
-                ], (num_keeps * d + i * (d + 1) + current_level_idx),
-                    min((num_keeps * d + (i + 1) * (d + 1) + current_level_idx), len(level)), render)
+                ],((num_keeps * d + i * (d + 1) + current_level_idx),
+                    min((num_keeps * d + (i + 1) * (d + 1) + current_level_idx)), len(level)), render)
             for i in range(r)
         ]
     )
@@ -243,7 +243,7 @@ def main():
             ]
         )
     elif args.strategy == 'milestone':
-        envs = make_env_loc(args, milestones=milestone, render=args.render)
+        envs = make_env_loc(args, level, milestones=milestone, step=10, render=args.render)
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
 
