@@ -17,7 +17,7 @@ from training.m3_model.m3_cnn import (
     M3MlpFeatureExtractor,
     M3LocFeatureExtractor
 )
-
+from info_config import *
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -241,9 +241,10 @@ def main():
         },
         _checkpoint=args.checkpoint,
         _wandb=args.wandb,
+        _api_wandb_key=API_WANDB_TOKEN,
         device="cuda",
         seed=13,
-        prefix_name=args.prefix_name,
+        prefix_name=f"{COMPUTER_NAME}_{args.prefix_name}",
     )
     print("trainable parameters", sum(p.numel() for p in PPO_trainer.policy.parameters() if p.requires_grad))
     run_i = 0

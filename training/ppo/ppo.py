@@ -114,6 +114,7 @@ class PPO(OnPolicyAlgorithm):
         seed: Optional[int] = None,
         _checkpoint:str = None,
         _wandb: bool = False,
+        _api_wandb_key: str = None,
         device: Union[th.device, str] = "auto",
         prefix_name: str = "m3_with_cnn",
         _init_setup_model: bool = True,
@@ -192,6 +193,7 @@ class PPO(OnPolicyAlgorithm):
         self._model_name = f"{prefix_name}_{policy_kwargs['features_extractor_kwargs']['num_first_cnn_layer']}layers_{policy_kwargs['features_extractor_kwargs']['mid_channels']}channels_{learning_rate}_{n_steps}_{'' if policy_kwargs['share_features_extractor'] else 'not_'}share_{datetime.datetime.today().strftime('%Y%m%d')}"
         self._wandb = _wandb
         if self._wandb:
+            wandb.login(key=_api_wandb_key)
             wandb.init(project="m3_with_cnn", 
                        name=self._model_name)
         
