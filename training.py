@@ -219,8 +219,8 @@ def make_env_loc(args, level, milestones=0, step=4, render=False):
                 level[
                     (num_keeps * d + i * (d + 1) + current_level_idx):
                     min((num_keeps * d + (i + 1) * (d + 1) + current_level_idx), len(level))
-                ],((num_keeps * d + i * (d + 1) + current_level_idx),
-                    min((num_keeps * d + (i + 1) * (d + 1) + current_level_idx)), len(level)), render)
+                ],(num_keeps * d + i * (d + 1) + current_level_idx,
+                    min((num_keeps * d + (i + 1) * (d + 1) + current_level_idx), len(level))), render)
             for i in range(r)
         ]
     )
