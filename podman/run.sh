@@ -1,5 +1,13 @@
 ##!/bin/bash
 git pull
+git checkout "$GIT_BRANCH"
+git pull
+
+cd /PPO_M3_Simulator/gym-match3
+pip install -e .
+
+cd /PPO_M3_Simulator
+pip install -r requirements.txt
 
 python training.py \
   --prefix_name milestone_mha_penalty_not_both_harder_ta_advice \
