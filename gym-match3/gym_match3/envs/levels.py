@@ -435,7 +435,7 @@ def condition_check_tiles(x, y, request_masked, paper_box, hp, height_mon):
     # If monster is on a side of the board, return num_tiles = 3
     # if (x == 0 or y == 0 or x == WIDTH - height_mon or y == HEIGHT - height_mon  or hp > 60) or sum(request_masked) <= 2 or paper_box:
     #     return 3
-    return np.random.choice([4, 5], p=[0.4, 0.6])
+    return np.random.choice([4, 5], p=[0.85, 0.15])
 
 def generate_request_masked(y, x, hp):
     # default request masked is boolean array [1, 1, 1, 1, 1] meaning monster take dmg from left, right, top, bottom, inside
@@ -467,7 +467,7 @@ def generate_request_masked(y, x, hp):
 
 def generate_max_mons_hp(x, y, type, height_mon):
     # Default HP values for different monster types
-    default_hp = {MonsterType.DMG_MONSTER: 80, MonsterType.BLOCKER_MONSTER: 80, MonsterType.PAPER_BOX_MONSTER: 80}
+    default_hp = {MonsterType.DMG_MONSTER: 80, MonsterType.BLOCKER_MONSTER: 60, MonsterType.PAPER_BOX_MONSTER: 55}
     
     # Get the base HP for the given monster type
     hp = default_hp.get(type, 40)  # Default to 40 if type is not recognized
