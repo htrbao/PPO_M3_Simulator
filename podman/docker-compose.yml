@@ -15,23 +15,25 @@ services:
       - API_WANDB_TOKEN=0d47a1ae7f86562300fb90139e6661df8e540297
 
       # Training configs
+      - PREFIX_NAME=milestone_mha_penalty_not_both_harder_ta_advice
+      - KERNEL_SIZE=3
+      - MID_CHANNELS=64
+      - NUM_FIRST_CNN_LAYER=3
+      - NUM_SELF_ATTENTION_LAYERS=8
+      - STRATEGY=milestone
+      - PI="256 128 128 128 128 128 128 128 128 128"
+      - VF=4096 256 256 256 256 256 256 256 256 256
+      - EPOCHS=10
+      - ENT_COEF=0.01
+      - NUM_HEADS=2
+      - N_STEPS=131072
+      - OBS_ORDER="none_tile color_1 color_2 color_3 color_4 color_5 pu disco bomb missile_h missile_v plane blocker monster monster_match_dmg_mask monster_match_hp monster_inside_dmg_mask monster_inside_hp self_dmg_mask match_normal match_2x2 match_4_v match_4_h match_L match_T match_5 legal_action heat_mask"
       - BATCH_SIZE=1024
       - LEARNING_RATE=0.000012
       - GAMMA=0.8
+      - N_UPDATIONS=1
       - NUM_ENVS=8
 
     volumes:
       - ./_saved_model/:/PPO_M3_Simulator/_saved_model/:rw
       - ./logging/:/PPO_M3_Simulator/logging/:rw
-
-    deploy:
-      resources:
-        limits:
-          memory: 30G
-          cpus: '14'
-        reservations:
-          devices:
-              - driver: nvidia
-                device_ids: ['0']
-                capabilities: [gpu]
-
