@@ -457,27 +457,28 @@ def generate_request_masked(y, x, hp):
         request_masked[2] = 0
     
     if x > 0 and x < WIDTH - 1 and y > 0 or y < HEIGHT - 1:
-        possible_directions = [i for i, v in enumerate(request_masked) if v == 1]
-        if possible_directions:
-            disable_direction = random.choice(possible_directions)
-            request_masked[disable_direction] = 0
+        for _ in range(2):
+            possible_directions = [i for i, v in enumerate(request_masked) if v == 1]
+            if possible_directions and sum(request_masked) >= 3:
+                disable_direction = random.choice(possible_directions)
+                request_masked[disable_direction] = 0
             
     return request_masked
 
 def generate_max_mons_hp(x, y, type, height_mon):
     # Default HP values for different monster types
-    default_hp = {MonsterType.DMG_MONSTER: 60, MonsterType.BLOCKER_MONSTER: 45, MonsterType.PAPER_BOX_MONSTER: 35}
+    default_hp = {MonsterType.DMG_MONSTER: 80, MonsterType.BLOCKER_MONSTER: 80, MonsterType.PAPER_BOX_MONSTER: 80}
     
     # Get the base HP for the given monster type
     hp = default_hp.get(type, 40)  # Default to 40 if type is not recognized
 
     # Decrease HP if the monster is near the side of the board
     if x == 0 or y == 0 or x == WIDTH - height_mon or y == HEIGHT - height_mon:
-        hp -= (8 + 2 * type.value)
+        hp -= (5 + 2 * type.value)
 
     # Increase HP if the monster's area (height x WIDTH) is greater than 4
     if (height_mon ** 2) > 4:
-        hp += (8 - 1 * type.value) 
+        hp += (5 - 1 * type.value) 
 
     return hp
 
@@ -548,8 +549,8 @@ for y in range(0, 9, 2):
                     monster_kwargs['request_masked'] = generate_request_masked(y, x, hp)
                 elif type_monster == MonsterType.PAPER_BOX_MONSTER:
                     monster_kwargs['have_paper_box'] = True
-                    monster_kwargs['relax_interval'] = 12
-                    monster_kwargs['setup_interval'] = 6 
+                    monster_kwargs['relax_interval'] = 5
+                    monster_kwargs['setup_interval'] = 2
                 num_tiles = condition_check_tiles(x, y, 
                                                 monster_kwargs.get("request_masked", [1, 1, 1, 1, 1]), 
                                                 monster_kwargs.get("have_paper_box", False), 
