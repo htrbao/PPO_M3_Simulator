@@ -24,4 +24,5 @@ python training.py \
   "${EXTRA3:-}" \
   "${EXTRA4:-}" \
   "${EXTRA5:-}" \
+  --wandb \
   --num_envs "$NUM_ENVS" >>"logging/$MODEL_NAME.log"
