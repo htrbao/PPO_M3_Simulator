@@ -433,8 +433,8 @@ def condition_check_tiles(x, y, request_masked, paper_box, hp, height_mon):
     # else random num tiles 4 and 5  
     
     # If monster is on a side of the board, return num_tiles = 3
-    if (x == 0 or y == 0 or x == WIDTH - height_mon or y == HEIGHT - height_mon  or hp > 60) or sum(request_masked) <= 2 or paper_box:
-        return 3
+    # if (x == 0 or y == 0 or x == WIDTH - height_mon or y == HEIGHT - height_mon  or hp > 60) or sum(request_masked) <= 2 or paper_box:
+    #     return 3
     return np.random.choice([4, 5], p=[0.4, 0.6])
 
 def generate_request_masked(y, x, hp):
