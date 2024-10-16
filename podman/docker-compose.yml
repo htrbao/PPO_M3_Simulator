@@ -1,0 +1,37 @@
+services:
+  m3:
+    container_name: m3
+    image: localhost/m3-sim
+    environment:
+      - GIT_BRANCH=main
+
+      # Info of device run
+      - MODEL_NAME=abc-test
+      - COMPUTER_NAME=duydt2-pc
+
+      # Tracking
+      - TELEGRAM_BOT_TOKEN=7182348523:AAFwetaUraARmTaY2n9vl_R4MJsdBeV8dhw
+      - CHAT_ID=-4592566575
+      - API_WANDB_TOKEN=0d47a1ae7f86562300fb90139e6661df8e540297
+
+      # Training configs
+      - BATCH_SIZE=1024
+      - LEARNING_RATE=0.000012
+      - GAMMA=0.8
+      - NUM_ENVS=8
+
+    volumes:
+      - ./_saved_model/:/PPO_M3_Simulator/_saved_model/:rw
+      - ./logging/:/PPO_M3_Simulator/logging/:rw
+
+    deploy:
+      resources:
+        limits:
+          memory: 30G
+          cpus: '14'
+        reservations:
+          devices:
+              - driver: nvidia
+                device_ids: ['0']
+                capabilities: [gpu]
+

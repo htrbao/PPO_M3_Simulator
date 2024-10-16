@@ -4,6 +4,7 @@ import time
 import torch
 import numpy as np
 
+from gym_match3.envs.notify import notify
 from gym_match3.envs.match3_env import Match3Env
 from gym_match3.envs.levels import Match3Levels, LEVELS
 from training.common.vec_env import SubprocVecEnv
@@ -17,7 +18,6 @@ from training.m3_model.m3_cnn import (
     M3MlpFeatureExtractor,
     M3LocFeatureExtractor
 )
-from info_config import *
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -193,6 +193,10 @@ def make_env_loc(args, milestones=0, step=4, render=False):
 
 
 def main():
+    # Get parameters from envs
+    COMPUTER_NAME = os.getenv('COMPUTER_NAME', "MODEL_NOT_DEFINED")
+    API_WANDB_TOKEN = os.getenv('API_WANDB_TOKEN', "API_WANDB_TOKEN_NOT_DEFINED")
+
     args = get_args()
     max_level = len(LEVELS)
     envs = None
@@ -208,6 +212,9 @@ def main():
         envs = make_env_loc(args, milestones=milestone, render=args.render)
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
+    
+
+    print(COMPUTER_NAME, API_WANDB_TOKEN)
 
     print(f"Agent will be train on {len(LEVELS)} levels")
     print("Observation Space:", envs.observation_space)
@@ -222,10 +229,10 @@ def main():
         ent_coef=args.ent_coef,
         policy_kwargs={
             "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3SelfAttentionFeatureExtractor,
+            "features_extractor_class": M3CnnWiderFeatureExtractor,
             "features_extractor_kwargs": {
                 "kernel_size": args.kernel_size,
-                "start_channel": 32,
+                "start_channel": 8,
                 "mid_channels": args.mid_channels,
                 "out_channels": 256,
                 "num_first_cnn_layer": args.num_first_cnn_layer,
@@ -291,5 +298,11 @@ def main():
             PPO_trainer.set_random_seed(13)
 
 if __name__ == "__main__":
-    
-    main()
+    is_success = True
+    try:
+        main()
+    except Exception as e:
+        is_success = False
+        raise e
+    finally:
+        notify.notify_finish(is_success)

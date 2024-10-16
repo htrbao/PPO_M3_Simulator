@@ -515,6 +515,17 @@ class M3Helper:
 
         action_space = np.zeros((self.num_action))
         obs = {
+            "tiles": ((board == GameObject.immovable_shape) * 0
+                    + (board == GameObject.color1) * 1
+                    + (board == GameObject.color2) * 2
+                    + (board == GameObject.color3) * 3
+                    + (board == GameObject.color4) * 4
+                    + (board == GameObject.color5) * 5
+                    + (board == GameObject.power_disco) * 6
+                    + (board == GameObject.power_bomb) * 7
+                    + (board == GameObject.power_missile_h) * 8
+                    + (board == GameObject.power_missile_v) * 9
+                    + (board == GameObject.power_plane) * 10) / 10.0,
             "none_tile": (board == GameObject.immovable_shape),
             "color_1": (board == GameObject.color1),
             "color_2": (board == GameObject.color2),
@@ -544,7 +555,7 @@ class M3Helper:
             # | (board == GameObject.blocker_bomb)),
             "monster": np.zeros((self.num_row, self .num_col)),
             "monster_match_dmg_mask": np.zeros((self.num_row, self.num_col)),
-            "monster_match_hp": np.zeros((self.num_row, self.num)),
+            "monster_match_hp": np.zeros((self.num_row, self.num_col)),
             "monster_inside_dmg_mask": np.zeros((self.num_row, self.num_col)),
             "monster_inside_hp": np.zeros((self.num_row, self.num_col)),
             "self_dmg_mask": np.zeros((self.num_row, self.num_col)),
