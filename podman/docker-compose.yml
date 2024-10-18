@@ -6,7 +6,7 @@ services:
       - GIT_BRANCH=main
 
       # Info of device run
-      - MODEL_NAME=abc-test
+      - FEATURE_EXTRACTOR=abc-test
       - COMPUTER_NAME=duydt2-pc
 
       # Tracking
