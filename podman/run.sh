@@ -16,13 +16,10 @@ python training.py \
   --num_first_cnn_layer "$NUM_FIRST_CNN_LAYER" \
   --num_self_attention_layers "$NUM_SELF_ATTENTION_LAYERS" \
   --strategy "$STRATEGY" \
-  --pi "$PI" \
-  --vf "$VF" \
   --epochs "$EPOCHS" \
   --ent_coef "$ENT_COEF" \
   --num_heads "$NUM_HEADS" \
   --n_steps "$N_STEPS" \
-  --obs-order "$OBS_ORDER" \
   --batch_size "$BATCH_SIZE" \
   --lr "$LEARNING_RATE" \
   --gamma "$GAMMA" \
@@ -34,4 +31,4 @@ python training.py \
   "${EXTRA4:-}" \
   "${EXTRA5:-}" \
   --wandb \
-  --num_envs "$NUM_ENVS" >>"logging/$MODEL_NAME.log"
+  --num_envs "$NUM_ENVS"
