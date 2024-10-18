@@ -28,7 +28,7 @@ services:
       - ENT_COEF=0.01
       - NUM_HEADS=2
       - N_STEPS=131072
-      - OBS_ORDER="none_tile color_1 color_2 color_3 color_4 color_5 pu disco bomb missile_h missile_v plane blocker monster monster_match_dmg_mask monster_match_hp monster_inside_dmg_mask monster_inside_hp self_dmg_mask match_normal match_2x2 match_4_v match_4_h match_L match_T match_5 legal_action heat_mask"
+      - OBS_ORDER=none_tile color_1 color_2 color_3 color_4 color_5 pu disco bomb missile_h missile_v plane blocker monster monster_match_dmg_mask monster_match_hp monster_inside_dmg_mask monster_inside_hp self_dmg_mask match_normal match_2x2 match_4_v match_4_h match_L match_T match_5 legal_action heat_mask
       - BATCH_SIZE=1024
       - LEARNING_RATE=0.000012
       - GAMMA=0.8
