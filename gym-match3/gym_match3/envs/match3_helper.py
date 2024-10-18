@@ -501,7 +501,7 @@ class M3Helper:
         )
 
     def _format_observation(
-        self, board: np.array, list_monsters: list[AbstractMonster], device, time_factor: float
+        self, board: np.array, list_monsters: list[AbstractMonster], device, time_factor: float, full_actions_space: bool
     ):
         """
         A utility function to process observations and move them to CUDA.
@@ -638,7 +638,18 @@ class M3Helper:
             obs["legal_action"],
             action_space,
         )
-
+        if full_actions_space:
+            monster = ((board == GameObject.monster_dame)
+                | (board == GameObject.monster_box_box)
+                | (board == GameObject.monster_box_bomb)
+                | (board == GameObject.monster_box_thorny)
+                | (board == GameObject.monster_box_both)
+                | (board == GameObject.blocker_thorny)
+                | (board == GameObject.blocker_bomb))
+            action_space = np.where(board == GameObject.immovable_shape, 0, 1) - monster
+            action_space_1 = (action_space[:, :-1] & action_space[:, 1:]).flatten()
+            action_space_2 = (action_space[:-1, :] & action_space[1:, :]).flatten()
+            action_space = np.concatenate([action_space_1, action_space_2])
         return dict(obs=obs, action_space=action_space)
 
     def obs_to_tensor(self, obs):

@@ -31,6 +31,7 @@ class Match3Env(gym.Env):
         obs_order: list[str] = [],
         level_group: tuple[int, int] = (0, 10),
         is_render: bool = False,
+        full_actions_space: bool = False,
     ):
         self.num_envs = 1
         self.rollout_len = rollout_len
@@ -71,6 +72,7 @@ class Match3Env(gym.Env):
         # setting actions space
         self.__match3_actions = self.__get_available_actions_in_order()
         self.action_space = spaces.Discrete(len(self.__match3_actions))
+        self.full_actions_space = full_actions_space
 
     @staticmethod
     def __get_directions(board_ndim):
@@ -206,7 +208,7 @@ class Match3Env(gym.Env):
             ob["board"] = self.__get_board()
             ob["list_monster"] = self.__game.list_monsters
 
-        obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu", self.__episode_counter / self.rollout_len)
+        obs = self.helper._format_observation(ob["board"], ob["list_monster"], "cpu", self.__episode_counter / self.rollout_len, self.full_actions_space)
         # Check if non legal_action
         if 1 not in np.unique(obs["action_space"]):
             episode_over = True
