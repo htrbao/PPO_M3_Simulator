@@ -6,8 +6,8 @@ services:
       - GIT_BRANCH=main
 
       # Info of device run
-      - FEATURE_EXTRACTOR=abc-test
-      - COMPUTER_NAME=duydt2-pc
+      - FEATURE_EXTRACTOR=M3SelfAttentionFeatureExtractor
+      - COMPUTER_NAME=DuyDT2
 
       # Tracking
       - TELEGRAM_BOT_TOKEN=7182348523:AAFwetaUraARmTaY2n9vl_R4MJsdBeV8dhw
@@ -22,8 +22,8 @@ services:
       - NUM_FIRST_CNN_LAYER=3
       - NUM_SELF_ATTENTION_LAYERS=8
       - STRATEGY=milestone
-      - PI=256 128 128 128 128 128 128 128 128 128
-      - VF=4096 256 256 256 256 256 256 256 256 256
+      - PI=256
+      - VF=256
       - EPOCHS=10
       - ENT_COEF=0.01
       - NUM_HEADS=2
