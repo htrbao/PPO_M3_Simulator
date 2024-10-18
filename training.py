@@ -19,6 +19,16 @@ from training.m3_model.m3_cnn import (
     M3LocFeatureExtractor
 )
 
+feature_extractor_class = {
+    M3CnnFeatureExtractor.name: M3CnnFeatureExtractor,
+    M3CnnLargerFeatureExtractor.name: M3CnnLargerFeatureExtractor,
+    M3CnnWiderFeatureExtractor.name: M3CnnWiderFeatureExtractor,
+    M3SelfAttentionFeatureExtractor.name: M3SelfAttentionFeatureExtractor,
+    M3ExplainationFeatureExtractor.name: M3ExplainationFeatureExtractor,
+    M3MlpFeatureExtractor.name: M3MlpFeatureExtractor,
+    M3LocFeatureExtractor.name: M3LocFeatureExtractor
+}
+
 def get_args():
     parser = argparse.ArgumentParser(
         "Match3 with PPO",
@@ -169,7 +179,7 @@ def make_env(obs_order, level_group, render):
 
     return _init
 
-def make_env_loc(args, milestones=0, step=4, render=False):
+def make_env_loc(args, obs_order, milestones=0, step=4, render=False):
     max_level = min(len(LEVELS), args.num_envs + step*milestones)
     
     r = max_level % args.num_envs
@@ -178,14 +188,14 @@ def make_env_loc(args, milestones=0, step=4, render=False):
 
     envs = SubprocVecEnv(
         [
-            make_env(args.obs_order, (i * d, (i + 1) * d), render)
+            make_env(obs_order, (i * d, (i + 1) * d), render)
             for i in range(num_keeps)
         ]
         
         + 
         
         [
-            make_env(args.obs_order, (num_keeps * d + i * (d + 1), num_keeps * d + (i + 1) * (d + 1)), render)
+            make_env(obs_order, (num_keeps * d + i * (d + 1), num_keeps * d + (i + 1) * (d + 1)), render)
             for i in range(r)
         ]
     )
@@ -193,23 +203,35 @@ def make_env_loc(args, milestones=0, step=4, render=False):
 
 
 def main():
+    args = get_args()
+
     # Get parameters from envs
     COMPUTER_NAME = os.getenv('COMPUTER_NAME', "MODEL_NOT_DEFINED")
     API_WANDB_TOKEN = os.getenv('API_WANDB_TOKEN', "API_WANDB_TOKEN_NOT_DEFINED")
+    FEATURE_EXTRACTOR = os.getenv('FEATURE_EXTRACTOR', "FEATURE_EXTRACTOR_NOT_DEFINED")
+    pi = args.pi
+    vf = args.vf
+    obs_order = args.obs_order
 
-    args = get_args()
+    if isinstance(pi, str):
+        pi = [int(x) for x in pi.split()]
+    if isinstance(vf, str):
+        vf = [int(x) for x in vf.split()]
+    if isinstance(obs_order, str):
+        obs_order = [x for x in obs_order.split()]
+
     max_level = len(LEVELS)
     envs = None
     milestone = 0
     if args.strategy == 'sequential':
         envs = SubprocVecEnv(
             [
-                make_env(i, args.obs_order, max_level // args.num_envs, args.render)
+                make_env(i, obs_order, max_level // args.num_envs, args.render)
                 for i in range(args.num_envs)
             ]
         )
     elif args.strategy == 'milestone':
-        envs = make_env_loc(args, milestones=milestone, render=args.render)
+        envs = make_env_loc(args, obs_order=obs_order, milestones=milestone, render=args.render)
     else:
         raise ValueError(f'Invalid strategy: {args.strategy}')
     
@@ -228,8 +250,8 @@ def main():
         batch_size=args.batch_size,
         ent_coef=args.ent_coef,
         policy_kwargs={
-            "net_arch": dict(pi=args.pi, vf=args.vf),
-            "features_extractor_class": M3CnnWiderFeatureExtractor,
+            "net_arch": dict(pi=pi, vf=vf),
+            "features_extractor_class": feature_extractor_class[FEATURE_EXTRACTOR],
             "features_extractor_kwargs": {
                 "kernel_size": args.kernel_size,
                 "start_channel": 8,

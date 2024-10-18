@@ -19,6 +19,7 @@ class M3Aap(nn.AdaptiveMaxPool2d):
 
 # With square kernels and equal stride
 class M3CnnFeatureExtractor(nn.Module):
+    name = "M3CnnFeatureExtractor"
     """
     Model architecture with CNN base.
 
@@ -73,6 +74,7 @@ class M3CnnFeatureExtractor(nn.Module):
     
 
 class M3LocFeatureExtractor(nn.Module):
+    name = "M3LocFeatureExtractor"
     """
     Model architecture with CNN base.
     `Input`:
@@ -131,6 +133,7 @@ class M3LocFeatureExtractor(nn.Module):
 
 # With square kernels and equal stride
 class M3CnnLargerFeatureExtractor(nn.Module):
+    name = "M3CnnLargerFeatureExtractor"
     """
     Model architecture with CNN base.
 
@@ -188,6 +191,7 @@ class M3CnnLargerFeatureExtractor(nn.Module):
 
 
 class M3CnnWiderFeatureExtractor(nn.Module):
+    name = "M3CnnWiderFeatureExtractor"
     """
     Model architecture with CNN base.
 
@@ -301,6 +305,7 @@ class CnnSelfAttention(nn.Module):
         return o.view(*size).contiguous()
 
 class M3CnnSelfAttentionFeatureExtractor(nn.Module):
+    name = "M3CnnSelfAttentionFeatureExtractor"
     """
     Constructs a CNN self-attention on channels feature extractor for the M3 algorithm.
     """
@@ -321,6 +326,7 @@ class M3CnnSelfAttentionFeatureExtractor(nn.Module):
         return torch.relu(x)
     
 class M3SelfAttentionFeatureExtractor(nn.Module):
+    name = "M3SelfAttentionFeatureExtractor"
     """
     Constructs a self-attention on tiles feature extractor for the M3 algorithm.
     """
@@ -355,6 +361,7 @@ class M3SelfAttentionFeatureExtractor(nn.Module):
 
 
 class M3CnnWiderThenSelfAttentionFeatureExtractor(nn.Module):
+    name = "M3CnnWiderThenSelfAttentionFeatureExtractor"
     def __init__(self, in_channels: int, **kwargs) -> None:
         # mid_channels: int, out_channels: int = 160, num_first_cnn_layer: int = 10, **kwargs
         super(M3CnnWiderThenSelfAttentionFeatureExtractor, self).__init__()
@@ -421,6 +428,7 @@ class M3CnnWiderThenSelfAttentionFeatureExtractor(nn.Module):
 
 
 class M3ExplainationFeatureExtractor(nn.Module):
+    name = "M3ExplainationFeatureExtractor"
     def __init__(self, in_channels, **kwargs) -> None:
         super().__init__()
 
@@ -450,6 +458,7 @@ class M3ExplainationFeatureExtractor(nn.Module):
         return x
 
 class M3MlpFeatureExtractor(nn.Module):
+    name = "M3MlpFeatureExtractor"
     def __init__(self, in_channels, **kwargs):
         super().__init__()
         self.features_dim = in_channels.shape[0] * in_channels.shape[1] * in_channels.shape[2]
