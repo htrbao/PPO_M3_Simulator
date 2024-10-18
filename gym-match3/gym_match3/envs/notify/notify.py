@@ -9,7 +9,7 @@ def notify_finish(is_success):
     USER_DEVICE = os.getenv('COMPUTER_NAME', "USER_DEVICE_NOT_DEFINED")
 
     if is_success:
-        message = f"✅ *{MODEL_NAME}* training _successfully on {USER_DEVICE}"
+        message = f"✅ *{MODEL_NAME}* training _successfully_ on {USER_DEVICE}"
     else:
         message = f"⚠️ *{MODEL_NAME}* training *FAIL* on {USER_DEVICE}"
 
