@@ -325,7 +325,7 @@ def main():
         if args.strategy == 'milestone' and win_rate > 80.0:
             milestone += 1
             envs.close()
-            envs = make_env_loc(args, milestone, step=10, render=args.render)
+            envs = make_env_loc(args, obs_order, milestone, step=10, render=args.render)
             PPO_trainer.set_env(envs)
             PPO_trainer.set_random_seed(13)
 
