@@ -189,7 +189,7 @@ def create_monster(monster_infos, realm_level):
     return monsters
 
 
-def get_map_infos(realm_info: dict, hit_rate: float = 0.5):
+def get_map_infos(realm_info: dict, scale_step=None):
     try:
         realm_id = realm_info["realmId"]
         realm_node = realm_info["nodeId"]
@@ -209,7 +209,8 @@ def get_map_infos(realm_info: dict, hit_rate: float = 0.5):
             raise Exception(f"Realm id {realm_id}, Node id {realm_node}, Level {realm_level} do not have monster")
         if sum([row.count('+') for row in realm_level_phase_map]) != len(monsters):
             raise Exception(f"Realm id {realm_id}, Node id {realm_node}, Level {realm_level} monster do not match map")
-        
+        if scale_step is not None:
+            monster_max_hp = int(monster_max_hp * scale_step / max_step)
         processed_map = process_map(realm_level_phase_map, monsters, monster_max_hp, realm_level_phase_num_tiles)
         
         return {
