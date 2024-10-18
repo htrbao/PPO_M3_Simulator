@@ -47,6 +47,7 @@ class Match3Env(gym.Env):
         self.w = self.levels.w
         self.n_shapes = self.levels.n_shapes
         self.__episode_counter = 0
+        self.full_actions_space = full_actions_space
 
         self.__game = Game(
             rows=self.h,
@@ -72,7 +73,6 @@ class Match3Env(gym.Env):
         # setting actions space
         self.__match3_actions = self.__get_available_actions_in_order()
         self.action_space = spaces.Discrete(len(self.__match3_actions))
-        self.full_actions_space = full_actions_space
 
     @staticmethod
     def __get_directions(board_ndim):
@@ -231,7 +231,7 @@ class Match3Env(gym.Env):
         is_win = kwargs.get("is_win", None)
         board, list_monsters = self.levels.next(is_win)
         self.__game.start(board, list_monsters)
-        obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu", 0 / self.rollout_len)
+        obs = self.helper._format_observation(self.__get_board(), list_monsters, "cpu", 0 / self.rollout_len, self.full_actions_space)
         return self.helper.obs_to_tensor(obs["obs"]), {
             "action_space": obs["action_space"],
             "current_level": self.levels.current_level + self.current_group
