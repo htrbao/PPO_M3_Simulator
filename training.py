@@ -217,9 +217,9 @@ def main():
     COMPUTER_NAME = os.getenv('COMPUTER_NAME', "MODEL_NOT_DEFINED")
     API_WANDB_TOKEN = os.getenv('API_WANDB_TOKEN', "API_WANDB_TOKEN_NOT_DEFINED")
     FEATURE_EXTRACTOR = os.getenv('FEATURE_EXTRACTOR', "FEATURE_EXTRACTOR_NOT_DEFINED")
-    pi = args.pi
-    vf = args.vf
-    obs_order = args.obs_order
+    pi = args.pi or os.getenv("PI", None)
+    vf = args.vf or os.getenv("VF", None)
+    obs_order = args.obs_order or os.getenv("OBS_ORDER", None)
 
     if isinstance(pi, str):
         pi = [int(x) for x in pi.split()]
