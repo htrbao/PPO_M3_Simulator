@@ -125,6 +125,14 @@ def get_args():
         help="Gamma in Reinforcement Learning",
     )
 
+    # Saving model
+    parser.add_argument(
+        "--n_saved",
+        default=100,
+        type=int,
+        help="Number of models to save (default: 100)",
+    )
+
     # Continue training
     parser.add_argument(
         "--checkpoint",
@@ -283,6 +291,7 @@ def main():
         device="cuda",
         seed=13,
         prefix_name=f"{COMPUTER_NAME}_{args.prefix_name}",
+        n_saved=args.n_saved
     )
     print("trainable parameters", sum(p.numel() for p in PPO_trainer.policy.parameters() if p.requires_grad))
     run_i = 0
@@ -319,7 +328,8 @@ def main():
             num_damage=num_damage,
             num_hit=num_hit,
             win_list=win_list,
-            level=level
+            run_i=run_i,
+            level=level,
         )
         print("training time", time.time() - s_t)
         if args.strategy == 'milestone' and win_rate > 80.0:

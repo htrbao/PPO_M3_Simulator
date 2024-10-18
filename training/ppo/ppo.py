@@ -117,6 +117,7 @@ class PPO(OnPolicyAlgorithm):
         _api_wandb_key: str = None,
         device: Union[th.device, str] = "auto",
         prefix_name: str = "m3_with_cnn",
+        n_saved: int = 100,
         _init_setup_model: bool = True,
     ):
         super().__init__(
@@ -191,6 +192,7 @@ class PPO(OnPolicyAlgorithm):
             self.policy = self.policy.load(path=self._checkpoint, device=self.device)
 
         self._model_name = f"{prefix_name}_{policy_kwargs['features_extractor_kwargs']['num_first_cnn_layer']}layers_{policy_kwargs['features_extractor_kwargs']['mid_channels']}channels_{learning_rate}_{n_steps}_{'' if policy_kwargs['share_features_extractor'] else 'not_'}share_{datetime.datetime.today().strftime('%Y%m%d')}"
+        self.n_saved = n_saved
         self._wandb = _wandb
         if self._wandb:
             wandb.login(key=_api_wandb_key)
@@ -401,7 +403,8 @@ class PPO(OnPolicyAlgorithm):
             stats["train/clip_range_vf"]=clip_range_vf
 
         self.train_log(stats)
-        self.policy.save(path=f"./_saved_model/{self._model_name}.pt")
+        if kwargs["run_i"] % self.n_saved == 0 and kwargs["run_i"] > 0:
+            self.policy.save(path=f"./_saved_model/{self._model_name}_{kwargs["run_i"]}.pt")
 
     def learn(
         self: SelfPPO,
