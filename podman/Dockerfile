@@ -17,4 +17,4 @@ RUN pip install -r requirements.txt
 RUN mkdir logging
 
 COPY run.sh .
-ENTRYPOINT ["sh", "run.sh", ">>", "logging/output.log"]
+ENTRYPOINT ["sh", "run.sh"]

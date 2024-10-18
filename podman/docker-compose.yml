@@ -12,7 +12,7 @@ services:
       # Tracking
       - TELEGRAM_BOT_TOKEN=7182348523:AAFwetaUraARmTaY2n9vl_R4MJsdBeV8dhw
       - CHAT_ID=-4592566575
-      - API_WANDB_TOKEN=0d47a1ae7f86562300fb90139e6661df8e540297
+      - API_WANDB_TOKEN=hehe
 
       # Training configs
       - PREFIX_NAME=milestone_mha_penalty_not_both_harder_ta_advice
@@ -37,4 +37,3 @@ services:
 
     volumes:
       - ./_saved_model/:/PPO_M3_Simulator/_saved_model/:rw
-      - ./logging/:/PPO_M3_Simulator/logging/:rw

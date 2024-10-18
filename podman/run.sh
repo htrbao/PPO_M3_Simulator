@@ -9,7 +9,7 @@ pip install -e .
 cd /PPO_M3_Simulator
 pip install -r requirements.txt
 
-python training.py \
+python -u training.py \
   --prefix_name milestone_mha_penalty_not_both_harder_ta_advice \
   --kernel_size "$KERNEL_SIZE" \
   --mid_channels "$MID_CHANNELS" \
