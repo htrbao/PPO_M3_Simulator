@@ -16,6 +16,7 @@ services:
 
       # Training configs
       - PREFIX_NAME=milestone_mha_penalty_not_both_harder_ta_advice
+      - N_SAVED=100
       - KERNEL_SIZE=3
       - MID_CHANNELS=64
       - NUM_FIRST_CNN_LAYER=3

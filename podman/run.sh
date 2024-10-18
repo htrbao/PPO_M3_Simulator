@@ -26,6 +26,7 @@ python training.py \
   --batch_size "$BATCH_SIZE" \
   --lr "$LEARNING_RATE" \
   --gamma "$GAMMA" \
+  --n_saved "$N_SAVED" \
   --n_updations "$N_UPDATIONS" \
   "${EXTRA1:-}" \
   "${EXTRA2:-}" \
