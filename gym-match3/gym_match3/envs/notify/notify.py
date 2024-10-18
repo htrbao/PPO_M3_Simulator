@@ -7,7 +7,11 @@ import requests
 def notify_finish(is_success):
     MODEL_NAME = os.getenv('FEATURE_EXTRACTOR', "FEATURE_NOT_DEFINED")
     USER_DEVICE = os.getenv('COMPUTER_NAME', "USER_DEVICE_NOT_DEFINED")
-    message = f"*{MODEL_NAME}* training completed {'successfully' if is_success else 'fail'} on {USER_DEVICE}"
+
+    if is_success:
+        message = f"✅ *{MODEL_NAME}* training _successfully on {USER_DEVICE}"
+    else:
+        message = f"⚠️ *{MODEL_NAME}* training *FAIL* on {USER_DEVICE}"
 
     send(message)
 
