@@ -404,7 +404,7 @@ class PPO(OnPolicyAlgorithm):
 
         self.train_log(stats)
         if kwargs["run_i"] % self.n_saved == 0 and kwargs["run_i"] > 0:
-            self.policy.save(path=f"./_saved_model/{self._model_name}_{kwargs["run_i"]}.pt")
+            self.policy.save(path=f"./_saved_model/{self._model_name}_{kwargs['run_i']}.pt")
 
     def learn(
         self: SelfPPO,
