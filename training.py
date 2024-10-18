@@ -276,7 +276,7 @@ def main():
             "share_features_extractor": False,
             "activation_fn": torch.nn.GELU
         },
-        _checkpoint=args.checkpoint | os.getenv("CHECKPOINT", None),
+        _checkpoint=args.checkpoint or os.getenv("CHECKPOINT", None),
         _wandb=args.wandb,
         _api_wandb_key=API_WANDB_TOKEN,
         device="cuda",
